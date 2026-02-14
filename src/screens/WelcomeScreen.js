@@ -34,8 +34,12 @@ export default function WelcomeScreen({ navigation }) {
         if (selectedRole === 'owner') {
             roomId = generateRoomId();
         } else {
+            if (!inputRoomId || inputRoomId.trim().length === 0) {
+                Alert.alert('시스템 알림', '입장하실 6자리 방 번호를 입력해주세요! 🤖');
+                return;
+            }
             if (inputRoomId.length !== 6) {
-                Alert.alert('알림', '6자리 방 번호를 입력해주세요!');
+                Alert.alert('시스템 알림', '방 번호는 정확히 6자리여야 합니다! 🔢');
                 return;
             }
             roomId = inputRoomId;
