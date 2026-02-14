@@ -39,3 +39,16 @@ yarn-error.*
 # generated native folders
 /ios
 /android
+
+# Temporary backup files
+App.js.*
+*.bak
+*.step1
+*.test
+*.test_nav
+*.restore_nav
+doctor.txt
+doctor_output.txt
+package.json.*
+project_info*.json
+sdk_config*.json
