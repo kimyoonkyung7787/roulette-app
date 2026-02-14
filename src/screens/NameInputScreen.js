@@ -556,14 +556,14 @@ export default function NameInputScreen({ route, navigation }) {
                                     fontWeight: 'bold',
                                     letterSpacing: 1.5,
                                     textTransform: 'uppercase'
-                                }}>투표자</Text>
+                                }}>VOTER</Text>
                                 <Text style={{
                                     color: Colors.primary,
                                     fontSize: 13,
                                     fontWeight: 'bold',
                                     letterSpacing: 1.5,
                                     textTransform: 'uppercase'
-                                }}>당첨자</Text>
+                                }}>WINNER</Text>
                             </View>
 
                             <ScrollView style={{ maxHeight: 400 }}>
