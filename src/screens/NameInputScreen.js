@@ -413,13 +413,13 @@ export default function NameInputScreen({ route, navigation }) {
                                             </TouchableOpacity>
                                         )}
 
-                                        <TouchableOpacity onPress={() => removeParticipant(index)} style={{ marginLeft: 10 }}>
+                                        <TouchableOpacity onPress={() => removeParticipant(index)} style={{ marginLeft: 20 }}>
                                             <Trash2 color={Colors.textSecondary} size={18} opacity={0.6} />
                                         </TouchableOpacity>
                                     </View>
                                 )}
                                 {role === 'participant' && (
-                                    <Text style={{ color: Colors.secondary, fontSize: 16, fontWeight: 'bold' }}>{item.weight}%</Text>
+                                    <Text style={{ color: Colors.secondary, fontSize: 16, fontWeight: 'bold', marginRight: 10 }}>{item.weight}%</Text>
                                 )}
                             </View>
                         )}
