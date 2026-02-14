@@ -172,9 +172,10 @@ const styles = StyleSheet.create({
     content: {
         flex: 1,
         justifyContent: 'center',
+        paddingBottom: 60,
     },
     section: {
-        marginBottom: 35,
+        marginBottom: 20,
     },
     categoryGrid: {
         flexDirection: 'row',
