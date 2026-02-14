@@ -195,8 +195,8 @@ export default function ResultScreen({ route, navigation }) {
                                 </TouchableOpacity>
                             </View>
                             <View style={styles.tableHeader}>
-                                <Text style={styles.tableHeaderText}>투표자</Text>
-                                <Text style={styles.tableHeaderText}>당첨자</Text>
+                                <Text style={styles.tableHeaderText}>VOTER</Text>
+                                <Text style={styles.tableHeaderText}>WINNER</Text>
                             </View>
 
                             <ScrollView style={{ maxHeight: 400 }}>
