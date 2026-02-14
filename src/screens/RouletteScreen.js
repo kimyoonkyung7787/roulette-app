@@ -171,12 +171,26 @@ export default function RouletteScreen({ route, navigation }) {
 
     const onSpinFinished = async (finalRotation) => {
         const normalizedRotation = (finalRotation % 360 + 360) % 360;
-        // The pointer is at the TOP. Since we render sectors starting at -90 degrees,
-        // absolute angle 0 on the wheel is at the top.
+        // The pointer is at the TOP.
         const winningAngle = (360 - normalizedRotation) % 360;
-        const sectorAngle = 360 / participants.length;
-        const winningIndex = Math.floor(winningAngle / sectorAngle) % participants.length;
-        const winner = participants[winningIndex];
+
+        // Find winner based on weighted sections
+        let cumulativeAngle = 0;
+        let winningIndex = 0;
+
+        for (let i = 0; i < participants.length; i++) {
+            const p = participants[i];
+            const weight = typeof p === 'object' ? p.weight : (100 / participants.length);
+            const sectorAngle = (weight / 100) * 360;
+
+            if (winningAngle >= cumulativeAngle && winningAngle < cumulativeAngle + sectorAngle) {
+                winningIndex = i;
+                break;
+            }
+            cumulativeAngle += sectorAngle;
+        }
+
+        const winner = typeof participants[winningIndex] === 'object' ? participants[winningIndex].name : participants[winningIndex];
 
         console.log(`Spin Finished - Winner: ${winner}`);
         console.log(`My name: ${mySelectedName}, Voting for: ${winner}`);
@@ -192,8 +206,21 @@ export default function RouletteScreen({ route, navigation }) {
     useAnimatedReaction(
         () => rotation.value,
         (currentValue) => {
-            const sectionAngle = 360 / participants.length;
-            const currentIndex = Math.floor((currentValue % 360) / sectionAngle);
+            const normalizedRotation = (currentValue % 360 + 360) % 360;
+            const pointerAngle = (360 - normalizedRotation) % 360;
+
+            let cumulativeAngle = 0;
+            let currentIndex = 0;
+            for (let i = 0; i < participants.length; i++) {
+                const p = participants[i];
+                const weight = typeof p === 'object' ? p.weight : (100 / participants.length);
+                const sectorAngle = (weight / 100) * 360;
+                if (pointerAngle >= cumulativeAngle && pointerAngle < cumulativeAngle + sectorAngle) {
+                    currentIndex = i;
+                    break;
+                }
+                cumulativeAngle += sectorAngle;
+            }
 
             if (currentIndex !== lastTickIndex.value) {
                 lastTickIndex.value = currentIndex;
@@ -250,10 +277,16 @@ export default function RouletteScreen({ route, navigation }) {
 
     const renderSections = () => {
         if (participants.length === 0) return null;
-        const angle = 360 / participants.length;
-        return participants.map((name, i) => {
-            const startAngle = i * angle;
-            const endAngle = (i + 1) * angle;
+
+        let cumulativeAngle = 0;
+        return participants.map((p, i) => {
+            const name = typeof p === 'object' ? p.name : p;
+            const weight = typeof p === 'object' ? p.weight : (100 / participants.length);
+            const angle = (weight / 100) * 360;
+
+            const startAngle = cumulativeAngle;
+            const endAngle = cumulativeAngle + angle;
+            cumulativeAngle += angle;
 
             const radStart = (startAngle - 90) * (Math.PI / 180);
             const radEnd = (endAngle - 90) * (Math.PI / 180);
@@ -276,7 +309,7 @@ export default function RouletteScreen({ route, navigation }) {
                         x={ROULETTE_SIZE / 2 + (ROULETTE_SIZE * 0.35) * Math.cos((startAngle + angle / 2 - 90) * (Math.PI / 180))}
                         y={ROULETTE_SIZE / 2 + (ROULETTE_SIZE * 0.35) * Math.sin((startAngle + angle / 2 - 90) * (Math.PI / 180))}
                         fill="white"
-                        fontSize="14"
+                        fontSize={participants.length > 8 ? "10" : "14"}
                         fontWeight="bold"
                         textAnchor="middle"
                         alignmentBaseline="middle"

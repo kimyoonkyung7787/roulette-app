@@ -14,7 +14,9 @@ export default function NameInputScreen({ route, navigation }) {
     const [participants, setParticipants] = useState([]);
     const [isLoaded, setIsLoaded] = useState(false);
     const [editingIndex, setEditingIndex] = useState(null);
+    const [editingWeightIndex, setEditingWeightIndex] = useState(null);
     const [editingValue, setEditingValue] = useState('');
+    const [editingWeightValue, setEditingWeightValue] = useState('');
     const [mySelectedName, setMySelectedName] = useState(null);
     const [onlineUsers, setOnlineUsers] = useState([]);
     const [votes, setVotes] = useState([]);
@@ -42,7 +44,17 @@ export default function NameInputScreen({ route, navigation }) {
 
                 // Ensure at least 2 participants exist for owner's initial screen
                 if (!savedParticipants || savedParticipants.length < 2) {
-                    savedParticipants = ['참여자 1', '참여자 2'];
+                    savedParticipants = [
+                        { name: '참여자 1', weight: 50 },
+                        { name: '참여자 2', weight: 50 }
+                    ];
+                } else if (typeof savedParticipants[0] === 'string') {
+                    // Migration: if they are strings, convert to objects
+                    const weight = Math.floor(100 / savedParticipants.length);
+                    savedParticipants = savedParticipants.map((p, i) => ({
+                        name: p,
+                        weight: i === savedParticipants.length - 1 ? 100 - (weight * (savedParticipants.length - 1)) : weight
+                    }));
                 }
 
                 setParticipants(savedParticipants);
@@ -107,31 +119,50 @@ export default function NameInputScreen({ route, navigation }) {
         }
     }, [participants, isLoaded]);
 
+    const redistributeWeights = (list) => {
+        if (list.length === 0) return [];
+        const baseWeight = Math.floor(100 / list.length);
+        const remainder = 100 % list.length;
+
+        return list.map((p, i) => ({
+            ...p,
+            weight: baseWeight + (i < remainder ? 1 : 0)
+        }));
+    };
+
     const addParticipant = () => {
         if (name.trim()) {
-            setParticipants([...participants, name.trim()]);
+            const newList = [...participants, { name: name.trim(), weight: 0 }];
+            setParticipants(redistributeWeights(newList));
             setName('');
         }
     };
 
     const removeParticipant = (index) => {
-        if (participants[index] === mySelectedName) {
+        const removedItem = participants[index];
+        if (removedItem.name === mySelectedName) {
             setMySelectedName(null);
         }
-        setParticipants(participants.filter((_, i) => i !== index));
+        const newList = participants.filter((_, i) => i !== index);
+        setParticipants(redistributeWeights(newList));
     };
 
     const startEditing = (index) => {
         setEditingIndex(index);
-        setEditingValue(participants[index]);
+        setEditingValue(participants[index].name);
+    };
+
+    const startEditingWeight = (index) => {
+        setEditingWeightIndex(index);
+        setEditingWeightValue(participants[index].weight.toString());
     };
 
     const saveEdit = () => {
         if (editingValue.trim()) {
-            const oldName = participants[editingIndex];
+            const oldName = participants[editingIndex].name;
             const newName = editingValue.trim();
             const newParticipants = [...participants];
-            newParticipants[editingIndex] = newName;
+            newParticipants[editingIndex] = { ...newParticipants[editingIndex], name: newName };
             setParticipants(newParticipants);
 
             if (oldName === mySelectedName) {
@@ -139,6 +170,16 @@ export default function NameInputScreen({ route, navigation }) {
             }
         }
         setEditingIndex(null);
+    };
+
+    const saveWeightEdit = () => {
+        const val = parseInt(editingWeightValue);
+        if (!isNaN(val) && val >= 0) {
+            const newParticipants = [...participants];
+            newParticipants[editingWeightIndex] = { ...newParticipants[editingWeightIndex], weight: val };
+            setParticipants(newParticipants);
+        }
+        setEditingWeightIndex(null);
     };
 
     const toggleMe = async (participantName) => {
@@ -153,6 +194,13 @@ export default function NameInputScreen({ route, navigation }) {
 
     const startRoulette = async () => {
         if (participants.length >= 2) {
+            // Validate total weight
+            const totalWeight = participants.reduce((sum, p) => sum + (p.weight || 0), 0);
+            if (totalWeight !== 100) {
+                alert(`전체 비율의 합이 100%이어야 합니다. (현재: ${totalWeight}%)`);
+                return;
+            }
+
             // Clear previous session data when starting fresh
             if (role === 'owner') {
                 try {
@@ -269,22 +317,22 @@ export default function NameInputScreen({ route, navigation }) {
                                 flexDirection: 'row',
                                 alignItems: 'center',
                                 justifyContent: 'space-between',
-                                backgroundColor: mySelectedName === item ? 'rgba(0, 255, 255, 0.08)' : 'rgba(255,255,255,0.03)',
+                                backgroundColor: mySelectedName === (item.name || item) ? 'rgba(0, 255, 255, 0.08)' : 'rgba(255,255,255,0.03)',
                                 padding: 12,
                                 borderRadius: 12,
                                 marginBottom: 12,
                                 borderWidth: 1,
-                                borderColor: editingIndex === index ? Colors.primary : (mySelectedName === item ? Colors.primary : 'rgba(255,255,255,0.08)')
+                                borderColor: editingIndex === index ? Colors.primary : (mySelectedName === (item.name || item) ? Colors.primary : 'rgba(255,255,255,0.08)')
                             }}>
                                 <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
                                     <TouchableOpacity
-                                        onPress={() => toggleMe(item)}
+                                        onPress={() => toggleMe(item.name || item)}
                                         style={{ marginRight: 12 }}
                                     >
                                         <CheckCircle2
-                                            color={mySelectedName === item ? Colors.primary : 'rgba(255,255,255,0.2)'}
+                                            color={mySelectedName === (item.name || item) ? Colors.primary : 'rgba(255,255,255,0.2)'}
                                             size={22}
-                                            fill={mySelectedName === item ? 'rgba(78, 205, 196, 0.2)' : 'transparent'}
+                                            fill={mySelectedName === (item.name || item) ? 'rgba(78, 205, 196, 0.2)' : 'transparent'}
                                         />
                                     </TouchableOpacity>
 
@@ -308,11 +356,11 @@ export default function NameInputScreen({ route, navigation }) {
                                                 fontSize: 18,
                                                 fontWeight: '500',
                                                 letterSpacing: 1,
-                                                opacity: mySelectedName === item ? 1 : 0.8
-                                            }}>{item}{mySelectedName === item ? ' (나)' : ''}</Text>
+                                                opacity: mySelectedName === item.name ? 1 : 0.8
+                                            }}>{item.name}{mySelectedName === item.name ? ' (나)' : ''}</Text>
 
                                             {/* Show Crown if this name is taken by an owner */}
-                                            {onlineUsers.some(u => u.name === item && u.role === 'owner') && (
+                                            {onlineUsers.some(u => u.name === item.name && u.role === 'owner') && (
                                                 <View style={{
                                                     flexDirection: 'row',
                                                     alignItems: 'center',
@@ -335,14 +383,67 @@ export default function NameInputScreen({ route, navigation }) {
                                     )}
                                 </View>
                                 {role === 'owner' && (
-                                    <TouchableOpacity onPress={() => removeParticipant(index)} style={{ padding: 8 }}>
-                                        <Trash2 color={Colors.textSecondary} size={18} opacity={0.6} />
-                                    </TouchableOpacity>
+                                    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                                        {editingWeightIndex === index ? (
+                                            <TextInput
+                                                autoFocus
+                                                keyboardType="number-pad"
+                                                style={{
+                                                    color: Colors.secondary,
+                                                    fontSize: 16,
+                                                    fontWeight: 'bold',
+                                                    width: 40,
+                                                    textAlign: 'right',
+                                                    marginRight: 2
+                                                }}
+                                                value={editingWeightValue}
+                                                onChangeText={setEditingWeightValue}
+                                                onBlur={saveWeightEdit}
+                                                onSubmitEditing={saveWeightEdit}
+                                            />
+                                        ) : (
+                                            <TouchableOpacity onPress={() => startEditingWeight(index)}>
+                                                <Text style={{
+                                                    color: Colors.secondary,
+                                                    fontSize: 16,
+                                                    fontWeight: 'bold',
+                                                    width: 45,
+                                                    textAlign: 'right'
+                                                }}>{item.weight}%</Text>
+                                            </TouchableOpacity>
+                                        )}
+
+                                        <TouchableOpacity onPress={() => removeParticipant(index)} style={{ marginLeft: 10 }}>
+                                            <Trash2 color={Colors.textSecondary} size={18} opacity={0.6} />
+                                        </TouchableOpacity>
+                                    </View>
+                                )}
+                                {role === 'participant' && (
+                                    <Text style={{ color: Colors.secondary, fontSize: 16, fontWeight: 'bold' }}>{item.weight}%</Text>
                                 )}
                             </View>
                         )}
                         style={{ flex: 1 }}
                         contentContainerStyle={{ paddingBottom: 20 }}
+                        ListFooterComponent={participants.length > 0 ? (
+                            <View style={{
+                                flexDirection: 'row',
+                                justifyContent: 'flex-end',
+                                alignItems: 'center',
+                                paddingHorizontal: 12,
+                                marginTop: 5,
+                                marginBottom: 15
+                            }}>
+                                <Text style={{ color: 'rgba(255,255,255,0.4)', fontSize: 12, marginRight: 10 }}>TOTAL_RATIO:</Text>
+                                <Text style={{
+                                    color: participants.reduce((sum, p) => sum + (p.weight || 0), 0) === 100 ? Colors.secondary : Colors.error,
+                                    fontSize: 14,
+                                    fontWeight: 'bold'
+                                }}>
+                                    {participants.reduce((sum, p) => sum + (p.weight || 0), 0)}%
+                                </Text>
+                            </View>
+                        ) : null}
                         ListEmptyComponent={
                             <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', marginTop: 50 }}>
                                 <Text style={{ color: 'rgba(255,255,255,0.3)', fontSize: 16 }}>
