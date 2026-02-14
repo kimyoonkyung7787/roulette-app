@@ -94,40 +94,36 @@ export default function WelcomeScreen({ navigation }) {
                             <NeonText className="text-sm mb-4 opacity-70">CHOOSE_YOUR_ROLE</NeonText>
                             <View style={styles.roleContainer}>
                                 {ROLES.map((role) => (
-                                    <View key={role.id}>
-                                        <TouchableOpacity
-                                            onPress={() => setSelectedRole(role.id)}
-                                            style={[
-                                                styles.roleCard,
-                                                selectedRole === role.id && { borderColor: Colors.primary, backgroundColor: 'rgba(0, 255, 255, 0.1)' }
-                                            ]}
-                                        >
-                                            <View style={styles.roleIconBox}>
-                                                <role.icon size={24} color={selectedRole === role.id ? Colors.primary : Colors.textSecondary} />
-                                            </View>
-                                            <View>
-                                                <Text style={[styles.roleLabel, selectedRole === role.id && { color: Colors.primary }]}>{role.label}</Text>
-                                                <Text style={styles.roleDesc}>{role.description}</Text>
-                                            </View>
-                                            {selectedRole === role.id && <View style={styles.checkMark} />}
-                                        </TouchableOpacity>
-
-                                        {role.id === 'participant' && selectedRole === 'participant' && (
-                                            <View style={styles.roomIdInputContainer}>
-                                                <TextInput
-                                                    style={styles.roomIdInput}
-                                                    placeholder="ENTER 6-DIGIT ROOM_ID"
-                                                    placeholderTextColor="rgba(255,255,255,0.3)"
-                                                    keyboardType="number-pad"
-                                                    maxLength={6}
-                                                    value={inputRoomId}
-                                                    onChangeText={setInputRoomId}
-                                                />
-                                            </View>
-                                        )}
-                                    </View>
+                                    <TouchableOpacity
+                                        key={role.id}
+                                        onPress={() => setSelectedRole(role.id)}
+                                        style={[
+                                            styles.roleCard,
+                                            selectedRole === role.id && { borderColor: Colors.primary, backgroundColor: 'rgba(0, 255, 255, 0.1)' }
+                                        ]}
+                                    >
+                                        <View style={styles.roleIconBox}>
+                                            <role.icon size={22} color={selectedRole === role.id ? Colors.primary : Colors.textSecondary} />
+                                        </View>
+                                        <Text style={[styles.roleLabel, selectedRole === role.id && { color: Colors.primary }]}>{role.label}</Text>
+                                        {selectedRole === role.id && <View style={styles.checkMark} />}
+                                    </TouchableOpacity>
                                 ))}
                             </View>
+
+                            {selectedRole === 'participant' && (
+                                <View style={styles.roomIdInputContainer}>
+                                    <TextInput
+                                        style={styles.roomIdInput}
+                                        placeholder="ENTER 6-DIGIT ROOM_ID"
+                                        placeholderTextColor="rgba(255,255,255,0.3)"
+                                        keyboardType="number-pad"
+                                        maxLength={6}
+                                        value={inputRoomId}
+                                        onChangeText={setInputRoomId}
+                                    />
+                                </View>
+                            )}
                         </View>
 
                         <TouchableOpacity
@@ -195,17 +191,19 @@ const styles = StyleSheet.create({
         letterSpacing: 1,
     },
     roleContainer: {
+        flexDirection: 'row',
         gap: 12,
     },
     roleCard: {
-        flexDirection: 'row',
+        flex: 1,
         alignItems: 'center',
-        padding: 15,
+        paddingVertical: 20,
+        paddingHorizontal: 10,
         borderRadius: 12,
         borderWidth: 1,
         borderColor: 'rgba(255,255,255,0.1)',
         backgroundColor: 'rgba(255,255,255,0.03)',
-        gap: 15,
+        gap: 10,
     },
     roleIconBox: {
         width: 45,
@@ -228,10 +226,11 @@ const styles = StyleSheet.create({
     },
     checkMark: {
         position: 'absolute',
-        right: 15,
-        width: 10,
-        height: 10,
-        borderRadius: 5,
+        top: 10,
+        right: 10,
+        width: 8,
+        height: 8,
+        borderRadius: 4,
         backgroundColor: Colors.primary,
         shadowColor: Colors.primary,
         shadowRadius: 5,
