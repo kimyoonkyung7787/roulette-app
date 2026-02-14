@@ -111,19 +111,25 @@ export default function WelcomeScreen({ navigation }) {
                                 ))}
                             </View>
 
-                            {selectedRole === 'participant' && (
-                                <View style={styles.roomIdInputContainer}>
-                                    <TextInput
-                                        style={styles.roomIdInput}
-                                        placeholder="ENTER 6-DIGIT ROOM_ID"
-                                        placeholderTextColor="rgba(255,255,255,0.3)"
-                                        keyboardType="number-pad"
-                                        maxLength={6}
-                                        value={inputRoomId}
-                                        onChangeText={setInputRoomId}
-                                    />
-                                </View>
-                            )}
+                            <View style={styles.inputAreaWrapper}>
+                                {selectedRole === 'participant' ? (
+                                    <View style={styles.roomIdInputContainer}>
+                                        <TextInput
+                                            style={styles.roomIdInput}
+                                            placeholder="ENTER 6-DIGIT ROOM_ID"
+                                            placeholderTextColor="rgba(255,255,255,0.3)"
+                                            keyboardType="number-pad"
+                                            maxLength={6}
+                                            value={inputRoomId}
+                                            onChangeText={setInputRoomId}
+                                        />
+                                    </View>
+                                ) : (
+                                    <View style={styles.inputPlaceholder}>
+                                        <Text style={styles.placeholderText}>OWNER_MODE_ACTIVE</Text>
+                                    </View>
+                                )}
+                            </View>
                         </View>
 
                         <TouchableOpacity
@@ -237,9 +243,29 @@ const styles = StyleSheet.create({
         shadowOpacity: 1,
         elevation: 5,
     },
+    inputAreaWrapper: {
+        height: 70,
+        marginTop: 15,
+        justifyContent: 'center',
+    },
+    inputPlaceholder: {
+        height: 50,
+        backgroundColor: 'rgba(255,255,255,0.02)',
+        borderRadius: 8,
+        borderWidth: 1,
+        borderStyle: 'dashed',
+        borderColor: 'rgba(255,255,255,0.05)',
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    placeholderText: {
+        color: 'rgba(255,255,255,0.1)',
+        fontSize: 10,
+        fontWeight: 'bold',
+        letterSpacing: 2,
+    },
     roomIdInputContainer: {
-        marginTop: 10,
-        paddingHorizontal: 5,
+        paddingHorizontal: 0,
     },
     roomIdInput: {
         height: 50,
