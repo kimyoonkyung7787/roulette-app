@@ -88,14 +88,13 @@ export default function RouletteScreen({ route, navigation }) {
     useEffect(() => {
         if (spinning || isNavigating.current || votes.length === 0) return;
 
-        const activeOnlineUsers = onlineUsers.filter(u => participants.includes(u.name));
-        const activeCount = Math.max(activeOnlineUsers.length, 1);
-
-        if (votes.length >= activeCount) {
-            console.log(`RouletteScreen: Threshold met (${votes.length}/${activeCount}). Finalizing...`);
+        // CRITICAL FIX: Only auto-finalize when ALL participants in the list have voted.
+        // Previously it was checking online count, which caused early finalization.
+        if (votes.length >= participants.length) {
+            console.log(`RouletteScreen: All votes received (${votes.length}/${participants.length}). Finalizing...`);
             processFinalResult(false);
         }
-    }, [votes, onlineUsers, participants, spinning]);
+    }, [votes, participants, spinning]);
 
     const processFinalResult = async (isManualForce = false) => {
         if (isNavigating.current) return;
