@@ -103,7 +103,7 @@ export default function WelcomeScreen({ navigation }) {
                                         ]}
                                     >
                                         <View style={styles.roleIconBox}>
-                                            <role.icon size={22} color={selectedRole === role.id ? Colors.primary : Colors.textSecondary} />
+                                            <role.icon size={18} color={selectedRole === role.id ? Colors.primary : Colors.textSecondary} />
                                         </View>
                                         <Text style={[styles.roleLabel, selectedRole === role.id && { color: Colors.primary }]}>{role.label}</Text>
                                         {selectedRole === role.id && <View style={styles.checkMark} />}
@@ -197,18 +197,18 @@ const styles = StyleSheet.create({
     roleCard: {
         flex: 1,
         alignItems: 'center',
-        paddingVertical: 20,
+        paddingVertical: 12,
         paddingHorizontal: 10,
         borderRadius: 12,
         borderWidth: 1,
         borderColor: 'rgba(255,255,255,0.1)',
         backgroundColor: 'rgba(255,255,255,0.03)',
-        gap: 10,
+        gap: 6,
     },
     roleIconBox: {
-        width: 45,
-        height: 45,
-        borderRadius: 10,
+        width: 32,
+        height: 32,
+        borderRadius: 8,
         backgroundColor: 'rgba(255,255,255,0.05)',
         alignItems: 'center',
         justifyContent: 'center',
