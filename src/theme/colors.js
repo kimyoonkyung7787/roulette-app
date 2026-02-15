@@ -1,7 +1,7 @@
 export const Colors = {
     background: '#050505',
     primary: '#00ffff', // Electric Cyan
-    secondary: '#39ff14', // Neon Green
+    secondary: '#00ffff', // Electric Cyan (Matched to primary)
     neonPink: '#ff00ff', // Neon Pink
     accent: '#ffff00', // Neon Yellow
     success: '#39ff14', // Neon Green

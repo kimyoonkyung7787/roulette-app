@@ -7,15 +7,20 @@ import { CyberBackground } from '../components/CyberBackground';
 import { feedbackService } from '../services/FeedbackService';
 import Svg, { Path, G, Text as SvgText, Circle, Defs, RadialGradient, Stop } from 'react-native-svg';
 import Animated, { useSharedValue, useAnimatedStyle, withTiming, Easing, runOnJS, useAnimatedReaction } from 'react-native-reanimated';
-import { RotateCw, Users, X, Power, History, LogOut } from 'lucide-react-native';
+import { RotateCw, Users, X, Power, History, LogOut, UserPlus, ListChecks } from 'lucide-react-native';
 import { Modal, ScrollView } from 'react-native';
 import { syncService } from '../services/SyncService';
 
 const { width } = Dimensions.get('window');
-const ROULETTE_SIZE = width * 0.85;
+const ROULETTE_SIZE = Math.min(width * 0.85, 420);
 
 export default function RouletteScreen({ route, navigation }) {
-    const { participants = [], mySelectedName, roomId = 'default', role = 'participant' } = route.params || {};
+    const { participants = [], menuItems = [], mySelectedName, roomId = 'default', role = 'participant', category = 'coffee' } = route.params || {};
+    const [participantsState, setParticipantsState] = useState(participants);
+    const [menuItemsState, setMenuItemsState] = useState(menuItems);
+    const [spinTarget, setSpinTarget] = useState('people'); // 'people' or 'menu'
+    const currentList = spinTarget === 'people' ? participantsState : menuItemsState;
+
     const rotation = useSharedValue(0);
     const [spinning, setSpinning] = useState(false);
     const [onlineUsers, setOnlineUsers] = useState([]);
@@ -26,16 +31,30 @@ export default function RouletteScreen({ route, navigation }) {
     const lastTickIndex = useSharedValue(-1);
 
     useEffect(() => {
-        let unsubUsers, unsubSpin, unsubVotes, unsubFinal;
+        let unsubUsers, unsubSpin, unsubVotes, unsubFinal, unsubParticipants, unsubMenuItems;
 
         const initSync = async () => {
-            await syncService.init(mySelectedName, roomId);
+            await syncService.init(mySelectedName, roomId, role);
             feedbackService.loadAssets();
             console.log('RouletteScreen: Session joined in room:', roomId);
 
             // Subscribe to online users list
             unsubUsers = syncService.subscribeToOnlineUsers(users => {
                 setOnlineUsers(users);
+            });
+
+            // Subscribe to actual lists to ensure sync
+            unsubParticipants = syncService.subscribeToParticipants(list => {
+                if (list && list.length > 0) setParticipantsState(list);
+            });
+
+            unsubMenuItems = syncService.subscribeToMenuItems(list => {
+                if (list && list.length > 0) setMenuItemsState(list);
+            });
+
+            // Subscribe to spin target (people or menu)
+            syncService.subscribeToSpinTarget(target => {
+                setSpinTarget(target);
             });
 
             // Subscribe to spin state from others
@@ -62,7 +81,8 @@ export default function RouletteScreen({ route, navigation }) {
                         navigation.navigate('Result', {
                             ...finalData,
                             roomId,
-                            role
+                            role,
+                            category
                         });
                     }
                 } else {
@@ -81,6 +101,8 @@ export default function RouletteScreen({ route, navigation }) {
             if (unsubSpin) unsubSpin();
             if (unsubVotes) unsubVotes();
             if (unsubFinal) unsubFinal();
+            if (unsubParticipants) unsubParticipants();
+            if (unsubMenuItems) unsubMenuItems();
         };
     }, []);
 
@@ -88,13 +110,12 @@ export default function RouletteScreen({ route, navigation }) {
     useEffect(() => {
         if (spinning || isNavigating.current || votes.length === 0) return;
 
-        // CRITICAL FIX: Only auto-finalize when ALL participants in the list have voted.
-        // Previously it was checking online count, which caused early finalization.
-        if (votes.length >= participants.length) {
-            console.log(`RouletteScreen: All votes received (${votes.length}/${participants.length}). Finalizing...`);
+        // AUTO-FINALIZE: When all registered participants have voted
+        if (votes.length >= participantsState.length && participantsState.length > 0) {
+            console.log(`RouletteScreen: All participants voted (${votes.length}/${participantsState.length}). Finalizing...`);
             processFinalResult(false);
         }
-    }, [votes, participants, spinning]);
+    }, [votes, currentList, spinning]);
 
     const processFinalResult = async (isManualForce = false) => {
         if (isNavigating.current) return;
@@ -137,9 +158,10 @@ export default function RouletteScreen({ route, navigation }) {
                 winner: winners.length === 1 ? winners[0] : (winners.length > 0 ? winners.join(', ') : 'Unknown'),
                 isTie: winners.length > 1,
                 tally,
-                totalParticipants: participants.length,
-                isForced: isManualForce || (finalVotes.length < participants.length),
-                finalVotes: finalVotes
+                totalParticipants: participantsState.length,
+                isForced: isManualForce || (finalVotes.length < participantsState.length),
+                finalVotes: finalVotes,
+                type: spinTarget // 'people' or 'menu'
             };
 
             if (role === 'owner') {
@@ -151,7 +173,8 @@ export default function RouletteScreen({ route, navigation }) {
                     navigation.navigate('Result', {
                         ...resultData,
                         roomId,
-                        role
+                        role,
+                        category
                     });
                 } catch (err) {
                     console.error('RouletteScreen: Owner finalize FAILED:', err);
@@ -177,9 +200,9 @@ export default function RouletteScreen({ route, navigation }) {
         let cumulativeAngle = 0;
         let winningIndex = 0;
 
-        for (let i = 0; i < participants.length; i++) {
-            const p = participants[i];
-            const weight = typeof p === 'object' ? p.weight : (100 / participants.length);
+        for (let i = 0; i < currentList.length; i++) {
+            const p = currentList[i];
+            const weight = typeof p === 'object' ? p.weight : (100 / currentList.length);
             const sectorAngle = (weight / 100) * 360;
 
             if (winningAngle >= cumulativeAngle && winningAngle < cumulativeAngle + sectorAngle) {
@@ -189,7 +212,7 @@ export default function RouletteScreen({ route, navigation }) {
             cumulativeAngle += sectorAngle;
         }
 
-        const winner = typeof participants[winningIndex] === 'object' ? participants[winningIndex].name : participants[winningIndex];
+        const winner = typeof currentList[winningIndex] === 'object' ? currentList[winningIndex].name : currentList[winningIndex];
 
         console.log(`Spin Finished - Winner: ${winner}`);
         console.log(`My name: ${mySelectedName}, Voting for: ${winner}`);
@@ -210,9 +233,9 @@ export default function RouletteScreen({ route, navigation }) {
 
             let cumulativeAngle = 0;
             let currentIndex = 0;
-            for (let i = 0; i < participants.length; i++) {
-                const p = participants[i];
-                const weight = typeof p === 'object' ? p.weight : (100 / participants.length);
+            for (let i = 0; i < currentList.length; i++) {
+                const p = currentList[i];
+                const weight = typeof p === 'object' ? p.weight : (100 / currentList.length);
                 const sectorAngle = (weight / 100) * 360;
                 if (pointerAngle >= cumulativeAngle && pointerAngle < cumulativeAngle + sectorAngle) {
                     currentIndex = i;
@@ -275,12 +298,12 @@ export default function RouletteScreen({ route, navigation }) {
     }));
 
     const renderSections = () => {
-        if (participants.length === 0) return null;
+        if (currentList.length === 0) return null;
 
         let cumulativeAngle = 0;
-        return participants.map((p, i) => {
+        return currentList.map((p, i) => {
             const name = typeof p === 'object' ? p.name : p;
-            const weight = typeof p === 'object' ? p.weight : (100 / participants.length);
+            const weight = typeof p === 'object' ? p.weight : (100 / currentList.length);
             const angle = (weight / 100) * 360;
 
             const startAngle = cumulativeAngle;
@@ -298,8 +321,8 @@ export default function RouletteScreen({ route, navigation }) {
             const largeArcFlag = angle > 180 ? 1 : 0;
             const d = `M ${ROULETTE_SIZE / 2} ${ROULETTE_SIZE / 2} L ${x1} ${y1} A ${ROULETTE_SIZE / 2} ${ROULETTE_SIZE / 2} 0 ${largeArcFlag} 1 ${x2} ${y2} Z`;
 
-            const color = i % 2 === 0 ? 'rgba(0, 255, 255, 0.1)' : 'rgba(255, 0, 255, 0.1)';
-            const strokeColor = i % 2 === 0 ? Colors.primary : Colors.secondary;
+            const color = i % 2 === 0 ? (spinTarget === 'people' ? 'rgba(0, 255, 255, 0.1)' : 'rgba(255, 0, 255, 0.1)') : (spinTarget === 'people' ? 'rgba(255, 0, 255, 0.1)' : 'rgba(0, 255, 255, 0.1)');
+            const strokeColor = i % 2 === 0 ? (spinTarget === 'people' ? Colors.primary : Colors.secondary) : (spinTarget === 'people' ? Colors.secondary : Colors.primary);
 
             return (
                 <G key={i}>
@@ -308,7 +331,7 @@ export default function RouletteScreen({ route, navigation }) {
                         x={ROULETTE_SIZE / 2 + (ROULETTE_SIZE * 0.35) * Math.cos((startAngle + angle / 2 - 90) * (Math.PI / 180))}
                         y={ROULETTE_SIZE / 2 + (ROULETTE_SIZE * 0.35) * Math.sin((startAngle + angle / 2 - 90) * (Math.PI / 180))}
                         fill="white"
-                        fontSize={participants.length > 8 ? "10" : "14"}
+                        fontSize={currentList.length > 8 ? "10" : "14"}
                         fontWeight="bold"
                         textAnchor="middle"
                         alignmentBaseline="middle"
@@ -353,30 +376,37 @@ export default function RouletteScreen({ route, navigation }) {
                             shadowOpacity: 0.3,
                             shadowRadius: 5
                         }}>
-                            <Text style={{ color: Colors.primary, fontSize: 12, fontWeight: '900', letterSpacing: 1 }}>#ROOM: {roomId.toUpperCase()}</Text>
-                            <Text style={{ color: Colors.secondary, fontSize: 11, fontWeight: 'bold', marginTop: 2, letterSpacing: 0.5 }}>IDENT: {mySelectedName.toUpperCase()}</Text>
+                            <Text style={{ color: Colors.primary, fontSize: 12, fontWeight: '900', letterSpacing: 1 }}>#ROOM: {(roomId || '').toUpperCase()}</Text>
+                            <Text style={{ color: Colors.secondary, fontSize: 11, fontWeight: 'bold', marginTop: 2, letterSpacing: 0.5 }}>IDENT: {(mySelectedName || role || 'UNKNOWN').toUpperCase()}</Text>
                         </View>
 
-                        <View style={{ flexDirection: 'row', gap: 10, alignItems: 'center' }}>
-                            <TouchableOpacity onPress={() => setShowUsersModal(true)} style={{ padding: 8 }}>
-                                <Users color={Colors.success} size={24} />
+                        <View style={{ flexDirection: 'row', gap: 8, alignItems: 'center' }}>
+                            <TouchableOpacity onPress={() => setShowUsersModal(true)} style={{ padding: 6 }}>
+                                <ListChecks color={Colors.success} size={24} />
                             </TouchableOpacity>
-                            <TouchableOpacity onPress={() => navigation.navigate('History')} style={{ padding: 8 }}>
+                            <TouchableOpacity onPress={() => navigation.navigate('History')} style={{ padding: 6 }}>
                                 <History color={Colors.primary} size={24} />
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                                onPress={() => navigation.navigate('NameInput', { roomId, role, category })}
+                                style={{ padding: 6 }}
+                            >
+                                <UserPlus color={Colors.accent} size={24} />
                             </TouchableOpacity>
                             <TouchableOpacity
                                 onPress={() => navigation.navigate('Welcome')}
                                 disabled={spinning}
-                                style={{ padding: 8, opacity: spinning ? 0.3 : 1 }}
+                                style={{ padding: 6, opacity: spinning ? 0.3 : 1 }}
                             >
                                 <LogOut color={Colors.error} size={24} />
                             </TouchableOpacity>
                         </View>
                     </View>
                     <View style={styles.header}>
-                        <NeonText className="text-3xl tracking-widest">DATA EXTRACTION</NeonText>
-                        <View style={styles.headerLine} />
+                        <NeonText className="text-3xl tracking-widest">{spinTarget === 'people' ? 'DATA EXTRACTION' : 'GOURMET SELECTION'}</NeonText>
+                        <View style={[styles.headerLine, { backgroundColor: spinTarget === 'people' ? Colors.primary : Colors.secondary, shadowColor: spinTarget === 'people' ? Colors.primary : Colors.secondary }]} />
                     </View>
+
 
                     <View style={styles.wheelContainer}>
                         <View style={styles.wheelGlow} />
@@ -417,7 +447,7 @@ export default function RouletteScreen({ route, navigation }) {
                         </TouchableOpacity>
 
                         {/* Force Result Button for Owner if some but not all have voted */}
-                        {role === 'owner' && votes.length > 0 && votes.length < participants.length && (
+                        {role === 'owner' && votes.length > 0 && votes.length < currentList.length && (
                             <TouchableOpacity
                                 onPress={() => processFinalResult(true)}
                                 style={{
@@ -499,6 +529,9 @@ const styles = StyleSheet.create({
         paddingHorizontal: 24,
         justifyContent: 'space-between',
         paddingVertical: 30,
+        width: '100%',
+        maxWidth: 500,
+        alignSelf: 'center',
     },
     header: {
         alignItems: 'center',

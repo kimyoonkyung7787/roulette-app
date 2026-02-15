@@ -159,6 +159,22 @@ class SyncService {
         });
     }
 
+    async setRoomPhase(phase) {
+        try {
+            await set(ref(db, `${this.roomPath}/phase`), phase);
+            console.log(`SyncService: Room phase updated to ${phase}`);
+        } catch (e) {
+            console.error('Failed to set room phase:', e);
+        }
+    }
+
+    subscribeToRoomPhase(callback) {
+        return onValue(ref(db, `${this.roomPath}/phase`), (snapshot) => {
+            const phase = snapshot.val() || 'waiting';
+            callback(phase);
+        });
+    }
+
     async setParticipants(participants) {
         try {
             await set(ref(db, `${this.roomPath}/participants`), participants);
@@ -173,6 +189,60 @@ class SyncService {
             const participants = snapshot.val() || [];
             console.log(`SyncService: Participants update received (${participants.length} items)`);
             callback(participants);
+        });
+    }
+
+    async setMenuItems(menuItems) {
+        try {
+            await set(ref(db, `${this.roomPath}/menu_items`), menuItems);
+            console.log(`SyncService: Menu items list updated (${menuItems.length} items) in room ${this.roomId}`);
+        } catch (e) {
+            console.error('Failed to set menu items:', e);
+        }
+    }
+
+    subscribeToMenuItems(callback) {
+        return onValue(ref(db, `${this.roomPath}/menu_items`), (snapshot) => {
+            const menuItems = snapshot.val() || [];
+            console.log(`SyncService: Menu items update received (${menuItems.length} items)`);
+            callback(menuItems);
+        });
+    }
+
+    async getParticipants() {
+        try {
+            const snapshot = await get(ref(db, `${this.roomPath}/participants`));
+            return snapshot.val() || [];
+        } catch (e) {
+            console.error('SyncService: Failed to get participants:', e);
+            return [];
+        }
+    }
+
+    async getMenuItems() {
+        try {
+            const snapshot = await get(ref(db, `${this.roomPath}/menu_items`));
+            return snapshot.val() || [];
+        } catch (e) {
+            console.error('SyncService: Failed to get menu items:', e);
+            return [];
+        }
+    }
+
+    async setSpinTarget(target) {
+        try {
+            await set(ref(db, `${this.roomPath}/spin_target`), target);
+            console.log(`SyncService: Spin target updated to ${target}`);
+        } catch (e) {
+            console.error('Failed to set spin target:', e);
+        }
+    }
+
+    subscribeToSpinTarget(callback) {
+        return onValue(ref(db, `${this.roomPath}/spin_target`), (snapshot) => {
+            const target = snapshot.val() || 'people';
+            console.log(`SyncService: Spin target update received: ${target}`);
+            callback(target);
         });
     }
 

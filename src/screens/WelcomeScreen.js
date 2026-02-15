@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, TouchableOpacity, StyleSheet, Text, Dimensions, Image, TextInput, Alert } from 'react-native';
+import { View, TouchableOpacity, StyleSheet, Text, Dimensions, Image, TextInput, Alert, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { NeonText } from '../components/NeonText';
 import { Colors } from '../theme/colors';
@@ -35,14 +35,24 @@ export default function WelcomeScreen({ navigation }) {
             roomId = generateRoomId();
         } else {
             if (!inputRoomId || inputRoomId.trim().length === 0) {
-                Alert.alert('시스템 알림', '입장하실 6자리 방 번호를 입력해주세요! 🤖');
+                const msg = '입장하실 6자리 방 번호를 입력해주세요! 🤖';
+                if (Platform.OS === 'web') {
+                    alert(msg);
+                } else {
+                    Alert.alert('시스템 알림', msg);
+                }
                 return;
             }
             if (inputRoomId.length !== 6) {
-                Alert.alert('시스템 알림', '방 번호는 정확히 6자리여야 합니다! 🔢');
+                const msg = '방 번호는 정확히 6자리여야 합니다! 🔢';
+                if (Platform.OS === 'web') {
+                    alert(msg);
+                } else {
+                    Alert.alert('시스템 알림', msg);
+                }
                 return;
             }
-            roomId = inputRoomId;
+            roomId = inputRoomId.trim();
         }
 
         navigation.navigate('NameInput', {
@@ -55,7 +65,7 @@ export default function WelcomeScreen({ navigation }) {
     return (
         <CyberBackground>
             <SafeAreaView style={{ flex: 1 }}>
-                <View style={styles.container}>
+                <View style={[styles.container, { width: '100%', maxWidth: 500, alignSelf: 'center' }]}>
                     {/* Header Image Placeholder / Roulette Aesthetic */}
                     <View style={styles.heroContainer}>
                         <View style={styles.rouletteCircle}>

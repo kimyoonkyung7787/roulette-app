@@ -10,10 +10,11 @@ import { Trophy, RefreshCw, Home, Users, Loader, Power, History, LogOut, X } fro
 import { syncService } from '../services/SyncService';
 
 export default function ResultScreen({ route, navigation }) {
-    const { winner = 'Unknown', isTie = false, tally = {}, totalParticipants = 0, roomId = 'default', role = 'participant', isForced = false, finalVotes = [] } = route.params || {};
+    const { winner = 'Unknown', isTie = false, tally = {}, totalParticipants = 0, roomId = 'default', role = 'participant', isForced = false, finalVotes = [], type = 'people', category = 'coffee' } = route.params || {};
     const [allVoted, setAllVoted] = useState(false);
     const [onlineUsers, setOnlineUsers] = useState([]);
     const [showUsersModal, setShowUsersModal] = useState(false);
+    const hasSavedRef = useRef(false);
 
     useEffect(() => {
         // Check if all participants have voted OR it was forced by owner
@@ -22,12 +23,13 @@ export default function ResultScreen({ route, navigation }) {
         setAllVoted(votingComplete);
 
         // Trigger success feedback only if all voted or forced
-        if (votingComplete) {
+        if (votingComplete && !hasSavedRef.current) {
             feedbackService.playSuccess();
             // Save to history only when voting is finalized
-            historyService.addWinner(winner);
+            historyService.addWinner(winner, type);
+            hasSavedRef.current = true;
         }
-    }, [tally, totalParticipants, isForced]);
+    }, [tally, totalParticipants, isForced, winner, type]);
 
     useEffect(() => {
         let unsubSpin, unsubFinal;
@@ -38,7 +40,7 @@ export default function ResultScreen({ route, navigation }) {
                 // If spin state is cleared (meaning game reset) and navigation is needed
                 if (!state?.isSpinning && !state?.lastResult) {
                     console.log('ResultScreen: Room state reset, returning to lobby');
-                    navigation.navigate('NameInput', { roomId, role });
+                    navigation.navigate('NameInput', { roomId, role, category });
                 }
             });
 
@@ -46,7 +48,7 @@ export default function ResultScreen({ route, navigation }) {
                 // If final results are cleared, return to lobby (unified reset)
                 if (!finalData) {
                     console.log('ResultScreen: Final results cleared, returning to lobby');
-                    navigation.navigate('NameInput', { roomId, role });
+                    navigation.navigate('NameInput', { roomId, role, category });
                 }
             });
         }
@@ -67,18 +69,20 @@ export default function ResultScreen({ route, navigation }) {
 
     const handleReset = async () => {
         console.log('ResultScreen: Owner resetting game...');
+        await syncService.setRoomPhase('waiting');
         await syncService.clearVotes();
         await syncService.clearSpinState();
         await syncService.clearFinalResults();
         // Navigate to NameInput instead of goBack to ensure fresh state
-        navigation.navigate('NameInput', { roomId, role });
+        navigation.navigate('NameInput', { roomId, role, category });
     };
 
     const handleReturnToBase = async () => {
+        await syncService.setRoomPhase('waiting');
         await syncService.clearVotes();
         await syncService.clearSpinState();
         await syncService.clearFinalResults();
-        navigation.navigate('NameInput', { roomId, role });
+        navigation.navigate('NameInput', { roomId, role, category });
     };
 
     return (
@@ -97,7 +101,7 @@ export default function ResultScreen({ route, navigation }) {
                             shadowOpacity: 0.3,
                             shadowRadius: 5
                         }}>
-                            <Text style={{ color: Colors.primary, fontSize: 12, fontWeight: '900', letterSpacing: 1 }}>#ROOM: {roomId.toUpperCase()}</Text>
+                            <Text style={{ color: Colors.primary, fontSize: 12, fontWeight: '900', letterSpacing: 1 }}>#ROOM: {(roomId || '').toUpperCase()}</Text>
                         </View>
 
                         <View style={{ flexDirection: 'row', gap: 10, alignItems: 'center' }}>
@@ -236,6 +240,9 @@ const styles = StyleSheet.create({
         paddingHorizontal: 24,
         alignItems: 'center',
         paddingVertical: 50,
+        width: '100%',
+        maxWidth: 500,
+        alignSelf: 'center',
     },
     trophyContainer: {
         marginTop: 40,

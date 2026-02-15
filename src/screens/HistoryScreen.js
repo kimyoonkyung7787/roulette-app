@@ -27,16 +27,30 @@ export default function HistoryScreen({ navigation }) {
     const renderItem = ({ item }) => {
         const date = new Date(item.timestamp);
         const dateString = date.toLocaleDateString();
-        const timeString = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        const timeString = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
 
         return (
-            <View style={styles.historyItem}>
+            <View style={[styles.historyItem, { borderLeftColor: item.type === 'menu' ? Colors.secondary : Colors.primary }]}>
                 <View>
-                    <NeonText className="text-xl" color={Colors.primary}>{item.name}</NeonText>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 2 }}>
+                        <View style={{
+                            backgroundColor: item.type === 'menu' ? `${Colors.secondary}20` : `${Colors.primary}20`,
+                            paddingHorizontal: 6,
+                            paddingVertical: 1,
+                            borderRadius: 3,
+                            borderWidth: 0.5,
+                            borderColor: item.type === 'menu' ? Colors.secondary : Colors.primary
+                        }}>
+                            <Text style={{ color: item.type === 'menu' ? Colors.secondary : Colors.primary, fontSize: 8, fontWeight: 'bold' }}>
+                                {item.type === 'menu' ? 'MENU' : 'PEOPLE'}
+                            </Text>
+                        </View>
+                        <NeonText className="text-xl" color={item.type === 'menu' ? Colors.secondary : Colors.primary}>{item.name}</NeonText>
+                    </View>
                     <Text style={styles.timeText}>{dateString} {timeString}</Text>
                 </View>
-                <View style={styles.statusBadge}>
-                    <Text style={styles.statusText}>WINNER</Text>
+                <View style={[styles.statusBadge, { borderColor: item.type === 'menu' ? Colors.secondary : Colors.primary, backgroundColor: item.type === 'menu' ? 'rgba(255, 0, 255, 0.1)' : 'rgba(0, 255, 255, 0.1)' }]}>
+                    <Text style={[styles.statusText, { color: item.type === 'menu' ? Colors.secondary : Colors.primary }]}>WINNER</Text>
                 </View>
             </View>
         );
@@ -80,6 +94,9 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
         paddingHorizontal: 24,
+        width: '100%',
+        maxWidth: 500,
+        alignSelf: 'center',
     },
     header: {
         flexDirection: 'row',
