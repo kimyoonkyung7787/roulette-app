@@ -4,7 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Colors } from '../theme/colors';
 import { CyberBackground } from '../components/CyberBackground';
 import { NeonText } from '../components/NeonText';
-import { UserPlus, Trash2, Play, History, CheckCircle2, ListChecks, Users, X, Loader, LogOut, Crown, Utensils, Coffee, Cookie } from 'lucide-react-native';
+import { UserPlus, Trash2, Play, History, CheckCircle2, ListChecks, Users, X, Loader, LogOut, Crown, Utensils, Coffee, Cookie, User, HelpCircle } from 'lucide-react-native';
 import { syncService } from '../services/SyncService';
 import { participantService } from '../services/ParticipantService';
 import { CyberAlert } from '../components/CyberAlert';
@@ -712,8 +712,8 @@ export default function NameInputScreen({ route, navigation }) {
                                         elevation: 8
                                     }}
                                 >
-                                    <ListChecks color={Colors.primary} size={20} style={{ marginRight: 8 }} />
-                                    <NeonText className="text-lg" style={{ color: Colors.primary }}>PEOPLE</NeonText>
+                                    <User color={Colors.primary} size={20} style={{ marginRight: 8 }} />
+                                    <NeonText className="text-lg" style={{ color: Colors.primary }}>WHO</NeonText>
                                 </TouchableOpacity>
 
                                 <TouchableOpacity
@@ -736,15 +736,9 @@ export default function NameInputScreen({ route, navigation }) {
                                     }}
                                 >
                                     <View style={{ marginRight: 8 }}>
-                                        {activeCategory === 'coffee' ? (
-                                            <Coffee color={Colors.secondary} size={20} />
-                                        ) : activeCategory === 'meal' ? (
-                                            <Utensils color={Colors.secondary} size={20} />
-                                        ) : (
-                                            <Cookie color={Colors.secondary} size={20} />
-                                        )}
+                                        <HelpCircle color={Colors.secondary} size={20} />
                                     </View>
-                                    <NeonText className="text-lg" color={Colors.secondary}>MENU</NeonText>
+                                    <NeonText className="text-lg" color={Colors.secondary}>WHAT</NeonText>
                                 </TouchableOpacity>
                             </View>
                         </View>
