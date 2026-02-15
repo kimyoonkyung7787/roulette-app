@@ -138,7 +138,7 @@ export default function ResultScreen({ route, navigation }) {
                         <Text style={styles.label}>
                             {allVoted
                                 ? (isTie ? 'TIE DETECTED' : 'CONGRATULATIONS!')
-                                : '투표 진행 중...'}
+                                : 'VOTING IN PROGRESS...'}
                         </Text>
                         <View style={styles.winnerNameContainer}>
                             <NeonText
@@ -148,7 +148,7 @@ export default function ResultScreen({ route, navigation }) {
                                 {winner}
                             </NeonText>
                         </View>
-                        {allVoted && isTie && <Text style={styles.tieSubText}>득표수가 동일하여 공동 우승 처리되었습니다!</Text>}
+                        {allVoted && isTie && <Text style={styles.tieSubText}>Multiple winners detected due to a tie!</Text>}
 
                         {/* Tally Chart */}
                         <View style={styles.tallyContainer}>
@@ -158,13 +158,13 @@ export default function ResultScreen({ route, navigation }) {
                                     <View style={styles.tallyBarContainer}>
                                         <View style={[styles.tallyBar, { width: `${(count / Math.max(...Object.values(tally))) * 100}%` }]} />
                                     </View>
-                                    <Text style={styles.tallyCount}>{count}표</Text>
+                                    <Text style={styles.tallyCount}>{count} VOTES</Text>
                                 </View>
                             ))}
                         </View>
 
                         <Text style={styles.subText}>
-                            {!allVoted && '다른 참가자의 투표를 기다리는 중...'}
+                            {!allVoted && 'WAITING FOR OTHER PLAYERS...'}
                         </Text>
                     </View>
 

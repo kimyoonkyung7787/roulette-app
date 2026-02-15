@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
-import { View, TouchableOpacity, StyleSheet, Text, Dimensions, Image, TextInput, Alert, Platform } from 'react-native';
+import { View, TouchableOpacity, StyleSheet, Text, Dimensions, Image, TextInput, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { NeonText } from '../components/NeonText';
 import { Colors } from '../theme/colors';
 import { CyberBackground } from '../components/CyberBackground';
 import { Coffee, Utensils, Pizza, Crown, User, ArrowRight } from 'lucide-react-native';
+import { CyberAlert } from '../components/CyberAlert';
 
 const { width } = Dimensions.get('window');
 
@@ -23,6 +24,7 @@ export default function WelcomeScreen({ navigation }) {
     const [selectedCategory, setSelectedCategory] = useState('coffee');
     const [selectedRole, setSelectedRole] = useState('owner');
     const [inputRoomId, setInputRoomId] = useState('');
+    const [alertConfig, setAlertConfig] = useState({ visible: false, message: '', title: '' });
 
     const generateRoomId = () => {
         return Math.floor(100000 + Math.random() * 900000).toString();
@@ -35,21 +37,19 @@ export default function WelcomeScreen({ navigation }) {
             roomId = generateRoomId();
         } else {
             if (!inputRoomId || inputRoomId.trim().length === 0) {
-                const msg = '입장하실 6자리 방 번호를 입력해주세요! 🤖';
-                if (Platform.OS === 'web') {
-                    alert(msg);
-                } else {
-                    Alert.alert('시스템 알림', msg);
-                }
+                setAlertConfig({
+                    visible: true,
+                    title: 'ALERT',
+                    message: 'Please enter 6-digit ROOM_ID to proceed.'
+                });
                 return;
             }
             if (inputRoomId.length !== 6) {
-                const msg = '방 번호는 정확히 6자리여야 합니다! 🔢';
-                if (Platform.OS === 'web') {
-                    alert(msg);
-                } else {
-                    Alert.alert('시스템 알림', msg);
-                }
+                setAlertConfig({
+                    visible: true,
+                    title: 'ALERT',
+                    message: 'ROOM_ID must be exactly 6 digits.'
+                });
                 return;
             }
             roomId = inputRoomId.trim();
@@ -155,6 +155,14 @@ export default function WelcomeScreen({ navigation }) {
                         </TouchableOpacity>
                     </View>
                 </View>
+
+                <CyberAlert
+                    visible={alertConfig.visible}
+                    title={alertConfig.title}
+                    message={alertConfig.message}
+                    type="info"
+                    onConfirm={() => setAlertConfig({ ...alertConfig, visible: false })}
+                />
             </SafeAreaView>
         </CyberBackground>
     );

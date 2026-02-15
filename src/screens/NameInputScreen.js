@@ -7,6 +7,7 @@ import { NeonText } from '../components/NeonText';
 import { UserPlus, Trash2, Play, History, CheckCircle2, ListChecks, Users, X, Loader, LogOut, Crown, Utensils, Coffee, Cookie } from 'lucide-react-native';
 import { syncService } from '../services/SyncService';
 import { participantService } from '../services/ParticipantService';
+import { CyberAlert } from '../components/CyberAlert';
 
 export default function NameInputScreen({ route, navigation }) {
     const { category = 'coffee', role = 'owner', roomId = 'default' } = route.params || {};
@@ -25,6 +26,7 @@ export default function NameInputScreen({ route, navigation }) {
     const [showUsersModal, setShowUsersModal] = useState(false);
     const [activeCategory, setActiveCategory] = useState(category);
     const categoryRef = useRef(category);
+    const [alertConfig, setAlertConfig] = useState({ visible: false, title: '', message: '' });
 
     useEffect(() => {
         categoryRef.current = activeCategory;
@@ -308,18 +310,30 @@ export default function NameInputScreen({ route, navigation }) {
     const startRoulette = async (target = 'people') => {
         if (target === 'people') {
             if (participants.length < 2) {
-                alert('최소 2명 이상의 참여자가 필요합니다!');
+                setAlertConfig({
+                    visible: true,
+                    title: 'ALERT',
+                    message: 'At least 2 participants required!'
+                });
                 return;
             }
             // Validate total weight with small tolerance for floating point precision
             const totalWeight = participants.reduce((sum, p) => sum + (p.weight || 0), 0);
             if (Math.abs(totalWeight - 100) > 0.01) {
-                alert(`참여자 전체 비율의 합이 100.0%이어야 합니다. (현재: ${totalWeight.toFixed(1)}%)`);
+                setAlertConfig({
+                    visible: true,
+                    title: 'ALERT',
+                    message: `Total ratio must be 100.0% (Current: ${totalWeight.toFixed(1)}%)`
+                });
                 return;
             }
         } else {
             if (menuItems.length < 2) {
-                alert('최소 2개 이상의 메뉴가 등록되어야 합니다!');
+                setAlertConfig({
+                    visible: true,
+                    title: 'ALERT',
+                    message: 'At least 2 menu items required!'
+                });
                 return;
             }
         }
@@ -756,6 +770,14 @@ export default function NameInputScreen({ route, navigation }) {
                         </View>
                     )}
                 </View>
+
+                <CyberAlert
+                    visible={alertConfig.visible}
+                    title={alertConfig.title}
+                    message={alertConfig.message}
+                    type="info"
+                    onConfirm={() => setAlertConfig({ ...alertConfig, visible: false })}
+                />
 
                 {/* Active Nodes Modal */}
                 <Modal
