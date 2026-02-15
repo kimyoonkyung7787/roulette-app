@@ -41,67 +41,51 @@ class SyncService {
     }
 
     async init(userName = null, roomId = 'default', role = 'participant') {
-        // If already initialized with same roomId, skip
-        if (this.isInitialized && this.roomId === roomId) return;
+        const roomChanged = this.roomId !== roomId;
+        console.log(`SyncService: Initializing for Room ID: ${roomId} as ${role}${roomChanged ? ' (NEW ROOM)' : ''}...`);
 
-        console.log(`SyncService: Initializing for Room ID: ${roomId} as ${role}...`);
         this.roomId = roomId;
         this.role = role;
         this.roomPath = `rooms/${roomId}`;
         this.isInitialized = true;
 
-        // Load personal identity
+        // Load or update personal identity
         try {
-            this.myId = await AsyncStorage.getItem('my_user_id');
             if (!this.myId) {
-                this.myId = Math.random().toString(36).substring(7);
-                await AsyncStorage.setItem('my_user_id', this.myId);
+                this.myId = await AsyncStorage.getItem('my_user_id');
+                if (!this.myId) {
+                    this.myId = Math.random().toString(36).substring(7);
+                    await AsyncStorage.setItem('my_user_id', this.myId);
+                }
             }
 
-            // Use provided userName or fallback to AsyncStorage
             if (userName) {
                 this.myName = userName;
                 await AsyncStorage.setItem('my_display_name', userName);
-            } else {
+            } else if (!this.myName) {
                 this.myName = await AsyncStorage.getItem('my_display_name');
             }
 
-            console.log(`SyncService: Identity loaded - ID: ${this.myId}, Name: ${this.myName}`);
+            console.log(`SyncService: Identity - ID: ${this.myId}, Name: ${this.myName}`);
 
-            // Setup presence in this specific room
+            // Setup presence - Always re-verify presence when init is called to be safe
             const myPresenceRef = ref(db, `${this.roomPath}/presence/${this.myId}`);
             const connectedRef = ref(db, '.info/connected');
 
-            console.log('SyncService: Listening for connection status...');
-
+            // Listen for connection once and maintain presence
             onValue(connectedRef, (snapshot) => {
                 const connected = snapshot.val();
-                console.log(`SyncService: Connection status changed: ${connected}`);
-
                 if (connected === true) {
-                    console.log('SyncService: Connected to Firebase RTDB!');
-
-                    // Test write to check rules
-                    set(ref(db, 'test_connection'), {
-                        status: 'checking',
-                        timestamp: serverTimestamp()
-                    }).then(() => console.log('SyncService: Test write SUCCESS (Rules are OK)'))
-                        .catch(e => console.error('SyncService: Test write FAILED (Check Rules!):', e));
+                    console.log(`SyncService: Writing presence for ${this.myName} in room ${this.roomId}`);
 
                     onDisconnect(myPresenceRef).remove().then(() => {
-                        console.log('SyncService: onDisconnect set up');
                         set(myPresenceRef, {
                             name: this.myName || 'Unknown User',
                             role: this.role || 'participant',
+                            id: this.myId, // Explicitly include ID for mapping
                             lastActive: serverTimestamp()
-                        }).then(() => {
-                            console.log('SyncService: My presence written to DB');
-                        }).catch(err => {
-                            console.error('SyncService: Presence write FAILED:', err);
                         });
                     });
-                } else if (connected === false) {
-                    console.log('SyncService: Disconnected from Firebase RTDB');
                 }
             });
         } catch (err) {
@@ -157,6 +141,16 @@ class SyncService {
             console.log(`SyncService: Category update received: ${category}`);
             callback(category);
         });
+    }
+
+    async getRoomCategory() {
+        try {
+            const snapshot = await get(ref(db, `${this.roomPath}/category`));
+            return snapshot.val() || 'coffee';
+        } catch (e) {
+            console.error('SyncService: Failed to get category:', e);
+            return 'coffee';
+        }
     }
 
     async setRoomPhase(phase) {
@@ -229,6 +223,16 @@ class SyncService {
         }
     }
 
+    async getSpinTarget() {
+        try {
+            const snapshot = await get(ref(db, `${this.roomPath}/spin_target`));
+            return snapshot.val() || 'people';
+        } catch (e) {
+            console.error('SyncService: Failed to get spin target:', e);
+            return 'people';
+        }
+    }
+
     async setSpinTarget(target) {
         try {
             await set(ref(db, `${this.roomPath}/spin_target`), target);
@@ -290,6 +294,16 @@ class SyncService {
             console.log(`SyncService: Vote submitted for ${votedForName}`);
         } catch (e) {
             console.error('SyncService: Failed to submit vote:', e);
+        }
+    }
+
+    async removeMyVote() {
+        if (!this.myId) return;
+        try {
+            await set(ref(db, `${this.roomPath}/votes/${this.myId}`), null);
+            console.log(`SyncService: Vote removed for user ${this.myId}`);
+        } catch (e) {
+            console.error('SyncService: Failed to remove vote:', e);
         }
     }
 

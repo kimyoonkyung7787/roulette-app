@@ -3,7 +3,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 const HISTORY_KEY = '@roulette_history';
 
 class HistoryService {
-    async addWinner(name, type) {
+    async addWinner(name, type, details = []) {
         try {
             console.log('HistoryService: Adding winner to history:', name, type);
             const history = await this.getHistory();
@@ -11,6 +11,7 @@ class HistoryService {
                 id: Date.now().toString(),
                 name,
                 type: type || 'people',
+                details,
                 timestamp: new Date().toISOString(),
             };
             const updatedHistory = [newEntry, ...history].slice(0, 50); // Keep last 50

@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { View, TouchableOpacity, Dimensions, StyleSheet, Text } from 'react-native';
+import { useIsFocused } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { NeonText } from '../components/NeonText';
 import { Colors } from '../theme/colors';
@@ -15,10 +16,10 @@ const { width } = Dimensions.get('window');
 const ROULETTE_SIZE = Math.min(width * 0.85, 420);
 
 export default function RouletteScreen({ route, navigation }) {
-    const { participants = [], menuItems = [], mySelectedName, roomId = 'default', role = 'participant', category = 'coffee' } = route.params || {};
+    const { participants = [], menuItems = [], mySelectedName, roomId = 'default', role = 'participant', category = 'coffee', votedItem = null } = route.params || {};
     const [participantsState, setParticipantsState] = useState(participants);
     const [menuItemsState, setMenuItemsState] = useState(menuItems);
-    const [spinTarget, setSpinTarget] = useState('people'); // 'people' or 'menu'
+    const [spinTarget, setSpinTarget] = useState(route.params?.spinTarget || 'people'); // Initialize from params
     const currentList = spinTarget === 'people' ? participantsState : menuItemsState;
 
     const rotation = useSharedValue(0);
@@ -28,7 +29,40 @@ export default function RouletteScreen({ route, navigation }) {
     const [remoteSpinState, setRemoteSpinState] = useState(null);
     const [votes, setVotes] = useState([]);
     const isNavigating = useRef(false);
+    const isFocused = useIsFocused();
     const lastTickIndex = useSharedValue(-1);
+
+    // Initial Rotation Effect for Voted Item
+    useEffect(() => {
+        if (votedItem && currentList.length > 0 && !spinning) {
+            console.log(`RouletteScreen: Initializing rotation for voted item: ${votedItem}`);
+            // Find index of voted item
+            const index = currentList.findIndex(item => (typeof item === 'object' ? item.name : item) === votedItem);
+
+            if (index !== -1) {
+                // Calculate target angle (Reuse logic from spin)
+                let winnerStartAngle = 0;
+                for (let i = 0; i < index; i++) {
+                    const p = currentList[i];
+                    const weight = typeof p === 'object' ? p.weight : (100 / currentList.length);
+                    winnerStartAngle += (weight / 100) * 360;
+                }
+
+                const winnerItem = currentList[index];
+                const winnerWeight = typeof winnerItem === 'object' ? winnerItem.weight : (100 / currentList.length);
+                const winnerSegmentAngle = (winnerWeight / 100) * 360;
+
+                // Center of the segment
+                const targetAngleOnWheel = winnerStartAngle + (winnerSegmentAngle / 2);
+
+                // Target Rotation (bring to Top/0 deg)
+                const targetRotation = (360 - targetAngleOnWheel) % 360;
+
+                // Set rotation immediately
+                rotation.value = targetRotation;
+            }
+        }
+    }, [votedItem, currentList, spinning]);
 
     useEffect(() => {
         let unsubUsers, unsubSpin, unsubVotes, unsubFinal, unsubParticipants, unsubMenuItems;
@@ -75,7 +109,7 @@ export default function RouletteScreen({ route, navigation }) {
             // Subscribe to final results to handle owner's force or collective completion
             unsubFinal = syncService.subscribeToFinalResults(finalData => {
                 if (finalData) {
-                    if (!isNavigating.current) {
+                    if (!isNavigating.current && isFocused) {
                         console.log('RouletteScreen: Final results received, navigating...');
                         isNavigating.current = true;
                         navigation.navigate('Result', {
@@ -108,7 +142,7 @@ export default function RouletteScreen({ route, navigation }) {
 
     // Check if everyone has voted
     useEffect(() => {
-        if (spinning || isNavigating.current || votes.length === 0) return;
+        if (!isFocused || spinning || isNavigating.current || votes.length === 0) return;
 
         // AUTO-FINALIZE: When all registered participants have voted
         if (votes.length >= participantsState.length && participantsState.length > 0) {
@@ -263,8 +297,59 @@ export default function RouletteScreen({ route, navigation }) {
 
         feedbackService.playStart();
 
-        const extraSpins = 5 + Math.random() * 5;
-        const finalRotation = rotation.value + extraSpins * 360 + Math.random() * 360;
+        // 1. Select a winner based on weights
+        let random = Math.random() * 100;
+        let winnerIndex = -1;
+        let accumulatedWeight = 0;
+
+        for (let i = 0; i < currentList.length; i++) {
+            const p = currentList[i];
+            const weight = typeof p === 'object' ? p.weight : (100 / currentList.length);
+            accumulatedWeight += weight;
+            if (random <= accumulatedWeight) {
+                winnerIndex = i;
+                break;
+            }
+        }
+
+        if (winnerIndex === -1) winnerIndex = currentList.length - 1;
+
+        // 2. Calculate the center angle of the winner's segment
+        // Calculate start angle of the winner
+        let winnerStartAngle = 0;
+        for (let i = 0; i < winnerIndex; i++) {
+            const p = currentList[i];
+            const weight = typeof p === 'object' ? p.weight : (100 / currentList.length);
+            winnerStartAngle += (weight / 100) * 360;
+        }
+
+        const winnerItem = currentList[winnerIndex];
+        const winnerWeight = typeof winnerItem === 'object' ? winnerItem.weight : (100 / currentList.length);
+        const winnerSegmentAngle = (winnerWeight / 100) * 360;
+
+        // Target angle is the center of the segment
+        // We want the pointer (at 0 deg / top) to point to this angle on the wheel
+        // The wheel rotates clockwise. At 0 rotation, 0 deg is at top.
+        // To bring angle X to top, we need to rotate by -X (or 360-X).
+        const targetAngleOnWheel = winnerStartAngle + (winnerSegmentAngle / 2);
+
+        // Calculate required rotation value
+        // We want (rotation % 360) to be equivalent to (360 - targetAngleOnWheel) % 360
+        const currentRotation = rotation.value;
+        const currentAngle = currentRotation % 360;
+        const targetRotation = (360 - targetAngleOnWheel) % 360;
+
+        // Calculate difference to get to target
+        let diff = targetRotation - currentAngle;
+        if (diff < 0) diff += 360;
+
+        // Add minimum spins (5) + diff
+        const extraSpins = 5;
+        // Add a small random jitter (+/- 10% of segment width) to avoid looking too mechanical, but keep near center
+        const jitter = (Math.random() - 0.5) * (winnerSegmentAngle * 0.2);
+
+        const finalRotation = currentRotation + (extraSpins * 360) + diff + jitter;
+
         const animationDuration = 4000;
 
         rotation.value = withTiming(finalRotation, {
@@ -356,7 +441,7 @@ export default function RouletteScreen({ route, navigation }) {
             return `${remoteSpinState.starter}님이 돌리는 중...`;
         }
 
-        if (hasVoted) return 'VOTED! WAITING...';
+        if (hasVoted || votedItem) return 'VOTED! WAITING...';
         return spinning ? 'SPINNING...' : 'EXECUTE';
     };
 
@@ -387,12 +472,22 @@ export default function RouletteScreen({ route, navigation }) {
                             <TouchableOpacity onPress={() => navigation.navigate('History')} style={{ padding: 6 }}>
                                 <History color={Colors.primary} size={24} />
                             </TouchableOpacity>
-                            <TouchableOpacity
-                                onPress={() => navigation.navigate('NameInput', { roomId, role, category })}
-                                style={{ padding: 6 }}
-                            >
-                                <UserPlus color={Colors.accent} size={24} />
-                            </TouchableOpacity>
+                            {['meal', 'coffee', 'snack'].includes(category) && (
+                                <TouchableOpacity
+                                    onPress={async () => {
+                                        await syncService.removeMyVote();
+                                        navigation.navigate('NameInput', {
+                                            roomId,
+                                            role,
+                                            category,
+                                            resetSelection: true
+                                        });
+                                    }}
+                                    style={{ padding: 6 }}
+                                >
+                                    <UserPlus color={Colors.accent} size={24} />
+                                </TouchableOpacity>
+                            )}
                             <TouchableOpacity
                                 onPress={() => navigation.navigate('Welcome')}
                                 disabled={spinning}
@@ -403,7 +498,7 @@ export default function RouletteScreen({ route, navigation }) {
                         </View>
                     </View>
                     <View style={styles.header}>
-                        <NeonText className="text-3xl tracking-widest">{spinTarget === 'people' ? 'DATA EXTRACTION' : 'GOURMET SELECTION'}</NeonText>
+                        <NeonText className="text-3xl tracking-widest">{spinTarget === 'people' ? 'SPINNING ROULETTE' : 'GOURMET SELECTION'}</NeonText>
                         <View style={[styles.headerLine, { backgroundColor: spinTarget === 'people' ? Colors.primary : Colors.secondary, shadowColor: spinTarget === 'people' ? Colors.primary : Colors.secondary }]} />
                     </View>
 
@@ -433,11 +528,11 @@ export default function RouletteScreen({ route, navigation }) {
                     <View style={styles.footer}>
                         <TouchableOpacity
                             onPress={spinRoulette}
-                            disabled={!!(spinning || (remoteSpinState?.isSpinning && remoteSpinState.starter !== mySelectedName && onlineUsers.some(u => u.name === remoteSpinState.starter)) || votes.some(v => v.userId === syncService.myId))}
+                            disabled={!!(spinning || (remoteSpinState?.isSpinning && remoteSpinState.starter !== mySelectedName && onlineUsers.some(u => u.name === remoteSpinState.starter)) || votes.some(v => v.userId === syncService.myId) || votedItem)}
                             activeOpacity={0.8}
                             style={[
                                 styles.spinButton,
-                                (spinning || (remoteSpinState?.isSpinning && remoteSpinState.starter !== mySelectedName && onlineUsers.some(u => u.name === remoteSpinState.starter)) || votes.some(v => v.userId === syncService.myId)) && styles.disabledButton
+                                (spinning || (remoteSpinState?.isSpinning && remoteSpinState.starter !== mySelectedName && onlineUsers.some(u => u.name === remoteSpinState.starter)) || votes.some(v => v.userId === syncService.myId) || votedItem) && styles.disabledButton
                             ]}
                         >
                             <RotateCw color={spinning || votes.some(v => v.userId === syncService.myId) ? Colors.textSecondary : Colors.primary} size={24} style={{ marginRight: 12 }} />

@@ -31,8 +31,8 @@ export default function HistoryScreen({ navigation }) {
 
         return (
             <View style={[styles.historyItem, { borderLeftColor: item.type === 'menu' ? Colors.secondary : Colors.primary }]}>
-                <View>
-                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 2 }}>
+                <View style={{ flex: 1 }}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 4 }}>
                         <View style={{
                             backgroundColor: item.type === 'menu' ? `${Colors.secondary}20` : `${Colors.primary}20`,
                             paddingHorizontal: 6,
@@ -48,8 +48,25 @@ export default function HistoryScreen({ navigation }) {
                         <NeonText className="text-xl" color={item.type === 'menu' ? Colors.secondary : Colors.primary}>{item.name}</NeonText>
                     </View>
                     <Text style={styles.timeText}>{dateString} {timeString}</Text>
+
+                    {/* Check if details exist and render them */}
+                    {item.details && item.details.length > 0 && (
+                        <View style={{ marginTop: 10, paddingTop: 10, borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.05)' }}>
+                            <Text style={{ color: 'rgba(255,255,255,0.4)', fontSize: 10, marginBottom: 5 }}>VOTES:</Text>
+                            {item.details.map((detail, idx) => (
+                                <View key={idx} style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 2 }}>
+                                    <Text style={{ color: detail.isMe ? Colors.success : 'rgba(255,255,255,0.7)', fontSize: 11 }}>
+                                        {detail.name} {detail.isMe ? '(ME)' : ''}
+                                    </Text>
+                                    <Text style={{ color: Colors.secondary, fontSize: 11, fontWeight: 'bold' }}>
+                                        {detail.votedFor}
+                                    </Text>
+                                </View>
+                            ))}
+                        </View>
+                    )}
                 </View>
-                <View style={[styles.statusBadge, { borderColor: item.type === 'menu' ? Colors.secondary : Colors.primary, backgroundColor: item.type === 'menu' ? 'rgba(255, 0, 255, 0.1)' : 'rgba(0, 255, 255, 0.1)' }]}>
+                <View style={[styles.statusBadge, { borderColor: item.type === 'menu' ? Colors.secondary : Colors.primary, backgroundColor: item.type === 'menu' ? 'rgba(255, 0, 255, 0.1)' : 'rgba(0, 255, 255, 0.1)', alignSelf: 'flex-start' }]}>
                     <Text style={[styles.statusText, { color: item.type === 'menu' ? Colors.secondary : Colors.primary }]}>WINNER</Text>
                 </View>
             </View>

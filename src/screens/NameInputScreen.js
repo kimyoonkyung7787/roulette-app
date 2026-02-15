@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, TextInput, TouchableOpacity, FlatList, Text, Modal, ScrollView } from 'react-native';
+import { View, TextInput, TouchableOpacity, FlatList, Text, Modal, ScrollView, Platform } from 'react-native';
+import { useIsFocused } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Colors } from '../theme/colors';
 import { CyberBackground } from '../components/CyberBackground';
 import { NeonText } from '../components/NeonText';
-import { UserPlus, Trash2, Play, History, CheckCircle2, ListChecks, Users, X, Loader, LogOut, Crown, Utensils, Coffee, Cookie, User, HelpCircle } from 'lucide-react-native';
+import { UserPlus, Trash2, Play, History, CheckCircle2, ListChecks, Users, X, Loader, LogOut, Crown, Utensils, Coffee, Cookie, User, HelpCircle, Circle, Zap, Target } from 'lucide-react-native';
 import { syncService } from '../services/SyncService';
 import { participantService } from '../services/ParticipantService';
 import { CyberAlert } from '../components/CyberAlert';
@@ -27,6 +28,7 @@ export default function NameInputScreen({ route, navigation }) {
     const [activeCategory, setActiveCategory] = useState(category);
     const categoryRef = useRef(category);
     const [alertConfig, setAlertConfig] = useState({ visible: false, title: '', message: '' });
+    const [selectedMenuIndex, setSelectedMenuIndex] = useState(null);
 
     useEffect(() => {
         categoryRef.current = activeCategory;
@@ -35,6 +37,8 @@ export default function NameInputScreen({ route, navigation }) {
     const [roomPhase, setRoomPhaseState] = useState('waiting');
     const [finalResults, setFinalResults] = useState(null);
     const isNavigatingRef = useRef(false);
+    const inhibitedByResetRef = useRef(false);
+    const isFocused = useIsFocused();
     const participantsRef = useRef(participants);
 
     useEffect(() => {
@@ -46,124 +50,143 @@ export default function NameInputScreen({ route, navigation }) {
             console.log('NameInputScreen: Initializing room:', roomId);
             await syncService.init(null, roomId, role);
 
-            // Auto-select name for OWNER ONLY to avoid IDENT: UNKNOWN.
-            // Participants must still manually select their name in the list.
-            if (role === 'owner' && syncService.myName) {
+            // Restore previously selected name if available (UX improvement for Retry/Refresh)
+            if (syncService.myName) {
+                console.log('NameInputScreen: Restoring identity:', syncService.myName);
                 setMySelectedName(syncService.myName);
             }
 
             // Sync room state based on role
             if (role === 'owner') {
-                await syncService.setRoomPhase('waiting');
-                // Use the route param category as the master for retry/initialization
-                await syncService.setRoomCategory(category);
-                setActiveCategory(category);
+                const isReturningToVote = route.params?.resetSelection;
 
-                // Participants logic - Prioritize remote data, then local storage, then defaults
-                let existingParticipants = await syncService.getParticipants();
-                let savedParticipants = [];
+                if (!isReturningToVote) {
+                    console.log('NameInputScreen: Owner full initialization');
+                    await syncService.setRoomPhase('waiting');
+                    await syncService.setRoomCategory(category);
+                    setActiveCategory(category);
 
-                if (existingParticipants && existingParticipants.length > 0) {
-                    savedParticipants = existingParticipants;
-                } else {
-                    savedParticipants = await participantService.getParticipants();
-                    if (!savedParticipants || savedParticipants.length < 2) {
-                        savedParticipants = [
-                            { name: '참여자 1', weight: 50 },
-                            { name: '참여자 2', weight: 50 }
-                        ];
-                    } else if (typeof savedParticipants[0] === 'string') {
-                        const weight = Math.floor((100 / savedParticipants.length) * 10) / 10;
-                        savedParticipants = savedParticipants.map((p, i) => ({
-                            name: p,
-                            weight: i === 0 ? Math.round((100 - (weight * (savedParticipants.length - 1))) * 10) / 10 : weight
-                        }));
+                    // Initialize data
+                    let existingParticipants = await syncService.getParticipants();
+                    let savedParticipants = [];
+                    if (existingParticipants && existingParticipants.length > 0) {
+                        savedParticipants = existingParticipants;
+                    } else {
+                        savedParticipants = await participantService.getParticipants();
+                        if (!savedParticipants || savedParticipants.length < 2) {
+                            savedParticipants = [{ name: '참여자 1', weight: 50 }, { name: '참여자 2', weight: 50 }];
+                        }
                     }
-                }
-                setParticipants(savedParticipants);
-                await syncService.setParticipants(savedParticipants);
+                    setParticipants(savedParticipants);
+                    await syncService.setParticipants(savedParticipants);
 
-                // Menu items logic - Prioritize remote data, then defaults based on category
-                let existingMenus = await syncService.getMenuItems();
-                let menuList = [];
+                    let existingMenus = await syncService.getMenuItems();
+                    let menuList = [];
+                    if (existingMenus && existingMenus.length > 0) {
+                        menuList = existingMenus;
+                    } else {
+                        if (category === 'coffee') menuList = [{ name: '아메리카노', weight: 50 }, { name: '카페라떼', weight: 50 }];
+                        else if (category === 'meal') menuList = [{ name: '김치찌개', weight: 50 }, { name: '된장찌개', weight: 50 }];
+                        else menuList = [{ name: '치킨', weight: 50 }, { name: '피자', weight: 50 }];
+                    }
+                    setMenuItems(menuList);
+                    await syncService.setMenuItems(menuList);
 
-                if (existingMenus && existingMenus.length > 0) {
-                    menuList = existingMenus;
+                    await syncService.clearSpinState();
+                    await syncService.clearVotes();
+                    await syncService.clearFinalResults();
                 } else {
-                    if (category === 'coffee') menuList = [{ name: '아메리카노', weight: 50 }, { name: '카페라떼', weight: 50 }];
-                    else if (category === 'meal') menuList = [{ name: '김치찌개', weight: 50 }, { name: '된장찌개', weight: 50 }];
-                    else menuList = [{ name: '치킨', weight: 50 }, { name: '피자', weight: 50 }];
+                    console.log('NameInputScreen: Owner returning to re-vote, skipping room reset');
+                    // Just load current state to ensure local UI matches DB
+                    const currentParticipants = await syncService.getParticipants();
+                    if (currentParticipants) setParticipants(currentParticipants);
+
+                    const currentMenus = await syncService.getMenuItems();
+                    if (currentMenus) setMenuItems(currentMenus);
+
+                    const currentCat = await syncService.getRoomCategory();
+                    if (currentCat) setActiveCategory(currentCat);
                 }
-
-                setMenuItems(menuList);
-                await syncService.setMenuItems(menuList);
-
-                await syncService.clearSpinState();
-                await syncService.clearVotes();
-                await syncService.clearFinalResults();
             }
 
             // --- Subscriptions MUST happen after init (when roomPath is set) ---
 
+            // Store unsubs
+            const unsubs = [];
+
             // Subscribe to room category (Everyone should stay in sync)
-            syncService.subscribeToCategory(cat => {
+            unsubs.push(syncService.subscribeToCategory(cat => {
                 setActiveCategory(cat);
-            });
+            }));
 
             // If participant, subscribe to other room states
             if (role === 'participant') {
-
-                syncService.subscribeToParticipants(list => {
+                unsubs.push(syncService.subscribeToParticipants(list => {
                     console.log('NameInputScreen: Received participants update:', list.length, 'items');
                     setParticipants(list);
-                });
+                }));
 
-                syncService.subscribeToMenuItems(list => {
+                unsubs.push(syncService.subscribeToMenuItems(list => {
                     console.log('NameInputScreen: Received menu items update:', list.length, 'items');
                     setMenuItems(list);
-                });
+                }));
             }
 
             // Subscribe to online users
-            syncService.subscribeToOnlineUsers(users => {
+            unsubs.push(syncService.subscribeToOnlineUsers(users => {
+                console.log(`NameInputScreen: Online users updated: ${users.length}`);
                 setOnlineUsers(users);
-            });
+            }));
 
             // Subscribe to votes
-            syncService.subscribeToVotes(vts => {
+            unsubs.push(syncService.subscribeToVotes(vts => {
                 setVotes(vts);
-            });
+            }));
 
             // Listen for spin start from owner
-            syncService.subscribeToSpinState(state => {
+            unsubs.push(syncService.subscribeToSpinState(state => {
                 setRemoteSpinState(state);
-            });
+            }));
 
             // Listen for room phase
-            syncService.subscribeToRoomPhase(phase => {
+            unsubs.push(syncService.subscribeToRoomPhase(phase => {
                 setRoomPhaseState(phase);
-            });
+            }));
 
             // Listen for final results (game finished)
-            syncService.subscribeToFinalResults(results => {
+            unsubs.push(syncService.subscribeToFinalResults(results => {
                 setFinalResults(results);
-            });
+            }));
 
             setIsLoaded(true);
+            return unsubs;
         };
-        loadInitialData();
+
+        let activeUnsubs = [];
+        loadInitialData().then(unsubs => {
+            activeUnsubs = unsubs;
+        });
+
+        return () => {
+            console.log('NameInputScreen: Cleaning up subscriptions...');
+            activeUnsubs.forEach(unsub => unsub && unsub());
+        };
     }, []);
 
     // Auto-navigate if game is in roulette phase or there's active game data
     useEffect(() => {
-        // Only attempt navigation for participants who have selected a name
-        if (role !== 'participant' || !mySelectedName || participants.length === 0 || isNavigatingRef.current) return;
+        // Guard: Only for participants, must be focused, and not currently navigating or resetting
+        if (role !== 'participant' || !isFocused || !mySelectedName || participants.length === 0 || isNavigatingRef.current || route.params?.resetSelection || inhibitedByResetRef.current) return;
 
-        const isGameActive = roomPhase === 'roulette' || votes.length > 0 || remoteSpinState?.isSpinning;
+        // Auto-navigate ONLY if game phase is explicitly 'roulette' or someone is spinning
+        const isGameActive = roomPhase === 'roulette' || remoteSpinState?.isSpinning;
 
-        // Condition 1: Game is finished (Results exist)
+        // Mode detection based on category
+        const isMenuMode = ['meal', 'coffee', 'snack'].includes(activeCategory);
+
+        // Condition 1: Game is finished (Results exist) - Auto-nav to result is still allowed for UX
         if (finalResults) {
-            console.log('NameInputScreen: Game already finished, showing result screen...');
+            console.log('NameInputScreen: Game already finished, auto-navigating to result...');
             isNavigatingRef.current = true;
             navigation.navigate('Result', {
                 ...finalResults,
@@ -174,24 +197,41 @@ export default function NameInputScreen({ route, navigation }) {
             return;
         }
 
-        if (isGameActive) {
-            console.log('NameInputScreen: Active game detected, joining Roulette screen...');
-            isNavigatingRef.current = true;
-            navigation.navigate('Roulette', {
-                participants: participants,
-                menuItems: menuItems,
-                mySelectedName: mySelectedName,
-                roomId,
-                role: 'participant',
-                category: activeCategory
-            });
+    }, [roomPhase, mySelectedName, role, votes, remoteSpinState, participants, finalResults, activeCategory, selectedMenuIndex, route.params?.resetSelection]);
 
-            // Reset navigation flag after a short delay to allow future joins if needed
+    // Safe reset of selection state when navigating back
+    useEffect(() => {
+        if (route.params?.resetSelection) {
+            console.log('NameInputScreen: Resetting selection state and inhibiting navigation...');
+            inhibitedByResetRef.current = true;
+            setSelectedMenuIndex(null);
+            isNavigatingRef.current = false;
+
+            // Clear the param
+            navigation.setParams({ resetSelection: undefined });
+
+            // Release inhibition after short delay to allow state to settle in DB
             setTimeout(() => {
-                isNavigatingRef.current = false;
-            }, 2000);
+                inhibitedByResetRef.current = false;
+                console.log('NameInputScreen: Reset inhibition released');
+            }, 1000);
         }
-    }, [roomPhase, mySelectedName, role, votes, remoteSpinState, participants, finalResults]);
+    }, [route.params?.resetSelection]);
+
+    // Sync local selection with DB votes (Preserves selection on Retry/Refresh)
+    useEffect(() => {
+        if (!isFocused || !syncService.myId || votes.length === 0 || menuItems.length === 0) return;
+
+        // Find current user's vote
+        const myVote = votes.find(v => v.userId === syncService.myId);
+        if (myVote && selectedMenuIndex === null) {
+            const index = menuItems.findIndex(item => item.name === myVote.votedFor);
+            if (index !== -1) {
+                console.log(`NameInputScreen: Syncing selection with DB vote: ${myVote.votedFor}`);
+                setSelectedMenuIndex(index);
+            }
+        }
+    }, [votes, menuItems, isFocused]);
 
     // Save participants whenever they change
     useEffect(() => {
@@ -242,6 +282,7 @@ export default function NameInputScreen({ route, navigation }) {
             const newList = menuItems.filter((_, i) => i !== index);
             const updated = redistributeWeights(newList);
             setMenuItems(updated);
+            setSelectedMenuIndex(null);
             if (role === 'owner') await syncService.setMenuItems(updated);
         }
     };
@@ -307,6 +348,108 @@ export default function NameInputScreen({ route, navigation }) {
         }
     };
 
+    const handleDirectPick = async () => {
+        if (selectedMenuIndex === null) {
+            setAlertConfig({
+                visible: true,
+                title: 'ALERT',
+                message: '메뉴를 먼저 선택해주세요!'
+            });
+            return;
+        }
+
+        const pickedItem = menuItems[selectedMenuIndex];
+        const winner = pickedItem.name;
+
+        if (role === 'owner') {
+            const isGameAlreadyActive = roomPhase === 'roulette' || (votes && votes.length > 0);
+
+            if (isGameAlreadyActive) {
+                // If game is active, just submit vote like a participant
+                try {
+                    console.log(`NameInputScreen: Owner joining active session, submitting vote: ${winner}`);
+                    await syncService.submitVote(winner);
+
+                    navigation.navigate('Roulette', {
+                        participants,
+                        menuItems,
+                        mySelectedName,
+                        roomId,
+                        role,
+                        category: activeCategory,
+                        votedItem: winner,
+                        spinTarget: 'menu'
+                    });
+                } catch (e) {
+                    console.error('Owner failed to join active session:', e);
+                }
+            } else {
+                try {
+                    // Initialize game session for Menu Selection
+                    console.log(`NameInputScreen: Owner initializing Direct Pick session for menu in room:`, roomId);
+                    await syncService.setSpinTarget('menu');
+                    await syncService.setRoomPhase('roulette');
+
+                    // Clear previous session data
+                    await syncService.clearVotes();
+                    await syncService.clearSpinState();
+                    await syncService.clearFinalResults();
+
+                    // Submit the owner's direct choice as a vote
+                    console.log(`NameInputScreen: Submitting owner's direct pick: ${winner}`);
+                    await syncService.submitVote(winner);
+
+                    // Navigate to Roulette Screen to wait for others
+                    navigation.navigate('Roulette', {
+                        participants,
+                        menuItems,
+                        mySelectedName,
+                        roomId,
+                        role,
+                        category: activeCategory,
+                        votedItem: winner,
+                        spinTarget: 'menu'
+                    });
+
+                } catch (err) {
+                    console.error('Direct pick failed:', err);
+                    setAlertConfig({
+                        visible: true,
+                        title: 'ERROR',
+                        message: 'Failed to start selection. Check connection.'
+                    });
+                }
+            }
+
+        } else {
+            // Participant handling for PICK NOW
+            const isGameActive = roomPhase === 'roulette' || votes.length > 0 || remoteSpinState?.isSpinning;
+            if (!isGameActive) {
+                setAlertConfig({
+                    visible: true,
+                    title: 'INFO',
+                    message: '방장이 아직 시작하지 않았습니다. 진행을 기다려주세요!'
+                });
+                return;
+            }
+
+            try {
+                await syncService.submitVote(winner);
+            } catch (e) { console.error(e); }
+
+            navigation.navigate('Roulette', {
+                participants,
+                menuItems,
+                mySelectedName,
+                roomId,
+                role,
+                category: activeCategory,
+                votedItem: winner,
+                spinTarget: 'menu'
+            });
+        }
+    };
+
     const startRoulette = async (target = 'people') => {
         if (target === 'people') {
             if (participants.length < 2) {
@@ -365,6 +508,8 @@ export default function NameInputScreen({ route, navigation }) {
     const activeMenuColor = activeCategory === 'coffee' ? Colors.neonPink :
         activeCategory === 'meal' ? Colors.success :
             Colors.accent;
+
+    const isPeopleTab = activeTab === 'people';
 
     return (
         <CyberBackground>
@@ -517,7 +662,6 @@ export default function NameInputScreen({ route, navigation }) {
                         keyExtractor={(item, index) => index.toString()}
                         renderItem={({ item, index }) => {
                             const nameToCheck = item.name || item;
-                            const isPeopleTab = activeTab === 'people';
                             const isTakenByOther = isPeopleTab && onlineUsers.some(u => u.name === nameToCheck && u.id !== syncService.myId);
                             const isMe = isPeopleTab && mySelectedName === nameToCheck;
                             const activeThemeColor = isPeopleTab ? Colors.primary : activeMenuColor;
@@ -536,7 +680,7 @@ export default function NameInputScreen({ route, navigation }) {
                                     opacity: isTakenByOther && !isMe ? 0.5 : 1
                                 }}>
                                     <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
-                                        {isPeopleTab && (
+                                        {isPeopleTab ? (
                                             <TouchableOpacity
                                                 onPress={() => !isTakenByOther ? toggleMe(nameToCheck) : null}
                                                 style={{ marginRight: 12 }}
@@ -547,6 +691,18 @@ export default function NameInputScreen({ route, navigation }) {
                                                     size={22}
                                                     fill={isMe ? `${Colors.primary}33` : 'transparent'}
                                                 />
+                                            </TouchableOpacity>
+                                        ) : (
+                                            <TouchableOpacity
+                                                // Allow everyone to select locally to indicate their preference (even if just for "Pick Now" voting)
+                                                onPress={() => setSelectedMenuIndex(index)}
+                                                style={{ marginRight: 12 }}
+                                            >
+                                                {selectedMenuIndex === index ? (
+                                                    <CheckCircle2 color={activeMenuColor} size={22} fill={`${activeMenuColor}33`} />
+                                                ) : (
+                                                    <Circle color="rgba(255,255,255,0.2)" size={22} />
+                                                )}
                                             </TouchableOpacity>
                                         )}
 
@@ -561,7 +717,14 @@ export default function NameInputScreen({ route, navigation }) {
                                             />
                                         ) : (
                                             <TouchableOpacity
-                                                onPress={() => !isTakenByOther && role === 'owner' ? startEditing(index) : (isPeopleTab && !isTakenByOther ? toggleMe(nameToCheck) : null)}
+                                                onPress={() => {
+                                                    if (activeTab === 'menu') {
+                                                        if (role === 'owner') setSelectedMenuIndex(index);
+                                                    } else {
+                                                        if (!isTakenByOther && role === 'owner') startEditing(index);
+                                                        else if (isPeopleTab && !isTakenByOther) toggleMe(nameToCheck);
+                                                    }
+                                                }}
                                                 activeOpacity={isTakenByOther ? 1 : 0.7}
                                                 style={{ flex: 1, flexDirection: 'row', alignItems: 'center' }}
                                             >
@@ -621,7 +784,7 @@ export default function NameInputScreen({ route, navigation }) {
                                                             color: Colors.secondary,
                                                             fontSize: 16,
                                                             fontWeight: 'bold',
-                                                            minWidth: 50,
+                                                            width: 50,
                                                             textAlign: 'right',
                                                             marginRight: 2,
                                                             padding: 0
@@ -689,12 +852,34 @@ export default function NameInputScreen({ route, navigation }) {
                         }
                     />
 
-                    {role === 'owner' ? (
-                        <View style={{ marginTop: 10 }}>
-                            <NeonText className="text-sm mb-2 opacity-70" style={{ marginLeft: 5 }}>SELECT_ROULETTE_TARGET</NeonText>
-                            <View style={{ flexDirection: 'row', gap: 12 }}>
+                    <View style={{ marginTop: 10 }}>
+                        <View style={{ flexDirection: 'row', gap: 12 }}>
+                            {isPeopleTab ? (
                                 <TouchableOpacity
-                                    onPress={() => startRoulette('people')}
+                                    onPress={() => {
+                                        if (role === 'owner') {
+                                            startRoulette('people');
+                                        } else {
+                                            const isGameActive = roomPhase === 'roulette' || votes.length > 0 || remoteSpinState?.isSpinning;
+                                            if (isGameActive) {
+                                                navigation.navigate('Roulette', {
+                                                    participants,
+                                                    menuItems,
+                                                    mySelectedName,
+                                                    roomId,
+                                                    role,
+                                                    category: activeCategory,
+                                                    spinTarget: 'people'
+                                                });
+                                            } else {
+                                                setAlertConfig({
+                                                    visible: true,
+                                                    title: 'INFO',
+                                                    message: '방장이 아직 시작하지 않았습니다. 시작을 기다려주세요!'
+                                                });
+                                            }
+                                        }
+                                    }}
                                     activeOpacity={0.8}
                                     style={{
                                         flex: 1,
@@ -712,57 +897,123 @@ export default function NameInputScreen({ route, navigation }) {
                                         elevation: 8
                                     }}
                                 >
-                                    <User color={Colors.primary} size={20} style={{ marginRight: 8 }} />
-                                    <NeonText className="text-lg" style={{ color: Colors.primary }}>WHO</NeonText>
+                                    <Users color={Colors.primary} size={20} style={{ marginRight: 8 }} />
+                                    <NeonText className="text-lg" style={{ color: Colors.primary }}>
+                                        WHO
+                                    </NeonText>
                                 </TouchableOpacity>
+                            ) : (
+                                <>
+                                    <TouchableOpacity
+                                        onPress={handleDirectPick}
+                                        activeOpacity={0.8}
+                                        style={{
+                                            flex: 1.2,
+                                            flexDirection: 'row',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            backgroundColor: 'rgba(0, 255, 255, 0.05)',
+                                            paddingVertical: 12,
+                                            borderRadius: 12,
+                                            borderWidth: 2,
+                                            borderColor: Colors.secondary,
+                                            shadowColor: Colors.secondary,
+                                            shadowOpacity: 0.3,
+                                            shadowRadius: 15,
+                                            elevation: 8,
+                                            marginRight: 10
+                                        }}
+                                    >
+                                        <Target color={Colors.secondary} size={20} style={{ marginRight: 8 }} />
+                                        <NeonText className="text-lg" style={{ color: Colors.secondary }}>PICK NOW</NeonText>
+                                    </TouchableOpacity>
 
-                                <TouchableOpacity
-                                    onPress={() => startRoulette('menu')}
-                                    activeOpacity={0.8}
-                                    style={{
-                                        flex: 1,
-                                        flexDirection: 'row',
-                                        alignItems: 'center',
-                                        justifyContent: 'center',
-                                        backgroundColor: 'rgba(0, 255, 255, 0.05)',
-                                        paddingVertical: 12,
-                                        borderRadius: 12,
-                                        borderWidth: 2,
-                                        borderColor: Colors.secondary,
-                                        shadowColor: Colors.secondary,
-                                        shadowOpacity: 0.3,
-                                        shadowRadius: 15,
-                                        elevation: 8
-                                    }}
-                                >
-                                    <View style={{ marginRight: 8 }}>
-                                        <HelpCircle color={Colors.secondary} size={20} />
-                                    </View>
-                                    <NeonText className="text-lg" color={Colors.secondary}>WHAT</NeonText>
-                                </TouchableOpacity>
-                            </View>
+                                    <TouchableOpacity
+                                        onPress={async () => {
+                                            if (role === 'owner') {
+                                                startRoulette('menu');
+                                            } else {
+                                                // Check if game started
+                                                const isGameActive = roomPhase === 'roulette' || votes.length > 0 || remoteSpinState?.isSpinning;
+                                                if (!isGameActive) {
+                                                    setAlertConfig({
+                                                        visible: true,
+                                                        title: 'INFO',
+                                                        message: '방장이 아직 시작하지 않았습니다. 시작을 기다려주세요!'
+                                                    });
+                                                    return;
+                                                }
+
+                                                // If menu is selected, submit vote while joining
+                                                let selectedItemName = null;
+                                                if (selectedMenuIndex !== null && menuItems[selectedMenuIndex]) {
+                                                    selectedItemName = menuItems[selectedMenuIndex].name;
+                                                    try {
+                                                        await syncService.submitVote(selectedItemName);
+                                                    } catch (e) {
+                                                        console.error('Failed to submit vote on join:', e);
+                                                    }
+                                                }
+
+                                                navigation.navigate('Roulette', {
+                                                    participants,
+                                                    menuItems,
+                                                    mySelectedName,
+                                                    roomId,
+                                                    role,
+                                                    category: activeCategory,
+                                                    spinTarget: 'menu',
+                                                    votedItem: selectedItemName
+                                                });
+                                            }
+                                        }}
+                                        activeOpacity={0.8}
+                                        style={{
+                                            flex: 1,
+                                            flexDirection: 'row',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            backgroundColor: 'rgba(0, 255, 255, 0.05)',
+                                            paddingVertical: 12,
+                                            borderRadius: 12,
+                                            borderWidth: 2,
+                                            borderColor: activeMenuColor, // Use activeMenuColor or Colors.secondary if strict
+                                            shadowColor: activeMenuColor,
+                                            shadowOpacity: 0.3,
+                                            shadowRadius: 15,
+                                            elevation: 8
+                                        }}
+                                    >
+                                        <View style={{ marginRight: 8 }}>
+                                            <Zap color={activeMenuColor} size={20} fill={activeMenuColor} />
+                                        </View>
+                                        <NeonText className="text-lg" style={{ color: activeMenuColor }}>
+                                            WHAT
+                                        </NeonText>
+                                    </TouchableOpacity>
+                                </>
+                            )}
                         </View>
-                    ) : (
-                        <View style={{
-                            paddingVertical: 18,
-                            borderRadius: 16,
-                            alignItems: 'center',
-                            marginTop: 10,
-                            borderWidth: 1,
-                            borderColor: 'rgba(255, 255, 255, 0.1)',
-                            backgroundColor: 'rgba(255, 255, 255, 0.02)',
-                        }}>
-                            <Loader color={Colors.primary} size={20} style={{ marginBottom: 8 }} />
-                            <Text style={{ color: Colors.textSecondary, fontSize: 13, fontWeight: 'bold', letterSpacing: 2 }}>
-                                {finalResults
-                                    ? 'GAME FINISHED! CHECK RESULTS...'
-                                    : (roomPhase === 'roulette' || votes.length > 0 || remoteSpinState?.isSpinning)
-                                        ? (mySelectedName ? 'GAME IN PROGRESS...' : 'SELECT YOUR NAME TO JOIN!')
-                                        : (mySelectedName ? 'WAITING FOR OWNER TO START...' : 'PLEASE SELECT YOUR NAME ABOVE')
-                                }
-                            </Text>
-                        </View>
-                    )}
+                    </View>
+                    <View style={{
+                        paddingVertical: 18,
+                        borderRadius: 16,
+                        alignItems: 'center',
+                        marginTop: 10,
+                        borderWidth: 1,
+                        borderColor: 'rgba(255, 255, 255, 0.1)',
+                        backgroundColor: 'rgba(255, 255, 255, 0.02)',
+                    }}>
+                        <Loader color={Colors.primary} size={20} style={{ marginBottom: 8 }} />
+                        <Text style={{ color: Colors.textSecondary, fontSize: 13, fontWeight: 'bold', letterSpacing: 2 }}>
+                            {finalResults
+                                ? 'GAME FINISHED! CHECK RESULTS...'
+                                : (roomPhase === 'roulette' || votes.length > 0 || remoteSpinState?.isSpinning)
+                                    ? (mySelectedName ? 'GAME IN PROGRESS...' : 'SELECT YOUR NAME TO JOIN!')
+                                    : (mySelectedName ? 'WAITING FOR OWNER TO START...' : 'PLEASE SELECT YOUR NAME ABOVE')
+                            }
+                        </Text>
+                    </View>
                 </View>
 
                 <CyberAlert

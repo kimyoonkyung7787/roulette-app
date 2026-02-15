@@ -23,26 +23,44 @@ export default function ResultScreen({ route, navigation }) {
         setAllVoted(votingComplete);
 
         // Trigger success feedback only if all voted or forced
+        // We wait for either onlineUsers or finalVotes to have data to ensure details are saved
         if (votingComplete && !hasSavedRef.current) {
-            feedbackService.playSuccess();
-            // Save to history only when voting is finalized
-            historyService.addWinner(winner, type);
-            hasSavedRef.current = true;
+            // Need at least some vote info to save meaningful details
+            if (finalVotes && finalVotes.length > 0) {
+                feedbackService.playSuccess();
+
+                // Construct details: prefer onlineUsers for complete list, fallback to finalVotes
+                let details = [];
+                if (onlineUsers && onlineUsers.length > 0) {
+                    details = onlineUsers.map(user => {
+                        const vote = finalVotes.find(v => v.userId === user.id);
+                        return {
+                            name: user.name,
+                            votedFor: vote ? vote.votedFor : 'NO VOTE',
+                            isMe: user.id === syncService.myId
+                        };
+                    });
+                } else {
+                    // Fallback to purely finalVotes if onlineUsers hasn't synced yet
+                    details = finalVotes.map(v => ({
+                        name: v.userName || 'Unknown',
+                        votedFor: v.votedFor,
+                        isMe: v.userId === syncService.myId
+                    }));
+                }
+
+                console.log(`ResultScreen: Saving history with ${details.length} details`);
+                historyService.addWinner(winner, type, details);
+                hasSavedRef.current = true;
+            }
         }
-    }, [tally, totalParticipants, isForced, winner, type]);
+    }, [tally, totalParticipants, isForced, winner, type, onlineUsers, finalVotes]);
 
     useEffect(() => {
-        let unsubSpin, unsubFinal;
+        let unsubFinal;
 
         // Sync navigation for participants
         if (role === 'participant') {
-            unsubSpin = syncService.subscribeToSpinState(state => {
-                // If spin state is cleared (meaning game reset) and navigation is needed
-                if (!state?.isSpinning && !state?.lastResult) {
-                    console.log('ResultScreen: Room state reset, returning to lobby');
-                    navigation.navigate('NameInput', { roomId, role, category });
-                }
-            });
 
             unsubFinal = syncService.subscribeToFinalResults(finalData => {
                 // If final results are cleared, return to lobby (unified reset)
@@ -55,7 +73,6 @@ export default function ResultScreen({ route, navigation }) {
 
         return () => {
             console.log('ResultScreen: Cleaning up subscriptions');
-            if (unsubSpin) unsubSpin();
             if (unsubFinal) unsubFinal();
         };
     }, [role, roomId]);
@@ -68,18 +85,17 @@ export default function ResultScreen({ route, navigation }) {
     }, []);
 
     const handleReset = async () => {
-        console.log('ResultScreen: Owner resetting game...');
+        console.log('ResultScreen: Owner resetting game (preserving votes)...');
         await syncService.setRoomPhase('waiting');
-        await syncService.clearVotes();
         await syncService.clearSpinState();
         await syncService.clearFinalResults();
-        // Navigate to NameInput instead of goBack to ensure fresh state
+        // Navigation to NameInput
         navigation.navigate('NameInput', { roomId, role, category });
     };
 
     const handleReturnToBase = async () => {
+        console.log('ResultScreen: Returning to lobby...');
         await syncService.setRoomPhase('waiting');
-        await syncService.clearVotes();
         await syncService.clearSpinState();
         await syncService.clearFinalResults();
         navigation.navigate('NameInput', { roomId, role, category });
