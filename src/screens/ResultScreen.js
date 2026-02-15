@@ -88,100 +88,117 @@ export default function ResultScreen({ route, navigation }) {
     return (
         <CyberBackground>
             <SafeAreaView style={{ flex: 1 }}>
-                <View style={styles.container}>
-                    <View style={{ width: '100%', marginBottom: 30, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <View style={{
-                            backgroundColor: 'rgba(0, 255, 255, 0.1)',
-                            paddingHorizontal: 10,
-                            paddingVertical: 5,
-                            borderRadius: 8,
-                            borderWidth: 1,
-                            borderColor: Colors.primary,
-                            shadowColor: Colors.primary,
-                            shadowOpacity: 0.3,
-                            shadowRadius: 5
-                        }}>
-                            <Text style={{ color: Colors.primary, fontSize: 12, fontWeight: '900', letterSpacing: 1 }}>#ROOM: {(roomId || '').toUpperCase()}</Text>
+                <ScrollView contentContainerStyle={{ flexGrow: 1 }} showsVerticalScrollIndicator={false}>
+                    <View style={styles.container}>
+                        <View style={{ width: '100%', marginBottom: 30, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <View style={{
+                                backgroundColor: 'rgba(0, 255, 255, 0.1)',
+                                paddingHorizontal: 10,
+                                paddingVertical: 5,
+                                borderRadius: 8,
+                                borderWidth: 1,
+                                borderColor: Colors.primary,
+                                shadowColor: Colors.primary,
+                                shadowOpacity: 0.3,
+                                shadowRadius: 5
+                            }}>
+                                <Text style={{ color: Colors.primary, fontSize: 12, fontWeight: '900', letterSpacing: 1 }}>#ROOM: {(roomId || '').toUpperCase()}</Text>
+                            </View>
+
+                            <View style={{ flexDirection: 'row', gap: 10, alignItems: 'center' }}>
+                                <TouchableOpacity onPress={() => setShowUsersModal(true)} style={{ padding: 8 }}>
+                                    <Users color={Colors.success} size={24} />
+                                </TouchableOpacity>
+                                <TouchableOpacity onPress={() => navigation.navigate('History')} style={{ padding: 8 }}>
+                                    <History color={Colors.primary} size={24} />
+                                </TouchableOpacity>
+                                <TouchableOpacity
+                                    onPress={() => navigation.navigate('Welcome')}
+                                    style={{ padding: 8 }}
+                                >
+                                    <LogOut color={Colors.error} size={24} />
+                                </TouchableOpacity>
+                            </View>
+                        </View>
+                        {/* Trophy or In-Progress Icon */}
+                        <View style={styles.trophyContainer}>
+                            {allVoted ? (
+                                <>
+                                    <Trophy color={Colors.accent} size={80} strokeWidth={1} />
+                                    <View style={styles.trophyGlow} />
+                                </>
+                            ) : (
+                                <>
+                                    <Loader color={Colors.primary} size={80} strokeWidth={1.5} />
+                                    <View style={styles.loaderGlow} />
+                                </>
+                            )}
                         </View>
 
-                        <View style={{ flexDirection: 'row', gap: 10, alignItems: 'center' }}>
-                            <TouchableOpacity onPress={() => setShowUsersModal(true)} style={{ padding: 8 }}>
-                                <Users color={Colors.success} size={24} />
-                            </TouchableOpacity>
-                            <TouchableOpacity onPress={() => navigation.navigate('History')} style={{ padding: 8 }}>
-                                <History color={Colors.primary} size={24} />
-                            </TouchableOpacity>
-                            <TouchableOpacity
-                                onPress={() => navigation.navigate('Welcome')}
-                                style={{ padding: 8 }}
-                            >
-                                <LogOut color={Colors.error} size={24} />
-                            </TouchableOpacity>
-                        </View>
-                    </View>
-                    {/* Trophy or In-Progress Icon */}
-                    <View style={styles.trophyContainer}>
-                        {allVoted ? (
-                            <>
-                                <Trophy color={Colors.accent} size={80} strokeWidth={1} />
-                                <View style={styles.trophyGlow} />
-                            </>
-                        ) : (
-                            <>
-                                <Loader color={Colors.primary} size={80} strokeWidth={1.5} />
-                                <View style={styles.loaderGlow} />
-                            </>
-                        )}
-                    </View>
+                        <View style={styles.resultBox}>
+                            <Text style={styles.label}>
+                                {allVoted
+                                    ? (isTie ? 'TIE DETECTED' : 'CONGRATULATIONS!')
+                                    : 'VOTING IN PROGRESS...'}
+                            </Text>
+                            <View style={styles.winnerNameContainer}>
+                                <NeonText
+                                    style={{
+                                        fontSize: winner.length > 20 ? 28 : (winner.length > 10 ? 36 : 56),
+                                        textAlign: 'center',
+                                        lineHeight: winner.length > 20 ? 34 : (winner.length > 10 ? 42 : 64),
+                                        color: isTie ? Colors.primary : Colors.secondary
+                                    }}
+                                >
+                                    {winner}
+                                </NeonText>
+                            </View>
+                            {allVoted && isTie && <Text style={styles.tieSubText}>Multiple winners detected due to a tie!</Text>}
 
-                    <View style={styles.resultBox}>
-                        <Text style={styles.label}>
-                            {allVoted
-                                ? (isTie ? 'TIE DETECTED' : 'CONGRATULATIONS!')
-                                : 'VOTING IN PROGRESS...'}
-                        </Text>
-                        <View style={styles.winnerNameContainer}>
-                            <NeonText
-                                className={winner.length > 10 ? "text-4xl text-center" : "text-6xl text-center"}
-                                color={isTie ? Colors.primary : Colors.secondary}
-                            >
-                                {winner}
-                            </NeonText>
-                        </View>
-                        {allVoted && isTie && <Text style={styles.tieSubText}>Multiple winners detected due to a tie!</Text>}
-
-                        {/* Tally Chart */}
-                        <View style={styles.tallyContainer}>
-                            {Object.entries(tally).map(([name, count]) => (
-                                <View key={name} style={styles.tallyItem}>
-                                    <Text style={styles.tallyName}>{name}</Text>
-                                    <View style={styles.tallyBarContainer}>
-                                        <View style={[styles.tallyBar, { width: `${(count / Math.max(...Object.values(tally))) * 100}%` }]} />
+                            {/* Tally Chart */}
+                            <View style={styles.tallyContainer}>
+                                {Object.entries(tally).map(([name, count]) => (
+                                    <View key={name} style={styles.tallyItem}>
+                                        <Text style={styles.tallyName}>{name}</Text>
+                                        <View style={styles.tallyBarContainer}>
+                                            {[...Array(Math.max(totalParticipants, 5))].map((_, i) => (
+                                                <View
+                                                    key={i}
+                                                    style={[
+                                                        styles.tallyCell,
+                                                        { backgroundColor: i < count ? Colors.secondary : 'rgba(255,255,255,0.05)' }
+                                                    ]}
+                                                />
+                                            ))}
+                                        </View>
+                                        <View style={styles.tallyCountContainer}>
+                                            <Text style={styles.tallyCountValue}>{count}</Text>
+                                            <Text style={styles.tallyCountLabel}>{count === 1 ? 'VOTE' : 'VOTES'}</Text>
+                                        </View>
                                     </View>
-                                    <Text style={styles.tallyCount}>{count} VOTES</Text>
-                                </View>
-                            ))}
+                                ))}
+                            </View>
+
+                            <Text style={styles.subText}>
+                                {!allVoted && 'WAITING FOR OTHER PLAYERS...'}
+                            </Text>
                         </View>
 
-                        <Text style={styles.subText}>
-                            {!allVoted && 'WAITING FOR OTHER PLAYERS...'}
-                        </Text>
+                        {role === 'owner' ? (
+                            <View style={styles.footer}>
+                                <TouchableOpacity
+                                    onPress={handleReset}
+                                    activeOpacity={0.7}
+                                    style={styles.retryButton}
+                                >
+                                    <RefreshCw color={Colors.primary} size={18} style={{ marginRight: 8 }} />
+                                    <Text style={styles.retryText}>RETRY</Text>
+                                </TouchableOpacity>
+                            </View>
+                        ) : null}
+
                     </View>
-
-                    {role === 'owner' ? (
-                        <View style={styles.footer}>
-                            <TouchableOpacity
-                                onPress={handleReset}
-                                activeOpacity={0.7}
-                                style={styles.retryButton}
-                            >
-                                <RefreshCw color={Colors.primary} size={18} style={{ marginRight: 8 }} />
-                                <Text style={styles.retryText}>RETRY</Text>
-                            </TouchableOpacity>
-                        </View>
-                    ) : null}
-
-                </View>
+                </ScrollView>
 
                 {/* Online Users Modal */}
                 <Modal
@@ -324,22 +341,32 @@ const styles = StyleSheet.create({
     },
     tallyBarContainer: {
         flex: 1,
-        height: 6,
-        backgroundColor: 'rgba(255,255,255,0.05)',
-        borderRadius: 3,
+        flexDirection: 'row',
+        gap: 2,
+        height: 12,
         marginHorizontal: 10,
-        overflow: 'hidden',
     },
-    tallyBar: {
+    tallyCell: {
+        flex: 1,
         height: '100%',
-        backgroundColor: Colors.secondary,
-        borderRadius: 3,
+        borderRadius: 2,
+        borderWidth: 1,
+        borderColor: 'rgba(255,255,255,0.1)',
     },
-    tallyCount: {
-        color: Colors.textSecondary,
-        width: 30,
-        fontSize: 12,
-        textAlign: 'right',
+    tallyCountContainer: {
+        width: 60,
+        alignItems: 'flex-end',
+    },
+    tallyCountValue: {
+        color: Colors.secondary,
+        fontSize: 14,
+        fontWeight: 'bold',
+    },
+    tallyCountLabel: {
+        color: 'rgba(255,255,255,0.3)',
+        fontSize: 8,
+        letterSpacing: 1,
+        marginTop: -3,
     },
     footer: {
         width: '100%',
