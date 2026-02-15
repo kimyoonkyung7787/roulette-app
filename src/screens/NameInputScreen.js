@@ -323,7 +323,7 @@ export default function NameInputScreen({ route, navigation }) {
                 setAlertConfig({
                     visible: true,
                     title: 'ALERT',
-                    message: `Total ratio must be 100.0% (Current: ${totalWeight.toFixed(1)}%)`
+                    message: `Total ratio must be 100% (Current: ${Number(totalWeight.toFixed(1))}%)`
                 });
                 return;
             }
@@ -639,7 +639,7 @@ export default function NameInputScreen({ route, navigation }) {
                                                             fontWeight: 'bold',
                                                             minWidth: 65,
                                                             textAlign: 'right'
-                                                        }}>{typeof item.weight === 'number' ? item.weight.toFixed(1) : item.weight}%</Text>
+                                                        }}>{typeof item.weight === 'number' ? Number(item.weight.toFixed(1)) : item.weight}%</Text>
                                                     </TouchableOpacity>
                                                 )
                                             )}
@@ -652,7 +652,7 @@ export default function NameInputScreen({ route, navigation }) {
                                     {role === 'participant' && isPeopleTab && (
                                         <View style={{ minWidth: 65, alignItems: 'flex-end' }}>
                                             <Text style={{ color: Colors.secondary, fontSize: 16, fontWeight: 'bold', marginRight: 10 }}>
-                                                {typeof item.weight === 'number' ? item.weight.toFixed(1) : item.weight}%
+                                                {typeof item.weight === 'number' ? Number(item.weight.toFixed(1)) : item.weight}%
                                             </Text>
                                         </View>
                                     )}
@@ -676,7 +676,7 @@ export default function NameInputScreen({ route, navigation }) {
                                     fontSize: 14,
                                     fontWeight: 'bold'
                                 }}>
-                                    {participants.reduce((sum, p) => sum + (p.weight || 0), 0).toFixed(1)}%
+                                    {Number(participants.reduce((sum, p) => sum + (p.weight || 0), 0).toFixed(1))}%
                                 </Text>
                             </View>
                         ) : null}
