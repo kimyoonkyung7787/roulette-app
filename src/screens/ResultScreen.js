@@ -6,7 +6,7 @@ import { Colors } from '../theme/colors';
 import { CyberBackground } from '../components/CyberBackground';
 import { feedbackService } from '../services/FeedbackService';
 import { historyService } from '../services/HistoryService';
-import { Trophy, RefreshCw, Home, Users, Loader, Power, History, LogOut, X } from 'lucide-react-native';
+import { Trophy, RefreshCw, Home, ListChecks, Loader, Power, History, LogOut, X } from 'lucide-react-native';
 import { syncService } from '../services/SyncService';
 
 export default function ResultScreen({ route, navigation }) {
@@ -107,7 +107,7 @@ export default function ResultScreen({ route, navigation }) {
 
                             <View style={{ flexDirection: 'row', gap: 10, alignItems: 'center' }}>
                                 <TouchableOpacity onPress={() => setShowUsersModal(true)} style={{ padding: 8 }}>
-                                    <Users color={Colors.success} size={24} />
+                                    <ListChecks color={Colors.success} size={24} />
                                 </TouchableOpacity>
                                 <TouchableOpacity onPress={() => navigation.navigate('History')} style={{ padding: 8 }}>
                                     <History color={Colors.primary} size={24} />

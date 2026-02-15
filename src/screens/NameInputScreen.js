@@ -712,7 +712,7 @@ export default function NameInputScreen({ route, navigation }) {
                                         elevation: 8
                                     }}
                                 >
-                                    <Users color={Colors.primary} size={20} style={{ marginRight: 8 }} />
+                                    <ListChecks color={Colors.primary} size={20} style={{ marginRight: 8 }} />
                                     <NeonText className="text-lg" style={{ color: Colors.primary }}>PEOPLE</NeonText>
                                 </TouchableOpacity>
 
