@@ -31,6 +31,7 @@ export default function RouletteScreen({ route, navigation }) {
     const isNavigating = useRef(false);
     const isFocused = useIsFocused();
     const lastTickIndex = useSharedValue(-1);
+    const isInitiator = useRef(false);
 
     // Initial Rotation Effect for Voted Item
     useEffect(() => {
@@ -87,16 +88,19 @@ export default function RouletteScreen({ route, navigation }) {
             });
 
             // Subscribe to spin target (people or menu)
+            const initialTarget = await syncService.getSpinTarget();
+            if (initialTarget) setSpinTarget(initialTarget);
+
             syncService.subscribeToSpinTarget(target => {
-                setSpinTarget(target);
+                if (target) setSpinTarget(target);
             });
 
             // Subscribe to spin state from others
             unsubSpin = syncService.subscribeToSpinState(state => {
                 setRemoteSpinState(state);
-                if (state?.isSpinning && state.starter !== mySelectedName && !spinning) {
-                    console.log('RouletteScreen: Remote spin detected');
-                } else if (state && !state.isSpinning) {
+
+                // FIXED: Each person spins their own wheel. No forced global sync.
+                if (state && !state.isSpinning) {
                     setSpinning(false);
                 }
             });
@@ -144,12 +148,18 @@ export default function RouletteScreen({ route, navigation }) {
     useEffect(() => {
         if (!isFocused || spinning || isNavigating.current || votes.length === 0) return;
 
+        // Determine expected voter count based on mode
+        const expectedVoterCount = spinTarget === 'people'
+            ? participantsState.length
+            : onlineUsers.length;
+
         // AUTO-FINALIZE: When all registered participants have voted
-        if (votes.length >= participantsState.length && participantsState.length > 0) {
-            console.log(`RouletteScreen: All participants voted (${votes.length}/${participantsState.length}). Finalizing...`);
+        // Works for both spin and "Pick Now" scenarios
+        if (votes.length >= expectedVoterCount && expectedVoterCount > 0) {
+            console.log(`RouletteScreen: All ${expectedVoterCount} participants voted (${spinTarget} mode). Finalizing...`);
             processFinalResult(false);
         }
-    }, [votes, currentList, spinning]);
+    }, [votes, currentList, spinning, remoteSpinState, spinTarget, onlineUsers]);
 
     const processFinalResult = async (isManualForce = false) => {
         if (isNavigating.current) return;
@@ -227,10 +237,8 @@ export default function RouletteScreen({ route, navigation }) {
 
     const onSpinFinished = async (finalRotation) => {
         const normalizedRotation = (finalRotation % 360 + 360) % 360;
-        // The pointer is at the TOP.
         const winningAngle = (360 - normalizedRotation) % 360;
 
-        // Find winner based on weighted sections
         let cumulativeAngle = 0;
         let winningIndex = 0;
 
@@ -249,13 +257,18 @@ export default function RouletteScreen({ route, navigation }) {
         const winner = typeof currentList[winningIndex] === 'object' ? currentList[winningIndex].name : currentList[winningIndex];
 
         console.log(`Spin Finished - Winner: ${winner}`);
-        console.log(`My name: ${mySelectedName}, Voting for: ${winner}`);
 
-        // Submit my result as a vote/result
-        await syncService.submitVote(winner);
-        await syncService.finishSpin(winner);
+        // Only submit vote if I AM the one who started this spin
+        // Using ref isInitiator for reliability over synced state
+        if (isInitiator.current) {
+            await syncService.submitVote(winner);
 
-        // Crucial: Set local spinning to false so processFinalResult can trigger
+            // Finalize global spin state so others see the spin is done
+            await syncService.finishSpin(winner);
+
+            isInitiator.current = false;
+        }
+
         setSpinning(false);
     };
 
@@ -285,34 +298,38 @@ export default function RouletteScreen({ route, navigation }) {
         }
     );
 
-    const startSpinAnimation = (shouldSyncStart = true) => {
+    const startSpinAnimation = (shouldSyncStart = true, fixedWinnerIndex = null) => {
         if (spinning) return;
 
         setSpinning(true);
+        isInitiator.current = shouldSyncStart;
         lastTickIndex.value = -1;
-
-        if (shouldSyncStart) {
-            syncService.startSpin(mySelectedName || 'Unknown User');
-        }
 
         feedbackService.playStart();
 
-        // 1. Select a winner based on weights
-        let random = Math.random() * 100;
-        let winnerIndex = -1;
-        let accumulatedWeight = 0;
+        // 1. Select a winner index (either random or fixed from remote)
+        let winnerIndex = fixedWinnerIndex;
 
-        for (let i = 0; i < currentList.length; i++) {
-            const p = currentList[i];
-            const weight = typeof p === 'object' ? p.weight : (100 / currentList.length);
-            accumulatedWeight += weight;
-            if (random <= accumulatedWeight) {
-                winnerIndex = i;
-                break;
+        if (winnerIndex === null) {
+            let random = Math.random() * 100;
+            let accumulatedWeight = 0;
+
+            for (let i = 0; i < currentList.length; i++) {
+                const p = currentList[i];
+                const weight = typeof p === 'object' ? p.weight : (100 / currentList.length);
+                accumulatedWeight += weight;
+                if (random <= accumulatedWeight) {
+                    winnerIndex = i;
+                    break;
+                }
             }
+            if (winnerIndex === -1 || winnerIndex === null) winnerIndex = currentList.length - 1;
         }
 
-        if (winnerIndex === -1) winnerIndex = currentList.length - 1;
+        // 2. Sync start if I am the starter
+        if (shouldSyncStart) {
+            syncService.startSpin(mySelectedName || 'Unknown User', winnerIndex, role);
+        }
 
         // 2. Calculate the center angle of the winner's segment
         // Calculate start angle of the winner
@@ -385,64 +402,179 @@ export default function RouletteScreen({ route, navigation }) {
     const renderSections = () => {
         if (currentList.length === 0) return null;
 
-        let cumulativeAngle = 0;
-        return currentList.map((p, i) => {
-            const name = typeof p === 'object' ? p.name : p;
-            const weight = typeof p === 'object' ? p.weight : (100 / currentList.length);
-            const angle = (weight / 100) * 360;
+        // Repeat the pattern 3 times for more dynamic visual
+        const REPEAT_COUNT = 3;
+        const sections = [];
 
-            const startAngle = cumulativeAngle;
-            const endAngle = cumulativeAngle + angle;
-            cumulativeAngle += angle;
+        for (let repeat = 0; repeat < REPEAT_COUNT; repeat++) {
+            let cumulativeAngle = (360 / REPEAT_COUNT) * repeat; // Start angle for this repetition
 
-            const radStart = (startAngle - 90) * (Math.PI / 180);
-            const radEnd = (endAngle - 90) * (Math.PI / 180);
+            currentList.forEach((p, i) => {
+                const name = typeof p === 'object' ? p.name : p;
+                const weight = typeof p === 'object' ? p.weight : (100 / currentList.length);
+                // Divide angle by REPEAT_COUNT since we're repeating the pattern
+                const angle = (weight / 100) * (360 / REPEAT_COUNT);
 
-            const x1 = ROULETTE_SIZE / 2 + (ROULETTE_SIZE / 2) * Math.cos(radStart);
-            const y1 = ROULETTE_SIZE / 2 + (ROULETTE_SIZE / 2) * Math.sin(radStart);
-            const x2 = ROULETTE_SIZE / 2 + (ROULETTE_SIZE / 2) * Math.cos(radEnd);
-            const y2 = ROULETTE_SIZE / 2 + (ROULETTE_SIZE / 2) * Math.sin(radEnd);
+                const startAngle = cumulativeAngle;
+                const endAngle = cumulativeAngle + angle;
+                cumulativeAngle += angle;
 
-            const largeArcFlag = angle > 180 ? 1 : 0;
-            const d = `M ${ROULETTE_SIZE / 2} ${ROULETTE_SIZE / 2} L ${x1} ${y1} A ${ROULETTE_SIZE / 2} ${ROULETTE_SIZE / 2} 0 ${largeArcFlag} 1 ${x2} ${y2} Z`;
+                const radStart = (startAngle - 90) * (Math.PI / 180);
+                const radEnd = (endAngle - 90) * (Math.PI / 180);
 
-            const color = i % 2 === 0 ? (spinTarget === 'people' ? 'rgba(0, 255, 255, 0.1)' : 'rgba(255, 0, 255, 0.1)') : (spinTarget === 'people' ? 'rgba(255, 0, 255, 0.1)' : 'rgba(0, 255, 255, 0.1)');
-            const strokeColor = i % 2 === 0 ? (spinTarget === 'people' ? Colors.primary : Colors.secondary) : (spinTarget === 'people' ? Colors.secondary : Colors.primary);
+                const x1 = ROULETTE_SIZE / 2 + (ROULETTE_SIZE / 2) * Math.cos(radStart);
+                const y1 = ROULETTE_SIZE / 2 + (ROULETTE_SIZE / 2) * Math.sin(radStart);
+                const x2 = ROULETTE_SIZE / 2 + (ROULETTE_SIZE / 2) * Math.cos(radEnd);
+                const y2 = ROULETTE_SIZE / 2 + (ROULETTE_SIZE / 2) * Math.sin(radEnd);
 
-            return (
-                <G key={i}>
-                    <Path d={d} fill={color} stroke={strokeColor} strokeWidth="1.5" />
-                    <SvgText
-                        x={ROULETTE_SIZE / 2 + (ROULETTE_SIZE * 0.35) * Math.cos((startAngle + angle / 2 - 90) * (Math.PI / 180))}
-                        y={ROULETTE_SIZE / 2 + (ROULETTE_SIZE * 0.35) * Math.sin((startAngle + angle / 2 - 90) * (Math.PI / 180))}
-                        fill="white"
-                        fontSize={currentList.length > 8 ? "10" : "14"}
-                        fontWeight="bold"
-                        textAnchor="middle"
-                        alignmentBaseline="middle"
-                        transform={`rotate(${startAngle + angle / 2}, ${ROULETTE_SIZE / 2 + (ROULETTE_SIZE * 0.35) * Math.cos((startAngle + angle / 2 - 90) * (Math.PI / 180))}, ${ROULETTE_SIZE / 2 + (ROULETTE_SIZE * 0.35) * Math.sin((startAngle + angle / 2 - 90) * (Math.PI / 180))})`}
-                    >
-                        {name}
-                    </SvgText>
-                </G>
-            );
-        });
+                const largeArcFlag = angle > 180 ? 1 : 0;
+                const d = `M ${ROULETTE_SIZE / 2} ${ROULETTE_SIZE / 2} L ${x1} ${y1} A ${ROULETTE_SIZE / 2} ${ROULETTE_SIZE / 2} 0 ${largeArcFlag} 1 ${x2} ${y2} Z`;
+
+                // Dynamic Neon Generation using HSL
+                const totalItems = currentList.length;
+                const totalSegments = totalItems * REPEAT_COUNT;
+
+                // Segment thickness in pixels at the outer edge (approx)
+                const segmentArcLength = (2 * Math.PI * (ROULETTE_SIZE / 2)) / totalSegments;
+
+                // Dynamic font size calculation
+                // Base size is 12, but we scale it down if the segment is too narrow or text is long
+                let calculatedFontSize = Math.min(12, segmentArcLength * 0.75);
+                if (name.length > 8) calculatedFontSize *= 0.9;
+                if (name.length > 12) calculatedFontSize *= 0.8;
+                calculatedFontSize = Math.max(7.5, calculatedFontSize); // Minimum readable size
+
+                let hue;
+                if (spinTarget === 'people') {
+                    hue = (180 + (i * (140 / Math.max(1, totalItems - 1)))) % 360;
+                } else {
+                    hue = (330 + (i * (200 / Math.max(1, totalItems - 1)))) % 360;
+                }
+
+                const color = `hsla(${hue}, 80%, 15%, 0.9)`; // Deeper, more solid dark base
+                const strokeColor = `hsl(${hue}, 100%, 70%)`; // Slightly brighter neon edge
+
+                // Perfect Radial Inward Style (Reference Image Style)
+                // Text stands vertically (radially) and grows from border towards center
+                const textAngle = startAngle + angle / 2;
+
+                // Rotates text 90 degrees relative to the arc to point at the center center
+                const finalRotation = textAngle + 90;
+
+                // Position at the outer edge (0.465)
+                const textDist = 0.465;
+                const tx = ROULETTE_SIZE / 2 + (ROULETTE_SIZE * textDist) * Math.cos((textAngle - 90) * (Math.PI / 180));
+                const ty = ROULETTE_SIZE / 2 + (ROULETTE_SIZE * textDist) * Math.sin((textAngle - 90) * (Math.PI / 180));
+
+                sections.push(
+                    <G key={`${repeat}-${i}`}>
+                        <Path
+                            d={d}
+                            fill={color}
+                            stroke={strokeColor}
+                            strokeWidth="0.4"
+                            strokeLinejoin="round"
+                        />
+                        <SvgText
+                            x={tx}
+                            y={ty}
+                            fill="white"
+                            fontSize={calculatedFontSize.toFixed(1)}
+                            fontWeight="900"
+                            textAnchor="start" // Starts at border, grows towards center
+                            alignmentBaseline="middle"
+                            opacity={0.95}
+                            transform={`rotate(${finalRotation}, ${tx}, ${ty})`}
+                            letterSpacing={0.5}
+                        >
+                            {name.toUpperCase()}
+                        </SvgText>
+                    </G>
+                );
+            });
+        }
+
+        return sections;
     };
 
-    const getButtonText = () => {
-        const hasVoted = votes.some(v => v.userId === syncService.myId);
+    const renderCenterPiece = () => (
+        <G>
+            {/* Outer Ring Glow */}
+            <Circle
+                cx={ROULETTE_SIZE / 2}
+                cy={ROULETTE_SIZE / 2}
+                r={26}
+                fill="transparent"
+                stroke={Colors.primary}
+                strokeWidth="0.3"
+                opacity={0.4}
+            />
+            {/* Main Core Base */}
+            <Circle
+                cx={ROULETTE_SIZE / 2}
+                cy={ROULETTE_SIZE / 2}
+                r={22}
+                fill={Colors.background}
+                stroke={Colors.primary}
+                strokeWidth="1.5"
+            />
+            {/* Inner Glass Glow Layer */}
+            <Circle
+                cx={ROULETTE_SIZE / 2}
+                cy={ROULETTE_SIZE / 2}
+                r={18}
+                fill="rgba(0, 255, 255, 0.08)"
+            />
+            {/* Spinning Indicator SVG Path (Arrows) */}
+            <Path
+                d={`M ${ROULETTE_SIZE / 2 - 7} ${ROULETTE_SIZE / 2} A 7 7 0 0 1 ${ROULETTE_SIZE / 2 + 7} ${ROULETTE_SIZE / 2}`}
+                fill="none"
+                stroke={Colors.primary}
+                strokeWidth="2.5"
+                strokeLinecap="round"
+            />
+            <Path
+                d={`M ${ROULETTE_SIZE / 2 + 5} ${ROULETTE_SIZE / 2 - 3} L ${ROULETTE_SIZE / 2 + 7} ${ROULETTE_SIZE / 2} L ${ROULETTE_SIZE / 2 + 10} ${ROULETTE_SIZE / 2 - 3}`}
+                fill="none"
+                stroke={Colors.primary}
+                strokeWidth="2.5"
+                strokeLinecap="round"
+            />
+            <SvgText
+                x={ROULETTE_SIZE / 2}
+                y={ROULETTE_SIZE / 2 + 13}
+                fill={Colors.accent}
+                fontSize="8"
+                fontWeight="900"
+                textAnchor="middle"
+                letterSpacing={2}
+            >
+                SPIN
+            </SvgText>
+        </G>
+    );
 
+    const getButtonText = () => {
         // Only show remote spinner if they are actually online
         const isRemoteSpinning = remoteSpinState?.isSpinning &&
             remoteSpinState.starter !== mySelectedName &&
             onlineUsers.some(u => u.name === remoteSpinState.starter);
 
         if (isRemoteSpinning) {
-            return `${remoteSpinState.starter}님이 돌리는 중...`;
+            return `${remoteSpinState.starter} IS SPINNING...`;
         }
 
-        if (hasVoted || votedItem) return 'VOTED! WAITING...';
-        return spinning ? 'SPINNING...' : 'EXECUTE';
+        if (spinning) return 'SPINNING...';
+
+        const myVote = votes.find(v => v.userId === syncService.myId);
+
+        // If I have voted, show appropriate status
+        if (myVote) return 'WAITING FOR OTHERS...';
+
+        const allVoted = votes.length >= participantsState.length && participantsState.length > 0;
+        if (allVoted) return 'READY! SPIN NOW';
+
+        return 'EXECUTE';
     };
 
     return (
@@ -462,7 +594,7 @@ export default function RouletteScreen({ route, navigation }) {
                             shadowRadius: 5
                         }}>
                             <Text style={{ color: Colors.primary, fontSize: 12, fontWeight: '900', letterSpacing: 1 }}>#ROOM: {(roomId || '').toUpperCase()}</Text>
-                            <Text style={{ color: Colors.secondary, fontSize: 11, fontWeight: 'bold', marginTop: 2, letterSpacing: 0.5 }}>IDENT: {(mySelectedName || role || 'UNKNOWN').toUpperCase()}</Text>
+                            <Text style={{ color: Colors.secondary, fontSize: 11, fontWeight: 'bold', marginTop: 2, letterSpacing: 0.5 }}>PLAYER: {(mySelectedName || (role === 'owner' ? 'HOST' : role) || 'UNKNOWN').toUpperCase()}</Text>
                         </View>
 
                         <View style={{ flexDirection: 'row', gap: 8, alignItems: 'center' }}>
@@ -472,7 +604,7 @@ export default function RouletteScreen({ route, navigation }) {
                             <TouchableOpacity onPress={() => navigation.navigate('History')} style={{ padding: 6 }}>
                                 <History color={Colors.primary} size={24} />
                             </TouchableOpacity>
-                            {['meal', 'coffee', 'snack'].includes(category) && (
+                            {['meal', 'coffee', 'snack'].includes(category) && spinTarget === 'menu' && (
                                 <TouchableOpacity
                                     onPress={async () => {
                                         await syncService.removeMyVote();
@@ -480,7 +612,8 @@ export default function RouletteScreen({ route, navigation }) {
                                             roomId,
                                             role,
                                             category,
-                                            resetSelection: true
+                                            resetSelection: true,
+                                            initialTab: spinTarget // 현재 룰렛 타입(people/menu)을 전달
                                         });
                                     }}
                                     style={{ padding: 6 }}
@@ -504,38 +637,62 @@ export default function RouletteScreen({ route, navigation }) {
 
 
                     <View style={styles.wheelContainer}>
-                        <View style={styles.wheelGlow} />
+                        <View style={[styles.wheelGlow, { backgroundColor: spinTarget === 'people' ? Colors.primary : Colors.secondary }]} />
                         <Animated.View style={[animatedStyle, { width: ROULETTE_SIZE, height: ROULETTE_SIZE }]}>
                             <Svg width={ROULETTE_SIZE} height={ROULETTE_SIZE}>
                                 <Defs>
-                                    <RadialGradient id="grad" cx="50%" cy="50%" r="50%">
-                                        <Stop offset="0%" stopColor={Colors.primary} stopOpacity="0.3" />
+                                    <RadialGradient id="innerGlow" cx="50%" cy="50%" r="50%">
+                                        <Stop offset="0%" stopColor={spinTarget === 'people' ? Colors.primary : Colors.secondary} stopOpacity="0.2" />
                                         <Stop offset="100%" stopColor="transparent" stopOpacity="0" />
                                     </RadialGradient>
                                 </Defs>
-                                <Circle cx={ROULETTE_SIZE / 2} cy={ROULETTE_SIZE / 2} r={ROULETTE_SIZE / 2} fill="rgba(255,255,255,0.02)" />
+                                {/* Base Shadow */}
+                                <Circle cx={ROULETTE_SIZE / 2} cy={ROULETTE_SIZE / 2} r={ROULETTE_SIZE / 2} fill="#000" />
+
+                                {/* Sections */}
                                 {renderSections()}
-                                <Circle cx={ROULETTE_SIZE / 2} cy={ROULETTE_SIZE / 2} r={ROULETTE_SIZE / 2} fill="url(#grad)" pointerEvents="none" />
-                                <Circle cx={ROULETTE_SIZE / 2} cy={ROULETTE_SIZE / 2} r={15} fill={Colors.background} stroke={Colors.primary} strokeWidth={2} />
+
+                                {/* Glass Shine Overlay */}
+                                <Circle
+                                    cx={ROULETTE_SIZE / 2}
+                                    cy={ROULETTE_SIZE / 2}
+                                    r={ROULETTE_SIZE / 2}
+                                    fill="url(#innerGlow)"
+                                    pointerEvents="none"
+                                />
+
+                                {/* Outer Border Ring */}
+                                <Circle
+                                    cx={ROULETTE_SIZE / 2}
+                                    cy={ROULETTE_SIZE / 2}
+                                    r={ROULETTE_SIZE / 2 - 1}
+                                    fill="transparent"
+                                    stroke={Colors.primary}
+                                    strokeWidth="1"
+                                    pointerEvents="none"
+                                />
+
+                                {/* Center Core Piece */}
+                                {renderCenterPiece()}
                             </Svg>
                         </Animated.View>
                         <View style={styles.pointerContainer}>
-                            <View style={styles.pointer} />
-                            <View style={styles.pointerOuterGlow} />
+                            <View style={[styles.pointer, { borderTopColor: Colors.accent }]} />
+                            <View style={[styles.pointerOuterGlow, { backgroundColor: Colors.accent, opacity: 0.3 }]} />
                         </View>
                     </View>
 
                     <View style={styles.footer}>
                         <TouchableOpacity
                             onPress={spinRoulette}
-                            disabled={!!(spinning || (remoteSpinState?.isSpinning && remoteSpinState.starter !== mySelectedName && onlineUsers.some(u => u.name === remoteSpinState.starter)) || votes.some(v => v.userId === syncService.myId) || votedItem)}
+                            disabled={!!(spinning || votes.find(v => v.userId === syncService.myId))}
                             activeOpacity={0.8}
                             style={[
                                 styles.spinButton,
-                                (spinning || (remoteSpinState?.isSpinning && remoteSpinState.starter !== mySelectedName && onlineUsers.some(u => u.name === remoteSpinState.starter)) || votes.some(v => v.userId === syncService.myId) || votedItem) && styles.disabledButton
+                                (spinning || votes.find(v => v.userId === syncService.myId)) && styles.disabledButton
                             ]}
                         >
-                            <RotateCw color={spinning || votes.some(v => v.userId === syncService.myId) ? Colors.textSecondary : Colors.primary} size={24} style={{ marginRight: 12 }} />
+                            <RotateCw color={spinning || votes.find(v => v.userId === syncService.myId) ? Colors.textSecondary : Colors.primary} size={24} style={{ marginRight: 12 }} />
                             <NeonText className="text-xl">
                                 {getButtonText()}
                             </NeonText>
@@ -550,14 +707,14 @@ export default function RouletteScreen({ route, navigation }) {
                                     paddingVertical: 12,
                                     paddingHorizontal: 20,
                                     borderWidth: 1,
-                                    borderColor: Colors.secondary,
+                                    borderColor: Colors.error,
                                     borderRadius: 12,
-                                    backgroundColor: 'rgba(255, 0, 255, 0.05)',
+                                    backgroundColor: 'rgba(255, 49, 49, 0.05)',
                                     alignItems: 'center',
                                     width: '100%'
                                 }}
                             >
-                                <Text style={{ color: Colors.secondary, fontSize: 13, fontWeight: 'bold', letterSpacing: 1 }}>⚡ Force result to date</Text>
+                                <Text style={{ color: Colors.error, fontSize: 13, fontWeight: 'bold', letterSpacing: 1 }}>⚡ FORCE RESULT (HOST)</Text>
                             </TouchableOpacity>
                         )}
 
@@ -574,7 +731,7 @@ export default function RouletteScreen({ route, navigation }) {
                     <View style={styles.modalOverlay}>
                         <View style={styles.modalContent}>
                             <View style={styles.modalHeader}>
-                                <Text style={styles.modalTitle}>ACTIVE NODES</Text>
+                                <Text style={styles.modalTitle}>PARTICIPANT STATUS</Text>
                                 <TouchableOpacity onPress={() => setShowUsersModal(false)}>
                                     <X color={Colors.primary} size={24} />
                                 </TouchableOpacity>
@@ -595,26 +752,26 @@ export default function RouletteScreen({ route, navigation }) {
                                             <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center' }}>
                                                 <View style={[styles.userStatusDot, { backgroundColor: userVote ? Colors.success : Colors.primary }]} />
                                                 <Text style={styles.userName}>
-                                                    {user.name} {user.id === syncService.myId ? '(ME)' : ''}
+                                                    {user.name} {user.id === syncService.myId ? <Text style={{ fontSize: 11 }}> (ME)</Text> : ''}
                                                 </Text>
                                             </View>
                                             <View style={{ backgroundColor: 'rgba(255,255,255,0.05)', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 6, borderWidth: 1, borderColor: userVote ? 'rgba(57, 255, 20, 0.2)' : 'rgba(255,255,255,0.1)' }}>
                                                 <Text style={{ color: userVote ? Colors.success : 'rgba(255,255,255,0.3)', fontSize: 12, fontWeight: 'bold' }}>
-                                                    {userVote ? userVote.votedFor : 'SPINNING...'}
+                                                    {userVote ? userVote.votedFor : 'WAITING...'}
                                                 </Text>
                                             </View>
                                         </View>
                                     );
                                 })}
                                 {onlineUsers.length === 0 && (
-                                    <Text style={{ color: 'rgba(255,255,255,0.5)', textAlign: 'center', marginVertical: 20 }}>NO ACTIVE NODES DETECTED</Text>
+                                    <Text style={{ color: 'rgba(255,255,255,0.5)', textAlign: 'center', marginVertical: 20 }}>NO PARTICIPANTS DETECTED</Text>
                                 )}
                             </ScrollView>
                         </View>
                     </View>
                 </Modal>
             </SafeAreaView>
-        </CyberBackground>
+        </CyberBackground >
     );
 }
 
@@ -689,8 +846,8 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         borderWidth: 2,
         borderColor: Colors.primary,
-        paddingVertical: 18,
-        borderRadius: 16,
+        paddingVertical: 12,
+        borderRadius: 12,
         backgroundColor: 'rgba(255,255,255,0.02)',
         shadowColor: Colors.primary,
         shadowOpacity: 0.3,

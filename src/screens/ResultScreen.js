@@ -1,12 +1,12 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { View, TouchableOpacity, StyleSheet, Text, Modal, ScrollView } from 'react-native';
+import { View, TouchableOpacity, StyleSheet, Text, Modal, ScrollView, Share } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { NeonText } from '../components/NeonText';
 import { Colors } from '../theme/colors';
 import { CyberBackground } from '../components/CyberBackground';
 import { feedbackService } from '../services/FeedbackService';
 import { historyService } from '../services/HistoryService';
-import { Trophy, RefreshCw, Home, ListChecks, Loader, Power, History, LogOut, X } from 'lucide-react-native';
+import { Trophy, RefreshCw, Home, ListChecks, Loader, Power, History, LogOut, X, Share2 } from 'lucide-react-native';
 import { syncService } from '../services/SyncService';
 
 export default function ResultScreen({ route, navigation }) {
@@ -27,7 +27,29 @@ export default function ResultScreen({ route, navigation }) {
         if (votingComplete && !hasSavedRef.current) {
             // Need at least some vote info to save meaningful details
             if (finalVotes && finalVotes.length > 0) {
-                feedbackService.playSuccess();
+                // Always play fanfare when results are ready
+                console.log('🎺 ResultScreen: Attempting to play fanfare...');
+
+                // Ensure audio is loaded before playing
+                const playFanfareWithLoading = async () => {
+                    console.log('🎺 playFanfareWithLoading: Starting...');
+                    console.log('🎺 playFanfareWithLoading: isLoaded =', feedbackService.isLoaded);
+
+                    if (!feedbackService.isLoaded) {
+                        console.log('🎺 playFanfareWithLoading: Audio not loaded yet, loading now...');
+                        await feedbackService.loadAssets();
+                        console.log('🎺 playFanfareWithLoading: loadAssets completed');
+                        console.log('🎺 playFanfareWithLoading: isLoaded after loading =', feedbackService.isLoaded);
+                    }
+
+                    console.log('🎺 playFanfareWithLoading: About to call playFanfare...');
+                    await feedbackService.playFanfare();
+                    console.log('🎺 playFanfareWithLoading: playFanfare completed');
+                };
+
+                playFanfareWithLoading()
+                    .then(() => console.log('🎺 ResultScreen: Fanfare played successfully!'))
+                    .catch(err => console.error('🎺 ResultScreen: Fanfare failed:', err));
 
                 // Construct details: prefer onlineUsers for complete list, fallback to finalVotes
                 let details = [];
@@ -66,7 +88,7 @@ export default function ResultScreen({ route, navigation }) {
                 // If final results are cleared, return to lobby (unified reset)
                 if (!finalData) {
                     console.log('ResultScreen: Final results cleared, returning to lobby');
-                    navigation.navigate('NameInput', { roomId, role, category });
+                    navigation.navigate('NameInput', { roomId, role, category, initialTab: type });
                 }
             });
         }
@@ -85,12 +107,13 @@ export default function ResultScreen({ route, navigation }) {
     }, []);
 
     const handleReset = async () => {
-        console.log('ResultScreen: Owner resetting game (preserving votes)...');
+        console.log(`ResultScreen: Owner resetting game (preserving type: ${type})...`);
         await syncService.setRoomPhase('waiting');
         await syncService.clearSpinState();
         await syncService.clearFinalResults();
-        // Navigation to NameInput
-        navigation.navigate('NameInput', { roomId, role, category });
+
+        // Navigation to NameInput with type to restore correct tab
+        navigation.navigate('NameInput', { roomId, role, category, initialTab: type });
     };
 
     const handleReturnToBase = async () => {
@@ -98,7 +121,21 @@ export default function ResultScreen({ route, navigation }) {
         await syncService.setRoomPhase('waiting');
         await syncService.clearSpinState();
         await syncService.clearFinalResults();
-        navigation.navigate('NameInput', { roomId, role, category });
+        navigation.navigate('NameInput', { roomId, role, category, initialTab: type });
+    };
+
+    const handleShare = async () => {
+        try {
+            const shareTitle = `🎰 룰렛 결과: ${winner}`;
+            const message = `[Gourmet Selection - 룰렛 결과]\n\n🏆 당첨: ${winner}\n📍 방 번호: ${roomId.toUpperCase()}\n\n우리 같이 정한 결과예요! 확인해 보세요! ✨`;
+
+            await Share.share({
+                title: shareTitle,
+                message: message,
+            });
+        } catch (error) {
+            console.error('ResultScreen: Sharing failed', error);
+        }
     };
 
     return (
@@ -122,6 +159,9 @@ export default function ResultScreen({ route, navigation }) {
                             </View>
 
                             <View style={{ flexDirection: 'row', gap: 10, alignItems: 'center' }}>
+                                <TouchableOpacity onPress={handleShare} style={{ padding: 8 }}>
+                                    <Share2 color={Colors.accent} size={24} />
+                                </TouchableOpacity>
                                 <TouchableOpacity onPress={() => setShowUsersModal(true)} style={{ padding: 8 }}>
                                     <ListChecks color={Colors.success} size={24} />
                                 </TouchableOpacity>
@@ -163,7 +203,7 @@ export default function ResultScreen({ route, navigation }) {
                                         fontSize: winner.length > 20 ? 28 : (winner.length > 10 ? 36 : 56),
                                         textAlign: 'center',
                                         lineHeight: winner.length > 20 ? 34 : (winner.length > 10 ? 42 : 64),
-                                        color: isTie ? Colors.primary : Colors.secondary
+                                        color: Colors.primary
                                     }}
                                 >
                                     {winner}
@@ -226,7 +266,7 @@ export default function ResultScreen({ route, navigation }) {
                     <View style={styles.modalOverlay}>
                         <View style={styles.modalContent}>
                             <View style={styles.modalHeader}>
-                                <Text style={styles.modalTitle}>ACTIVE NODES</Text>
+                                <Text style={styles.modalTitle}>PARTICIPANT STATUS</Text>
                                 <TouchableOpacity onPress={() => setShowUsersModal(false)}>
                                     <X color={Colors.primary} size={24} />
                                 </TouchableOpacity>
@@ -244,7 +284,7 @@ export default function ResultScreen({ route, navigation }) {
                                             <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center' }}>
                                                 <View style={[styles.userStatusDot, { backgroundColor: userVote ? Colors.success : Colors.primary }]} />
                                                 <Text style={styles.userName}>
-                                                    {user.name} {user.id === syncService.myId ? '(ME)' : ''}
+                                                    {user.name} {user.id === syncService.myId ? <Text style={{ fontSize: 10 }}> (ME)</Text> : ''}
                                                 </Text>
                                             </View>
                                             <View style={{ backgroundColor: 'rgba(255,255,255,0.05)', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 6, borderWidth: 1, borderColor: userVote ? 'rgba(57, 255, 20, 0.2)' : 'rgba(255,255,255,0.1)' }}>
@@ -256,7 +296,7 @@ export default function ResultScreen({ route, navigation }) {
                                     );
                                 })}
                                 {onlineUsers.length === 0 && (
-                                    <Text style={{ color: 'rgba(255,255,255,0.5)', textAlign: 'center', marginVertical: 20 }}>NO ACTIVE NODES DETECTED</Text>
+                                    <Text style={{ color: 'rgba(255,255,255,0.5)', textAlign: 'center', marginVertical: 20 }}>NO PARTICIPANTS DETECTED</Text>
                                 )}
                             </ScrollView>
                         </View>
@@ -398,7 +438,7 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         borderWidth: 1,
         borderColor: Colors.primary,
-        paddingVertical: 14,
+        paddingVertical: 12,
         borderRadius: 12,
         backgroundColor: 'rgba(255, 255, 255, 0.02)',
     },
@@ -415,7 +455,7 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         borderWidth: 1,
         borderColor: 'rgba(255, 255, 255, 0.1)',
-        paddingVertical: 14,
+        paddingVertical: 12,
         borderRadius: 12,
         backgroundColor: 'rgba(255, 255, 255, 0.02)',
     },
@@ -428,7 +468,7 @@ const styles = StyleSheet.create({
         borderWidth: 1,
         borderColor: Colors.error,
         borderRadius: 12,
-        paddingVertical: 14,
+        paddingVertical: 12,
         paddingHorizontal: 20,
         backgroundColor: 'rgba(255, 49, 49, 0.05)',
         marginTop: 20,

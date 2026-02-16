@@ -34,18 +34,18 @@ export default function HistoryScreen({ navigation }) {
                 <View style={{ flex: 1 }}>
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 4 }}>
                         <View style={{
-                            backgroundColor: item.type === 'menu' ? `${Colors.secondary}20` : `${Colors.primary}20`,
+                            backgroundColor: `${Colors.accent}20`,
                             paddingHorizontal: 6,
                             paddingVertical: 1,
                             borderRadius: 3,
                             borderWidth: 0.5,
-                            borderColor: item.type === 'menu' ? Colors.secondary : Colors.primary
+                            borderColor: Colors.accent
                         }}>
-                            <Text style={{ color: item.type === 'menu' ? Colors.secondary : Colors.primary, fontSize: 8, fontWeight: 'bold' }}>
+                            <Text style={{ color: Colors.accent, fontSize: 8, fontWeight: 'bold' }}>
                                 {item.type === 'menu' ? 'MENU' : 'PEOPLE'}
                             </Text>
                         </View>
-                        <NeonText className="text-xl" color={item.type === 'menu' ? Colors.secondary : Colors.primary}>{item.name}</NeonText>
+                        <NeonText className="text-xl" color={Colors.accent}>{item.name}</NeonText>
                     </View>
                     <Text style={styles.timeText}>{dateString} {timeString}</Text>
 
@@ -56,7 +56,7 @@ export default function HistoryScreen({ navigation }) {
                             {item.details.map((detail, idx) => (
                                 <View key={idx} style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 2 }}>
                                     <Text style={{ color: detail.isMe ? Colors.success : 'rgba(255,255,255,0.7)', fontSize: 11 }}>
-                                        {detail.name} {detail.isMe ? '(ME)' : ''}
+                                        {detail.name} {detail.isMe ? <Text style={{ fontSize: 8 }}> (ME)</Text> : ''}
                                     </Text>
                                     <Text style={{ color: Colors.secondary, fontSize: 11, fontWeight: 'bold' }}>
                                         {detail.votedFor}
@@ -66,8 +66,8 @@ export default function HistoryScreen({ navigation }) {
                         </View>
                     )}
                 </View>
-                <View style={[styles.statusBadge, { borderColor: item.type === 'menu' ? Colors.secondary : Colors.primary, backgroundColor: item.type === 'menu' ? 'rgba(255, 0, 255, 0.1)' : 'rgba(0, 255, 255, 0.1)', alignSelf: 'flex-start' }]}>
-                    <Text style={[styles.statusText, { color: item.type === 'menu' ? Colors.secondary : Colors.primary }]}>WINNER</Text>
+                <View style={[styles.statusBadge, { borderColor: Colors.primary, backgroundColor: 'rgba(0, 255, 255, 0.1)', alignSelf: 'flex-start' }]}>
+                    <Text style={[styles.statusText, { color: Colors.primary }]}>WINNER</Text>
                 </View>
             </View>
         );

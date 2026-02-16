@@ -11,11 +11,11 @@ import { participantService } from '../services/ParticipantService';
 import { CyberAlert } from '../components/CyberAlert';
 
 export default function NameInputScreen({ route, navigation }) {
-    const { category = 'coffee', role = 'owner', roomId = 'default' } = route.params || {};
+    const { category = 'coffee', role = 'owner', roomId = 'default', initialTab } = route.params || {};
     const [name, setName] = useState('');
     const [participants, setParticipants] = useState([]);
     const [menuItems, setMenuItems] = useState([]);
-    const [activeTab, setActiveTab] = useState('people'); // 'people' | 'menu'
+    const [activeTab, setActiveTab] = useState(initialTab || 'people'); // 'people' | 'menu' - initialTab으로 복원
     const [isLoaded, setIsLoaded] = useState(false);
     const [editingIndex, setEditingIndex] = useState(null);
     const [editingWeightIndex, setEditingWeightIndex] = useState(null);
@@ -74,7 +74,7 @@ export default function NameInputScreen({ route, navigation }) {
                     } else {
                         savedParticipants = await participantService.getParticipants();
                         if (!savedParticipants || savedParticipants.length < 2) {
-                            savedParticipants = [{ name: '참여자 1', weight: 50 }, { name: '참여자 2', weight: 50 }];
+                            savedParticipants = [{ name: 'PARTICIPANT 1', weight: 50 }, { name: 'PARTICIPANT 2', weight: 50 }];
                         }
                     }
                     setParticipants(savedParticipants);
@@ -85,9 +85,9 @@ export default function NameInputScreen({ route, navigation }) {
                     if (existingMenus && existingMenus.length > 0) {
                         menuList = existingMenus;
                     } else {
-                        if (category === 'coffee') menuList = [{ name: '아메리카노', weight: 50 }, { name: '카페라떼', weight: 50 }];
-                        else if (category === 'meal') menuList = [{ name: '김치찌개', weight: 50 }, { name: '된장찌개', weight: 50 }];
-                        else menuList = [{ name: '치킨', weight: 50 }, { name: '피자', weight: 50 }];
+                        if (category === 'coffee') menuList = [{ name: 'AMERICANO', weight: 50 }, { name: 'CAFE LATTE', weight: 50 }];
+                        else if (category === 'meal') menuList = [{ name: 'KIMCHI STEW', weight: 50 }, { name: 'SOYBEAN STEW', weight: 50 }];
+                        else menuList = [{ name: 'CHICKEN', weight: 50 }, { name: 'PIZZA', weight: 50 }];
                     }
                     setMenuItems(menuList);
                     await syncService.setMenuItems(menuList);
@@ -173,18 +173,13 @@ export default function NameInputScreen({ route, navigation }) {
         };
     }, []);
 
-    // Auto-navigate if game is in roulette phase or there's active game data
+    // Auto-navigate ONLY to Result screen when game is finished
+    // Participants must manually click "WHAT?" button to join roulette screen
     useEffect(() => {
         // Guard: Only for participants, must be focused, and not currently navigating or resetting
-        if (role !== 'participant' || !isFocused || !mySelectedName || participants.length === 0 || isNavigatingRef.current || route.params?.resetSelection || inhibitedByResetRef.current) return;
+        if (role !== 'participant' || !isFocused || isNavigatingRef.current || inhibitedByResetRef.current) return;
 
-        // Auto-navigate ONLY if game phase is explicitly 'roulette' or someone is spinning
-        const isGameActive = roomPhase === 'roulette' || remoteSpinState?.isSpinning;
-
-        // Mode detection based on category
-        const isMenuMode = ['meal', 'coffee', 'snack'].includes(activeCategory);
-
-        // Condition 1: Game is finished (Results exist) - Auto-nav to result is still allowed for UX
+        // Auto-navigate ONLY if game is finished (Results exist)
         if (finalResults) {
             console.log('NameInputScreen: Game already finished, auto-navigating to result...');
             isNavigatingRef.current = true;
@@ -197,7 +192,7 @@ export default function NameInputScreen({ route, navigation }) {
             return;
         }
 
-    }, [roomPhase, mySelectedName, role, votes, remoteSpinState, participants, finalResults, activeCategory, selectedMenuIndex, route.params?.resetSelection]);
+    }, [finalResults, role, isFocused, roomId, activeCategory]);
 
     // Safe reset of selection state when navigating back
     useEffect(() => {
@@ -232,6 +227,17 @@ export default function NameInputScreen({ route, navigation }) {
             }
         }
     }, [votes, menuItems, isFocused]);
+
+    // Restore tab from initialTab parameter (for retry functionality)
+    useEffect(() => {
+        if (initialTab && (initialTab === 'people' || initialTab === 'menu')) {
+            console.log(`NameInputScreen: Restoring tab to: ${initialTab}`);
+            setActiveTab(initialTab);
+            // Clear the param after using it
+            navigation.setParams({ initialTab: undefined });
+        }
+    }, [initialTab]);
+
 
     // Save participants whenever they change
     useEffect(() => {
@@ -353,7 +359,7 @@ export default function NameInputScreen({ route, navigation }) {
             setAlertConfig({
                 visible: true,
                 title: 'ALERT',
-                message: '메뉴를 먼저 선택해주세요!'
+                message: 'PLEASE SELECT A MENU FIRST!'
             });
             return;
         }
@@ -428,7 +434,7 @@ export default function NameInputScreen({ route, navigation }) {
                 setAlertConfig({
                     visible: true,
                     title: 'INFO',
-                    message: '방장이 아직 시작하지 않았습니다. 진행을 기다려주세요!'
+                    message: 'Owner has not started yet. Please wait for the game to begin!'
                 });
                 return;
             }
@@ -481,17 +487,30 @@ export default function NameInputScreen({ route, navigation }) {
             }
         }
 
-        // Clear previous session data when starting fresh
+        // Check if game is already in progress
+        const isGameAlreadyActive = roomPhase === 'roulette' || votes.length > 0;
+
+        // Clear previous session data ONLY when starting a fresh game
         if (role === 'owner') {
             try {
-                console.log(`NameInputScreen: Owner initializing fresh session for ${target} in room:`, roomId);
-                await syncService.setSpinTarget(target);
-                await syncService.setRoomPhase('roulette'); // Signal participants to move
-                await syncService.clearVotes();
-                await syncService.clearSpinState();
-                await syncService.clearFinalResults();
+                // Determine if we need to switch targets or start fresh
+                const currentSyncTarget = await syncService.getSpinTarget();
+                const needsTargetSwitch = currentSyncTarget !== target;
+
+                if (isGameAlreadyActive && !needsTargetSwitch) {
+                    // Same mode game is in progress - just rejoin
+                    console.log(`NameInputScreen: Owner rejoining active session for ${target} in room:`, roomId);
+                } else {
+                    // Different mode requested or fresh game - reset and initialize
+                    console.log(`NameInputScreen: Owner initializing ${needsTargetSwitch ? 'NEW' : 'fresh'} session for ${target} in room:`, roomId);
+                    await syncService.setSpinTarget(target);
+                    await syncService.setRoomPhase('roulette');
+                    await syncService.clearVotes();
+                    await syncService.clearSpinState();
+                    await syncService.clearFinalResults();
+                }
             } catch (e) {
-                console.error('NameInputScreen: Failed to clear previous session:', e);
+                console.error('NameInputScreen: Failed to initialize session:', e);
             }
 
             navigation.navigate('Roulette', {
@@ -500,7 +519,8 @@ export default function NameInputScreen({ route, navigation }) {
                 mySelectedName,
                 roomId,
                 role,
-                category: activeCategory
+                category: activeCategory,
+                spinTarget: target // Explicitly pass the target mode
             });
         }
     };
@@ -527,7 +547,7 @@ export default function NameInputScreen({ route, navigation }) {
                             shadowOpacity: 0.3,
                             shadowRadius: 5
                         }}>
-                            <Text style={{ color: Colors.primary, fontSize: 12, fontWeight: '900', letterSpacing: 1 }}>#ROOM: {roomId.toUpperCase()}</Text>
+                            <Text style={{ color: Colors.primary, fontSize: 12, fontWeight: '900', letterSpacing: 1 }}>#ROOM ID: {roomId.toUpperCase()}</Text>
                         </View>
 
                         <View style={{ flexDirection: 'row', gap: 8, alignItems: 'center' }}>
@@ -568,7 +588,7 @@ export default function NameInputScreen({ route, navigation }) {
                                 );
                             })()}
                             <View style={{ backgroundColor: 'rgba(255,255,255,0.05)', paddingHorizontal: 8, paddingVertical: 2, borderRadius: 4, borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)' }}>
-                                <Text style={{ color: Colors.textSecondary, fontSize: 10, fontWeight: 'bold' }}>{(role || '').toUpperCase()}</Text>
+                                <Text style={{ color: Colors.textSecondary, fontSize: 10, fontWeight: 'bold' }}>{(role === 'owner' ? 'HOST' : (role || '')).toUpperCase()}</Text>
                             </View>
                         </View>
                         <NeonText className="text-4xl">{activeTab === 'people' ? 'PARTICIPANTS' : 'MENU ITEMS'}</NeonText>
@@ -612,11 +632,12 @@ export default function NameInputScreen({ route, navigation }) {
                             <View style={{ flex: 1, backgroundColor: 'rgba(255,255,255,0.12)', borderRadius: 12, borderWidth: 1, borderColor: 'rgba(255,255,255,0.15)', marginRight: 10, overflow: 'hidden' }}>
                                 <TextInput
                                     style={{ color: 'white', padding: 16, fontSize: 16 }}
-                                    placeholder={activeTab === 'people' ? "참여자를 추가하세요..." : "메뉴를 추가하세요..."}
+                                    placeholder={activeTab === 'people' ? "Add participant..." : "Add menu item..."}
                                     placeholderTextColor="rgba(255,255,255,0.3)"
                                     value={name}
                                     onChangeText={setName}
                                     onSubmitEditing={addParticipant}
+                                    maxLength={15}
                                 />
                             </View>
                             <TouchableOpacity
@@ -672,9 +693,9 @@ export default function NameInputScreen({ route, navigation }) {
                                     alignItems: 'center',
                                     justifyContent: 'space-between',
                                     backgroundColor: isMe ? `${Colors.primary}15` : (isTakenByOther ? 'rgba(255,255,255,0.01)' : 'rgba(255,255,255,0.03)'),
-                                    padding: 12,
+                                    padding: 8,
                                     borderRadius: 12,
-                                    marginBottom: 12,
+                                    marginBottom: 6,
                                     borderWidth: 1,
                                     borderColor: isMe ? Colors.primary : (isTakenByOther ? 'rgba(255,255,255,0.05)' : 'rgba(255,255,255,0.08)'),
                                     opacity: isTakenByOther && !isMe ? 0.5 : 1
@@ -735,7 +756,7 @@ export default function NameInputScreen({ route, navigation }) {
                                                     letterSpacing: 1,
                                                     opacity: isMe ? 1 : 0.8,
                                                     textDecorationLine: isTakenByOther && !isMe ? 'line-through' : 'none'
-                                                }}>{item.name}{isMe ? ' (ME)' : ''}</Text>
+                                                }}>{item.name}{isMe ? <Text style={{ fontSize: 13 }}> (ME)</Text> : ''}</Text>
 
                                                 {/* Show Crown if this name is taken by an owner */}
                                                 {isPeopleTab && onlineUsers.some(u => u.name === item.name && u.role === 'owner') && (
@@ -846,7 +867,7 @@ export default function NameInputScreen({ route, navigation }) {
                         ListEmptyComponent={
                             <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', marginTop: 50 }}>
                                 <Text style={{ color: 'rgba(255,255,255,0.3)', fontSize: 16 }}>
-                                    {role === 'owner' ? '참여자를 추가해주세요' : '방장이 참여자를 설정 중입니다...'}
+                                    {role === 'owner' ? 'PLEASE ADD PARTICIPANTS' : 'THE HOST IS SETTING UP...'}
                                 </Text>
                             </View>
                         }
@@ -875,7 +896,7 @@ export default function NameInputScreen({ route, navigation }) {
                                                 setAlertConfig({
                                                     visible: true,
                                                     title: 'INFO',
-                                                    message: '방장이 아직 시작하지 않았습니다. 시작을 기다려주세요!'
+                                                    message: 'THE HOST HAS NOT STARTED YET. PLEASE WAIT!'
                                                 });
                                             }
                                         }
@@ -933,28 +954,20 @@ export default function NameInputScreen({ route, navigation }) {
                                             if (role === 'owner') {
                                                 startRoulette('menu');
                                             } else {
-                                                // Check if game started
+                                                // Participant: Just navigate to roulette screen without submitting vote
+                                                // They will vote by spinning the wheel in the roulette screen
                                                 const isGameActive = roomPhase === 'roulette' || votes.length > 0 || remoteSpinState?.isSpinning;
                                                 if (!isGameActive) {
                                                     setAlertConfig({
                                                         visible: true,
                                                         title: 'INFO',
-                                                        message: '방장이 아직 시작하지 않았습니다. 시작을 기다려주세요!'
+                                                        message: 'THE HOST HAS NOT STARTED YET. PLEASE WAIT!'
                                                     });
                                                     return;
                                                 }
 
-                                                // If menu is selected, submit vote while joining
-                                                let selectedItemName = null;
-                                                if (selectedMenuIndex !== null && menuItems[selectedMenuIndex]) {
-                                                    selectedItemName = menuItems[selectedMenuIndex].name;
-                                                    try {
-                                                        await syncService.submitVote(selectedItemName);
-                                                    } catch (e) {
-                                                        console.error('Failed to submit vote on join:', e);
-                                                    }
-                                                }
-
+                                                // Navigate to roulette screen WITHOUT submitting vote
+                                                // Vote will be submitted when they spin the wheel
                                                 navigation.navigate('Roulette', {
                                                     participants,
                                                     menuItems,
@@ -962,8 +975,7 @@ export default function NameInputScreen({ route, navigation }) {
                                                     roomId,
                                                     role,
                                                     category: activeCategory,
-                                                    spinTarget: 'menu',
-                                                    votedItem: selectedItemName
+                                                    spinTarget: 'menu'
                                                 });
                                             }
                                         }}
@@ -996,8 +1008,8 @@ export default function NameInputScreen({ route, navigation }) {
                         </View>
                     </View>
                     <View style={{
-                        paddingVertical: 18,
-                        borderRadius: 16,
+                        paddingVertical: 12,
+                        borderRadius: 12,
                         alignItems: 'center',
                         marginTop: 10,
                         borderWidth: 1,
@@ -1010,7 +1022,7 @@ export default function NameInputScreen({ route, navigation }) {
                                 ? 'GAME FINISHED! CHECK RESULTS...'
                                 : (roomPhase === 'roulette' || votes.length > 0 || remoteSpinState?.isSpinning)
                                     ? (mySelectedName ? 'GAME IN PROGRESS...' : 'SELECT YOUR NAME TO JOIN!')
-                                    : (mySelectedName ? 'WAITING FOR OWNER TO START...' : 'PLEASE SELECT YOUR NAME ABOVE')
+                                    : (mySelectedName ? 'WAITING FOR HOST TO START...' : 'PLEASE SELECT YOUR NAME ABOVE')
                             }
                         </Text>
                     </View>
@@ -1057,7 +1069,7 @@ export default function NameInputScreen({ route, navigation }) {
                                 alignItems: 'center',
                                 marginBottom: 15
                             }}>
-                                <NeonText className="text-2xl">ACTIVE NODES</NeonText>
+                                <NeonText className="text-2xl">PARTICIPANT STATUS</NeonText>
                                 <TouchableOpacity onPress={() => setShowUsersModal(false)}>
                                     <X color={Colors.primary} size={24} />
                                 </TouchableOpacity>
@@ -1129,7 +1141,7 @@ export default function NameInputScreen({ route, navigation }) {
                                                     fontWeight: '500',
                                                     letterSpacing: 1
                                                 }}>
-                                                    {user.name} {user.id === syncService.myId ? '(ME)' : ''}
+                                                    {user.name} {user.id === syncService.myId ? <Text style={{ fontSize: 11 }}> (ME)</Text> : ''}
                                                 </Text>
                                             </View>
                                             <View style={{
@@ -1145,7 +1157,7 @@ export default function NameInputScreen({ route, navigation }) {
                                                     fontSize: 12,
                                                     fontWeight: 'bold'
                                                 }}>
-                                                    {userVote ? userVote.votedFor : 'SPINNING...'}
+                                                    {userVote ? userVote.votedFor : 'WAITING...'}
                                                 </Text>
                                             </View>
                                         </View>

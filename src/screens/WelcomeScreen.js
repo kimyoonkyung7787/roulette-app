@@ -6,6 +6,7 @@ import { Colors } from '../theme/colors';
 import { CyberBackground } from '../components/CyberBackground';
 import { Coffee, Utensils, Pizza, Crown, User, ArrowRight } from 'lucide-react-native';
 import { CyberAlert } from '../components/CyberAlert';
+import { syncService } from '../services/SyncService';
 
 const { width } = Dimensions.get('window');
 
@@ -16,13 +17,13 @@ const CATEGORIES = [
 ];
 
 const ROLES = [
-    { id: 'owner', label: 'OWNER', icon: Crown, description: 'Manage participants' },
+    { id: 'owner', label: 'HOST', icon: Crown, description: 'Manage participants' },
     { id: 'participant', label: 'PARTICIPANT', icon: User, description: 'Join existing list' },
 ];
 
 export default function WelcomeScreen({ navigation }) {
     const [selectedCategory, setSelectedCategory] = useState('coffee');
-    const [selectedRole, setSelectedRole] = useState('owner');
+    const [selectedRole, setSelectedRole] = useState('participant');
     const [inputRoomId, setInputRoomId] = useState('');
     const [alertConfig, setAlertConfig] = useState({ visible: false, message: '', title: '' });
 
@@ -30,7 +31,7 @@ export default function WelcomeScreen({ navigation }) {
         return Math.floor(100000 + Math.random() * 900000).toString();
     };
 
-    const handleStart = () => {
+    const handleStart = async () => {
         let roomId = '';
 
         if (selectedRole === 'owner') {
@@ -40,7 +41,7 @@ export default function WelcomeScreen({ navigation }) {
                 setAlertConfig({
                     visible: true,
                     title: 'ALERT',
-                    message: 'Please enter 6-digit ROOM_ID to proceed.'
+                    message: 'Please enter 6-digit ROOM ID to proceed.'
                 });
                 return;
             }
@@ -48,11 +49,21 @@ export default function WelcomeScreen({ navigation }) {
                 setAlertConfig({
                     visible: true,
                     title: 'ALERT',
-                    message: 'ROOM_ID must be exactly 6 digits.'
+                    message: 'ROOM ID must be exactly 6 digits.'
                 });
                 return;
             }
             roomId = inputRoomId.trim();
+
+            const exists = await syncService.checkRoomExists(roomId);
+            if (!exists) {
+                setAlertConfig({
+                    visible: true,
+                    title: 'ALERT',
+                    message: 'ROOM NOT FOUND. PLEASE CHECK THE ROOM ID.'
+                });
+                return;
+            }
         }
 
         navigation.navigate('NameInput', {
@@ -83,7 +94,7 @@ export default function WelcomeScreen({ navigation }) {
 
                     <View style={styles.content}>
                         <View style={styles.section}>
-                            <NeonText className="text-sm mb-4 opacity-70">SELECT_CATEGORY</NeonText>
+                            <NeonText className="text-sm mb-4 opacity-70">SELECT CATEGORY</NeonText>
                             <View style={styles.categoryGrid}>
                                 {CATEGORIES.map((cat) => (
                                     <TouchableOpacity
@@ -105,7 +116,7 @@ export default function WelcomeScreen({ navigation }) {
                         </View>
 
                         <View style={styles.section}>
-                            <NeonText className="text-sm mb-4 opacity-70">CHOOSE_YOUR_ROLE</NeonText>
+                            <NeonText className="text-sm mb-4 opacity-70">CHOOSE YOUR ROLE</NeonText>
                             <View style={styles.roleContainer}>
                                 {ROLES.map((role) => (
                                     <TouchableOpacity
@@ -140,7 +151,7 @@ export default function WelcomeScreen({ navigation }) {
                                     </View>
                                 ) : (
                                     <View style={styles.inputPlaceholder}>
-                                        <Text style={styles.placeholderText}>OWNER_MODE_ACTIVE</Text>
+                                        <Text style={styles.placeholderText}>HOST_MODE_ACTIVE</Text>
                                     </View>
                                 )}
                             </View>
@@ -150,7 +161,7 @@ export default function WelcomeScreen({ navigation }) {
                             style={[styles.startButton, { shadowColor: Colors.primary }]}
                             onPress={handleStart}
                         >
-                            <Text style={styles.startButtonText}>INITIATE_SESSION</Text>
+                            <Text style={styles.startButtonText}>START GAME</Text>
                             <ArrowRight color="black" size={20} style={{ marginLeft: 10 }} />
                         </TouchableOpacity>
                     </View>
@@ -305,7 +316,7 @@ const styles = StyleSheet.create({
     },
     startButton: {
         backgroundColor: Colors.primary,
-        height: 56,
+        paddingVertical: 12,
         borderRadius: 12,
         flexDirection: 'row',
         alignItems: 'center',

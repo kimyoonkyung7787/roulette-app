@@ -256,11 +256,13 @@ class SyncService {
         });
     }
 
-    async startSpin(userName) {
+    async startSpin(userName, winnerIndex = null, role = 'participant') {
         try {
             await set(ref(db, `${this.roomPath}/spin_state`), {
                 isSpinning: true,
                 starter: userName,
+                starterRole: role,
+                winnerIndex: winnerIndex,
                 startTime: serverTimestamp()
             });
         } catch (e) {
@@ -376,6 +378,16 @@ class SyncService {
             await set(ref(db, `${this.roomPath}/final_results`), null);
         } catch (e) {
             console.error('SyncService: Failed to clear final results:', e);
+        }
+    }
+
+    async checkRoomExists(roomId) {
+        try {
+            const snapshot = await get(ref(db, `rooms/${roomId}`));
+            return snapshot.exists();
+        } catch (e) {
+            console.error('SyncService: Failed to check room existence:', e);
+            return false;
         }
     }
 }
