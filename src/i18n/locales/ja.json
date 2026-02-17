@@ -29,7 +29,11 @@
         "start_game": "ゲーム開始",
         "enter_room_id_to_proceed": "ルームIDを入力してください",
         "room_id_length_error": "ルームIDは6桁である必要があります",
-        "room_not_found": "ルームが見つかりません"
+        "room_not_found": "ルームが見つかりません",
+        "resume_session": "前回のセッションを復元しますか？",
+        "resume_message": "ルーム #{{roomId}} のホストセッションが見つかりました。復元しますか？",
+        "resume_confirm": "はい、\n復元する",
+        "resume_cancel": "いいえ、\n新しく作成"
     },
     "name_input": {
         "add_participant": "参加者を追加...",

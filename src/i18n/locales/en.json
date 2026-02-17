@@ -13,7 +13,8 @@
         "info": "INFO",
         "error": "ERROR",
         "room": "ROOM",
-        "select_language": "SELECT LANGUAGE"
+        "select_language": "SELECT LANGUAGE",
+        "weight": "Weight"
     },
     "categories": {
         "coffee": "COFFEE",
@@ -29,7 +30,11 @@
         "start_game": "START GAME",
         "enter_room_id_to_proceed": "Please enter Room ID",
         "room_id_length_error": "Room ID must be 6 digits",
-        "room_not_found": "Room not found"
+        "room_not_found": "Room not found",
+        "resume_session": "Resume previous session?",
+        "resume_message": "Found an active host session for Room #{{roomId}}. Would you like to resume?",
+        "resume_confirm": "YES,\nRESUME",
+        "resume_cancel": "NO,\nSTART NEW"
     },
     "name_input": {
         "add_participant": "Add participant...",
@@ -52,7 +57,7 @@
         "game_in_progress": "Game in progress...",
         "select_name_to_join": "Select name to join",
         "game_finished": "Game finished",
-        "total_ratio": "Total Ratio",
+        "total_ratio": "Total Weight",
         "please_add_participants": "Please add participants",
         "host_setting_up": "Host is setting up...",
         "select_menu_error": "Please click a menu item to select",
@@ -86,6 +91,7 @@
     },
     "history": {
         "title": "LOG HISTORY",
-        "no_data": "NO DATA LOGS FOUND"
+        "no_data": "NO DATA LOGS FOUND",
+        "restore": "RESTORE SETTINGS"
     }
 }

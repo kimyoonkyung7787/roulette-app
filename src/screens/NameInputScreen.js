@@ -76,7 +76,7 @@ export default function NameInputScreen({ route, navigation }) {
                     } else {
                         savedParticipants = await participantService.getParticipants();
                         if (!savedParticipants || savedParticipants.length < 2) {
-                            savedParticipants = [{ name: 'PARTICIPANT 1', weight: 50 }, { name: 'PARTICIPANT 2', weight: 50 }];
+                            savedParticipants = [{ name: 'PARTICIPANT 1', weight: 1 }, { name: 'PARTICIPANT 2', weight: 1 }];
                         }
                     }
                     setParticipants(savedParticipants);
@@ -87,9 +87,9 @@ export default function NameInputScreen({ route, navigation }) {
                     if (existingMenus && existingMenus.length > 0) {
                         menuList = existingMenus;
                     } else {
-                        if (category === 'coffee') menuList = [{ name: 'AMERICANO', weight: 50 }, { name: 'CAFE LATTE', weight: 50 }];
-                        else if (category === 'meal') menuList = [{ name: 'KIMCHI STEW', weight: 50 }, { name: 'SOYBEAN STEW', weight: 50 }];
-                        else menuList = [{ name: 'CHICKEN', weight: 50 }, { name: 'PIZZA', weight: 50 }];
+                        if (category === 'coffee') menuList = [{ name: 'AMERICANO', weight: 1 }, { name: 'CAFE LATTE', weight: 1 }];
+                        else if (category === 'meal') menuList = [{ name: 'KIMCHI STEW', weight: 1 }, { name: 'SOYBEAN STEW', weight: 1 }];
+                        else menuList = [{ name: 'CHICKEN', weight: 1 }, { name: 'PIZZA', weight: 1 }];
                     }
                     setMenuItems(menuList);
                     await syncService.setMenuItems(menuList);
@@ -249,29 +249,39 @@ export default function NameInputScreen({ route, navigation }) {
         }
     }, [participants, isLoaded]);
 
-    const redistributeWeights = (list) => {
-        if (list.length === 0) return [];
-        // Use floor to truncate at 1 decimal place
-        const baseWeight = Math.floor((100 / list.length) * 10) / 10;
-        const totalOthers = baseWeight * (list.length - 1);
-        const ownerWeight = Math.round((100 - totalOthers) * 10) / 10;
+    // Handle data restoration from history
+    useEffect(() => {
+        if (route.params?.restoredData && role === 'owner') {
+            const { type, list } = route.params.restoredData;
+            console.log(`NameInputScreen: Restoring ${type} from history...`);
 
-        return list.map((p, i) => ({
-            ...p,
-            weight: i === 0 ? ownerWeight : baseWeight
-        }));
+            if (type === 'people') {
+                setParticipants(list);
+                syncService.setParticipants(list);
+                setActiveTab('people');
+            } else {
+                setMenuItems(list);
+                syncService.setMenuItems(list);
+                setActiveTab('menu');
+            }
+
+            // Clear the param so it doesn't trigger again on re-focus
+            navigation.setParams({ restoredData: null });
+        }
+    }, [route.params?.restoredData]);
+
+    const redistributeWeights = (list) => {
+        return list; // Numerical weights don't need auto-redistribution to 100%
     };
 
     const addParticipant = async () => {
         if (!name.trim()) return;
         if (activeTab === 'people') {
-            const newList = [...participants, { name: name.trim(), weight: 0 }];
-            const updated = redistributeWeights(newList);
+            const updated = [...participants, { name: name.trim(), weight: 1 }];
             setParticipants(updated);
             if (role === 'owner') await syncService.setParticipants(updated);
         } else {
-            const newList = [...menuItems, { name: name.trim(), weight: 0 }];
-            const updated = redistributeWeights(newList);
+            const updated = [...menuItems, { name: name.trim(), weight: 1 }];
             setMenuItems(updated);
             if (role === 'owner') await syncService.setMenuItems(updated);
         }
@@ -282,13 +292,11 @@ export default function NameInputScreen({ route, navigation }) {
         if (activeTab === 'people') {
             const removedItem = participants[index];
             if (removedItem.name === mySelectedName) setMySelectedName(null);
-            const newList = participants.filter((_, i) => i !== index);
-            const updated = redistributeWeights(newList);
+            const updated = participants.filter((_, i) => i !== index);
             setParticipants(updated);
             if (role === 'owner') await syncService.setParticipants(updated);
         } else {
-            const newList = menuItems.filter((_, i) => i !== index);
-            const updated = redistributeWeights(newList);
+            const updated = menuItems.filter((_, i) => i !== index);
             setMenuItems(updated);
             setSelectedMenuIndex(null);
             if (role === 'owner') await syncService.setMenuItems(updated);
@@ -468,13 +476,13 @@ export default function NameInputScreen({ route, navigation }) {
                 });
                 return;
             }
-            // Validate total weight with small tolerance for floating point precision
+            // Validate total weight is positive
             const totalWeight = participants.reduce((sum, p) => sum + (p.weight || 0), 0);
-            if (Math.abs(totalWeight - 100) > 0.01) {
+            if (totalWeight <= 0) {
                 setAlertConfig({
                     visible: true,
                     title: t('common.alert'),
-                    message: t('name_input.ratio_error', { ratio: Number(totalWeight.toFixed(1)) })
+                    message: t('name_input.min_participants_error')
                 });
                 return;
             }
@@ -552,16 +560,16 @@ export default function NameInputScreen({ route, navigation }) {
                             <Text style={{ color: Colors.primary, fontSize: 12, fontWeight: '900', letterSpacing: 1 }}>#{t('common.room_id')}: {roomId.toUpperCase()}</Text>
                         </View>
 
-                        <View style={{ flexDirection: 'row', gap: 8, alignItems: 'center' }}>
-                            <TouchableOpacity onPress={() => setShowUsersModal(true)} style={{ padding: 6 }}>
+                        <View style={{ flexDirection: 'row', gap: 2, alignItems: 'center' }}>
+                            <TouchableOpacity onPress={() => setShowUsersModal(true)} style={{ padding: 4 }}>
                                 <ListChecks color={Colors.success} size={24} />
                             </TouchableOpacity>
-                            <TouchableOpacity onPress={() => navigation.navigate('History')} style={{ padding: 6 }}>
+                            <TouchableOpacity onPress={() => navigation.navigate('History', { role, roomId, category: activeCategory })} style={{ padding: 4 }}>
                                 <History color={Colors.primary} size={24} />
                             </TouchableOpacity>
                             <TouchableOpacity
                                 onPress={() => navigation.navigate('Welcome')}
-                                style={{ padding: 6 }}
+                                style={{ padding: 4 }}
                             >
                                 <LogOut color={Colors.error} size={24} />
                             </TouchableOpacity>
@@ -688,6 +696,14 @@ export default function NameInputScreen({ route, navigation }) {
                             const isTakenByOther = isPeopleTab && onlineUsers.some(u => u.name === nameToCheck && u.id !== syncService.myId);
                             const isMe = isPeopleTab && mySelectedName === nameToCheck;
                             const activeThemeColor = isPeopleTab ? Colors.primary : activeMenuColor;
+                            const currentList = activeTab === 'people' ? participants : menuItems;
+                            const totalWeightSum = currentList.reduce((sum, p) => sum + (p.weight || 0), 0);
+                            const totalWeight = Math.max(1, totalWeightSum);
+                            // Format percentage: remove .0 if it's an integer
+                            const percentageValue = (item.weight / totalWeight) * 100;
+                            const percentage = percentageValue % 1 === 0 ? percentageValue.toFixed(0) : percentageValue.toFixed(1);
+                            // Format weight: remove .0 if it's an integer
+                            const displayWeight = item.weight % 1 === 0 ? item.weight.toFixed(0) : item.weight.toFixed(1);
 
                             return (
                                 <View style={{
@@ -819,13 +835,21 @@ export default function NameInputScreen({ route, navigation }) {
                                                     />
                                                 ) : (
                                                     <TouchableOpacity onPress={() => startEditingWeight(index)}>
-                                                        <Text style={{
-                                                            color: Colors.secondary,
-                                                            fontSize: 16,
-                                                            fontWeight: 'bold',
-                                                            minWidth: 65,
-                                                            textAlign: 'right'
-                                                        }}>{typeof item.weight === 'number' ? Number(item.weight.toFixed(1)) : item.weight}%</Text>
+                                                        <View style={{ alignItems: 'flex-end', minWidth: 65 }}>
+                                                            <Text style={{
+                                                                color: Colors.secondary,
+                                                                fontSize: 16,
+                                                                fontWeight: 'bold',
+                                                                textAlign: 'right'
+                                                            }}>{displayWeight}</Text>
+                                                            <Text style={{
+                                                                color: 'rgba(255,255,255,0.4)',
+                                                                fontSize: 10,
+                                                                textAlign: 'right'
+                                                            }}>
+                                                                ({percentage}%)
+                                                            </Text>
+                                                        </View>
                                                     </TouchableOpacity>
                                                 )
                                             )}
@@ -838,7 +862,10 @@ export default function NameInputScreen({ route, navigation }) {
                                     {role === 'participant' && isPeopleTab && (
                                         <View style={{ minWidth: 65, alignItems: 'flex-end' }}>
                                             <Text style={{ color: Colors.secondary, fontSize: 16, fontWeight: 'bold', marginRight: 10 }}>
-                                                {typeof item.weight === 'number' ? Number(item.weight.toFixed(1)) : item.weight}%
+                                                {displayWeight}
+                                            </Text>
+                                            <Text style={{ color: 'rgba(255,255,255,0.4)', fontSize: 10, marginRight: 10 }}>
+                                                ({percentage}%)
                                             </Text>
                                         </View>
                                     )}
@@ -847,7 +874,7 @@ export default function NameInputScreen({ route, navigation }) {
                         }}
                         style={{ flex: 1 }}
                         contentContainerStyle={{ paddingBottom: 20 }}
-                        ListFooterComponent={activeTab === 'people' && participants.length > 0 ? (
+                        ListFooterComponent={(activeTab === 'people' ? participants : menuItems).length > 0 ? (
                             <View style={{
                                 flexDirection: 'row',
                                 justifyContent: 'flex-end',
@@ -858,11 +885,15 @@ export default function NameInputScreen({ route, navigation }) {
                             }}>
                                 <Text style={{ color: 'rgba(255,255,255,0.4)', fontSize: 12, marginRight: 10 }}>{t('name_input.total_ratio').toUpperCase()}:</Text>
                                 <Text style={{
-                                    color: Math.abs(participants.reduce((sum, p) => sum + (p.weight || 0), 0) - 100) < 0.01 ? Colors.secondary : Colors.error,
+                                    color: Colors.secondary,
                                     fontSize: 14,
                                     fontWeight: 'bold'
                                 }}>
-                                    {Number(participants.reduce((sum, p) => sum + (p.weight || 0), 0).toFixed(1))}%
+                                    {(() => {
+                                        const currentList = activeTab === 'people' ? participants : menuItems;
+                                        const sum = currentList.reduce((sum, p) => sum + (p.weight || 0), 0);
+                                        return sum % 1 === 0 ? sum.toFixed(0) : sum.toFixed(1);
+                                    })()}
                                 </Text>
                             </View>
                         ) : null}

@@ -29,7 +29,11 @@
         "start_game": "SPIEL STARTEN",
         "enter_room_id_to_proceed": "Bitte Room-ID eingeben",
         "room_id_length_error": "Raum-ID muss 6-stellig sein",
-        "room_not_found": "Raum nicht gefunden"
+        "room_not_found": "Raum nicht gefunden",
+        "resume_session": "Vorherige Sitzung fortsetzen?",
+        "resume_message": "Aktive Host-Sitzung für Raum #{{roomId}} gefunden. Möchten Sie fortfahren?",
+        "resume_confirm": "JA,\nFORTSETZEN",
+        "resume_cancel": "NEIN,\nNEU"
     },
     "name_input": {
         "add_participant": "Teilnehmer hinzufügen...",

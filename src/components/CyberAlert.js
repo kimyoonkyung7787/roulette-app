@@ -9,6 +9,9 @@ export const CyberAlert = ({
     title = 'ALERT',
     message,
     onConfirm,
+    onCancel,
+    confirmText = 'CONFIRM',
+    cancelText = 'CANCEL',
     type = 'info' // 'info' | 'error' | 'success'
 }) => {
     // Making it feel like a guidance/info window by default or using a softer warning color
@@ -25,7 +28,7 @@ export const CyberAlert = ({
             visible={visible}
             transparent={true}
             animationType="fade"
-            onRequestClose={onConfirm}
+            onRequestClose={onCancel || onConfirm}
         >
             <View style={styles.overlay}>
                 <View style={[styles.container, {
@@ -33,8 +36,10 @@ export const CyberAlert = ({
                     ...(Platform.OS === 'web' ? { boxShadow: `0 0 20px ${themeColor}` } : { shadowColor: themeColor })
                 }]}>
                     <View style={styles.header}>
-                        <Icon color={themeColor} size={20} style={{ marginRight: 10 }} />
-                        <NeonText className="text-xl" style={{ color: themeColor }}>{title}</NeonText>
+                        <Icon color={themeColor} size={20} style={{ marginRight: 10, marginTop: 2 }} />
+                        <View style={{ flex: 1 }}>
+                            <NeonText className="text-xl" style={{ color: themeColor }}>{title}</NeonText>
+                        </View>
                     </View>
 
                     <View style={styles.divider} />
@@ -43,12 +48,22 @@ export const CyberAlert = ({
                         <Text style={styles.message}>{message}</Text>
                     </View>
 
-                    <TouchableOpacity
-                        onPress={onConfirm}
-                        style={[styles.button, { backgroundColor: `${themeColor}15`, borderColor: themeColor }]}
-                    >
-                        <Text style={[styles.buttonText, { color: themeColor }]}>CONFIRM</Text>
-                    </TouchableOpacity>
+                    <View style={onCancel ? styles.buttonRow : styles.buttonContainer}>
+                        {onCancel && (
+                            <TouchableOpacity
+                                onPress={onCancel}
+                                style={[styles.button, onCancel ? styles.sideButton : null, { backgroundColor: 'rgba(255,255,255,0.05)', borderColor: 'rgba(255,255,255,0.2)' }]}
+                            >
+                                <Text style={[styles.buttonText, { color: 'rgba(255,255,255,0.6)' }]}>{cancelText}</Text>
+                            </TouchableOpacity>
+                        )}
+                        <TouchableOpacity
+                            onPress={onConfirm}
+                            style={[styles.button, onCancel ? styles.sideButton : null, { backgroundColor: `${themeColor}15`, borderColor: themeColor }]}
+                        >
+                            <Text style={[styles.buttonText, { color: themeColor }]}>{confirmText}</Text>
+                        </TouchableOpacity>
+                    </View>
                 </View>
             </View>
         </Modal>
@@ -78,7 +93,7 @@ const styles = StyleSheet.create({
     },
     header: {
         flexDirection: 'row',
-        alignItems: 'center',
+        alignItems: 'flex-start',
         marginBottom: 15,
     },
     divider: {
@@ -96,17 +111,29 @@ const styles = StyleSheet.create({
         letterSpacing: 0.5,
         textAlign: 'center',
     },
-    button: {
+    buttonContainer: {
         width: '100%',
-        paddingVertical: 14,
+    },
+    buttonRow: {
+        flexDirection: 'row',
+        gap: 10,
+    },
+    button: {
+        paddingVertical: 12,
+        paddingHorizontal: 8,
         borderRadius: 8,
         borderWidth: 1,
         alignItems: 'center',
         justifyContent: 'center',
     },
+    sideButton: {
+        flex: 1,
+    },
     buttonText: {
-        fontSize: 14,
+        fontSize: 13,
         fontWeight: '900',
-        letterSpacing: 2,
+        letterSpacing: 1,
+        textAlign: 'center',
+        lineHeight: 18,
     }
 });

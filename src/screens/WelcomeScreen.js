@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { View, TouchableOpacity, StyleSheet, Text, Dimensions, Image, TextInput, Platform, KeyboardAvoidingView, ScrollView } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import { NeonText } from '../components/NeonText';
@@ -29,6 +30,50 @@ export default function WelcomeScreen({ navigation }) {
     const [selectedRole, setSelectedRole] = useState('participant');
     const [inputRoomId, setInputRoomId] = useState('');
     const [alertConfig, setAlertConfig] = useState({ visible: false, message: '', title: '' });
+    const [resumeConfig, setResumeConfig] = useState({ visible: false, roomId: '', category: '' });
+
+    // Check for previous host session on mount
+    React.useEffect(() => {
+        const checkSession = async () => {
+            try {
+                const savedRole = await AsyncStorage.getItem('last_role');
+                const savedRoomId = await AsyncStorage.getItem('last_room_id');
+                const savedCategory = await AsyncStorage.getItem('last_category');
+
+                if (savedRole === 'owner' && savedRoomId) {
+                    // Quick check if room still exists
+                    const exists = await syncService.checkRoomExists(savedRoomId);
+                    if (exists) {
+                        setResumeConfig({
+                            visible: true,
+                            roomId: savedRoomId,
+                            category: savedCategory || 'coffee'
+                        });
+                    } else {
+                        // Room gone, clear storage
+                        await AsyncStorage.multiRemove(['last_role', 'last_room_id', 'last_category']);
+                    }
+                }
+            } catch (e) {
+                console.log('WelcomeScreen: Failed to check session', e);
+            }
+        };
+        checkSession();
+    }, []);
+
+    const handleResume = async () => {
+        setResumeConfig({ ...resumeConfig, visible: false });
+        navigation.navigate('NameInput', {
+            category: resumeConfig.category,
+            role: 'owner',
+            roomId: resumeConfig.roomId
+        });
+    };
+
+    const handleDiscard = async () => {
+        setResumeConfig({ ...resumeConfig, visible: false });
+        await AsyncStorage.multiRemove(['last_role', 'last_room_id', 'last_category']);
+    };
 
     const generateRoomId = () => {
         return Math.floor(100000 + Math.random() * 900000).toString();
@@ -39,6 +84,14 @@ export default function WelcomeScreen({ navigation }) {
 
         if (selectedRole === 'owner') {
             roomId = generateRoomId();
+            // Store session info
+            try {
+                await AsyncStorage.setItem('last_role', 'owner');
+                await AsyncStorage.setItem('last_room_id', roomId);
+                await AsyncStorage.setItem('last_category', selectedCategory);
+            } catch (e) {
+                console.error('WelcomeScreen: Failed to save session', e);
+            }
         } else {
             if (!inputRoomId || inputRoomId.trim().length === 0) {
                 setAlertConfig({
@@ -131,7 +184,7 @@ export default function WelcomeScreen({ navigation }) {
                                     </View>
                                 </View>
 
-                                <View style={styles.section}>
+                                <View style={[styles.section, { marginBottom: 0 }]}>
                                     <NeonText className="text-sm mb-4 opacity-70">{t('welcome.choose_role')}</NeonText>
                                     <View style={styles.roleContainer}>
                                         {ROLES.map((role) => (
@@ -192,6 +245,17 @@ export default function WelcomeScreen({ navigation }) {
                     type="info"
                     onConfirm={() => setAlertConfig({ ...alertConfig, visible: false })}
                 />
+
+                <CyberAlert
+                    visible={resumeConfig.visible}
+                    title={t('welcome.resume_session')}
+                    message={t('welcome.resume_message', { roomId: resumeConfig.roomId })}
+                    type="info"
+                    confirmText={t('welcome.resume_confirm')}
+                    cancelText={t('welcome.resume_cancel')}
+                    onConfirm={handleResume}
+                    onCancel={handleDiscard}
+                />
             </SafeAreaView>
         </CyberBackground>
     );
@@ -208,13 +272,11 @@ const styles = StyleSheet.create({
     topHeader: {
         flexDirection: 'row',
         justifyContent: 'flex-end',
-        paddingTop: 0,
-        paddingBottom: 5,
+        paddingVertical: 10,
     },
     heroContainer: {
         alignItems: 'center',
-        paddingBottom: 15,
-        paddingTop: 0,
+        paddingVertical: 20,
     },
     rouletteCircle: {
         alignItems: 'center',
@@ -348,7 +410,7 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',
-        marginTop: 10,
+        marginTop: 15,
         shadowOffset: { width: 0, height: 4 },
         shadowOpacity: 0.5,
         shadowRadius: 10,

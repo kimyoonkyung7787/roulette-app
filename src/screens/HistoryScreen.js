@@ -8,9 +8,10 @@ import { historyService } from '../services/HistoryService';
 import { History as HistoryIcon, ArrowLeft, Trash2 } from 'lucide-react-native';
 import { useTranslation } from 'react-i18next';
 
-export default function HistoryScreen({ navigation }) {
+export default function HistoryScreen({ route, navigation }) {
     const { t } = useTranslation();
     const [history, setHistory] = useState([]);
+    const { role, roomId, category } = route.params || {};
 
     useEffect(() => {
         loadHistory();
@@ -26,34 +27,94 @@ export default function HistoryScreen({ navigation }) {
         setHistory([]);
     };
 
+    const handleRestore = (item) => {
+        if (!item.originalList || item.originalList.length === 0) return;
+
+        // Navigate back to NameInput with the restored data AND original session info
+        navigation.navigate('NameInput', {
+            roomId,
+            role,
+            category: category || item.category || 'coffee',
+            restoredData: {
+                type: item.type,
+                list: item.originalList,
+                timestamp: Date.now()
+            }
+        });
+    };
+
     const renderItem = ({ item }) => {
         const date = new Date(item.timestamp);
         const dateString = date.toLocaleDateString();
         const timeString = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        const canRestore = role === 'owner' && item.originalList && item.originalList.length > 0;
 
         return (
-            <View style={[styles.historyItem, { borderLeftColor: item.type === 'menu' ? Colors.secondary : Colors.primary }]}>
-                <View style={{ flex: 1 }}>
-                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 4 }}>
+            <View style={[styles.historyItem, { borderLeftColor: item.type === 'menu' ? Colors.secondary : Colors.primary, flexDirection: 'column', alignItems: 'stretch' }]}>
+                {/* Top Row: Tag, Name and Winner Badge */}
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
                         <View style={{
-                            backgroundColor: `${Colors.accent}20`,
+                            backgroundColor: `${item.type === 'menu' ? Colors.secondary : Colors.primary}20`,
                             paddingHorizontal: 6,
                             paddingVertical: 1,
                             borderRadius: 3,
                             borderWidth: 0.5,
-                            borderColor: Colors.accent
+                            borderColor: item.type === 'menu' ? Colors.secondary : Colors.primary
                         }}>
-                            <Text style={{ color: Colors.accent, fontSize: 8, fontWeight: 'bold' }}>
+                            <Text style={{ color: item.type === 'menu' ? Colors.secondary : Colors.primary, fontSize: 8, fontWeight: 'bold' }}>
                                 {item.type === 'menu' ? t('common.menu').toUpperCase() : t('common.people').toUpperCase()}
                             </Text>
                         </View>
                         <NeonText className="text-xl" color={Colors.accent}>{item.name}</NeonText>
                     </View>
+
+                    <View style={[styles.statusBadge, {
+                        borderColor: Colors.primary,
+                        backgroundColor: 'rgba(0, 255, 255, 0.1)',
+                    }]}>
+                        <Text style={[styles.statusText, { color: Colors.primary }]}>{t('result.winner_label').toUpperCase()}</Text>
+                    </View>
+                </View>
+
+                {/* Middle Row: Date and Room ID */}
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
                     <Text style={styles.timeText}>{dateString} {timeString}</Text>
+                    {item.roomId && (
+                        <Text style={{
+                            color: 'rgba(255,255,255,0.8)', // Further increased visibility
+                            fontSize: 12,
+                            fontWeight: 'bold',
+                            letterSpacing: 0.5
+                        }}>#{item.roomId.toUpperCase()}</Text>
+                    )}
+                </View>
+
+                {/* Button and Details column */}
+                <View>
+                    {canRestore && (
+                        <TouchableOpacity
+                            onPress={() => handleRestore(item)}
+                            style={{
+                                marginTop: 15,
+                                backgroundColor: 'rgba(57, 255, 20, 0.1)',
+                                paddingVertical: 6,
+                                paddingHorizontal: 12,
+                                borderRadius: 6,
+                                borderWidth: 1,
+                                borderColor: Colors.success,
+                                alignSelf: 'flex-start'
+                            }}
+                        >
+                            <Text style={{ color: Colors.success, fontSize: 11, fontWeight: 'bold' }}>
+                                {t('history.restore').toUpperCase()}
+                            </Text>
+                        </TouchableOpacity>
+                    )}
 
                     {/* Check if details exist and render them */}
                     {item.details && item.details.length > 0 && (
-                        <View style={{ marginTop: 10, paddingTop: 10, borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.05)' }}>
+                        <View style={{ marginTop: 15, paddingTop: 10, borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.05)' }}>
                             <Text style={{ color: 'rgba(255,255,255,0.4)', fontSize: 10, marginBottom: 5 }}>{t('result.votes').toUpperCase()}:</Text>
                             {item.details.map((detail, idx) => (
                                 <View key={idx} style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 2 }}>
@@ -67,9 +128,6 @@ export default function HistoryScreen({ navigation }) {
                             ))}
                         </View>
                     )}
-                </View>
-                <View style={[styles.statusBadge, { borderColor: Colors.primary, backgroundColor: 'rgba(0, 255, 255, 0.1)', alignSelf: 'flex-start' }]}>
-                    <Text style={[styles.statusText, { color: Colors.primary }]}>{t('result.winner_label').toUpperCase()}</Text>
                 </View>
             </View>
         );

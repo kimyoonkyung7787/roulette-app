@@ -45,17 +45,18 @@ export default function RouletteScreen({ route, navigation }) {
             const index = currentList.findIndex(item => (typeof item === 'object' ? item.name : item) === votedItem);
 
             if (index !== -1) {
+                const totalWeight = currentList.reduce((sum, p) => sum + (typeof p === 'object' ? (p.weight || 0) : (100 / currentList.length)), 0);
                 // Calculate target angle using PATTERN_ANGLE
                 let winnerStartAngleInPattern = 0;
                 for (let i = 0; i < index; i++) {
                     const p = currentList[i];
                     const weight = typeof p === 'object' ? p.weight : (100 / currentList.length);
-                    winnerStartAngleInPattern += (weight / 100) * PATTERN_ANGLE;
+                    winnerStartAngleInPattern += (weight / totalWeight) * PATTERN_ANGLE;
                 }
 
                 const winnerItem = currentList[index];
                 const winnerWeight = typeof winnerItem === 'object' ? winnerItem.weight : (100 / currentList.length);
-                const winnerSegmentAngleInPattern = (winnerWeight / 100) * PATTERN_ANGLE;
+                const winnerSegmentAngleInPattern = (winnerWeight / totalWeight) * PATTERN_ANGLE;
 
                 // Center of the segment in the pattern
                 const targetAngleOnWheel = winnerStartAngleInPattern + (winnerSegmentAngleInPattern / 2);
@@ -219,7 +220,9 @@ export default function RouletteScreen({ route, navigation }) {
                 totalParticipants: participantsState.length,
                 isForced: isManualForce || (finalVotes.length < participantsState.length),
                 finalVotes: finalVotes,
-                type: spinTarget // 'people' or 'menu'
+                type: spinTarget,
+                participants: participantsState,
+                menuItems: menuItems
             };
 
             if (role === 'owner') {
@@ -254,13 +257,14 @@ export default function RouletteScreen({ route, navigation }) {
         const winningAngle = (360 - normalizedRotation) % 360;
         const winningAngleInPattern = winningAngle % PATTERN_ANGLE;
 
+        const totalWeight = currentList.reduce((sum, p) => sum + (typeof p === 'object' ? (p.weight || 0) : (100 / currentList.length)), 0);
         let cumulativeAngle = 0;
         let winningIndex = 0;
 
         for (let i = 0; i < currentList.length; i++) {
             const p = currentList[i];
             const weight = typeof p === 'object' ? p.weight : (100 / currentList.length);
-            const sectorAngle = (weight / 100) * PATTERN_ANGLE;
+            const sectorAngle = (weight / totalWeight) * PATTERN_ANGLE;
 
             if (winningAngleInPattern >= cumulativeAngle && winningAngleInPattern < cumulativeAngle + sectorAngle) {
                 winningIndex = i;
@@ -294,12 +298,13 @@ export default function RouletteScreen({ route, navigation }) {
             const pointerAngle = (360 - normalizedRotation) % 360;
             const pointerAngleInPattern = pointerAngle % PATTERN_ANGLE;
 
+            const totalWeight = currentList.reduce((sum, p) => sum + (typeof p === 'object' ? (p.weight || 0) : (100 / currentList.length)), 0);
             let cumulativeAngle = 0;
             let currentIndex = 0;
             for (let i = 0; i < currentList.length; i++) {
                 const p = currentList[i];
                 const weight = typeof p === 'object' ? p.weight : (100 / currentList.length);
-                const sectorAngle = (weight / 100) * PATTERN_ANGLE;
+                const sectorAngle = (weight / totalWeight) * PATTERN_ANGLE;
                 if (pointerAngleInPattern >= cumulativeAngle && pointerAngleInPattern < cumulativeAngle + sectorAngle) {
                     currentIndex = i;
                     break;
@@ -327,7 +332,8 @@ export default function RouletteScreen({ route, navigation }) {
         let winnerIndex = fixedWinnerIndex;
 
         if (winnerIndex === null) {
-            let random = Math.random() * 100;
+            const totalWeight = currentList.reduce((sum, p) => sum + (typeof p === 'object' ? (p.weight || 0) : (100 / currentList.length)), 0);
+            let random = Math.random() * totalWeight;
             let accumulatedWeight = 0;
 
             for (let i = 0; i < currentList.length; i++) {
@@ -349,16 +355,17 @@ export default function RouletteScreen({ route, navigation }) {
 
         // 2. Calculate the center angle of the winner's segment
         // Calculate start angle of the winner within a pattern
+        const totalWeight = currentList.reduce((sum, p) => sum + (typeof p === 'object' ? (p.weight || 0) : (100 / currentList.length)), 0);
         let winnerStartAngleInPattern = 0;
         for (let i = 0; i < winnerIndex; i++) {
             const p = currentList[i];
             const weight = typeof p === 'object' ? p.weight : (100 / currentList.length);
-            winnerStartAngleInPattern += (weight / 100) * PATTERN_ANGLE;
+            winnerStartAngleInPattern += (weight / totalWeight) * PATTERN_ANGLE;
         }
 
         const winnerItem = currentList[winnerIndex];
         const winnerWeight = typeof winnerItem === 'object' ? winnerItem.weight : (100 / currentList.length);
-        const winnerSegmentAngleInPattern = (winnerWeight / 100) * PATTERN_ANGLE;
+        const winnerSegmentAngleInPattern = (winnerWeight / totalWeight) * PATTERN_ANGLE;
 
         // Target angle is the center of the segment
         const targetAngleOnWheel = winnerStartAngleInPattern + (winnerSegmentAngleInPattern / 2);
@@ -421,11 +428,12 @@ export default function RouletteScreen({ route, navigation }) {
         for (let repeat = 0; repeat < REPEAT_COUNT; repeat++) {
             let cumulativeAngle = (360 / REPEAT_COUNT) * repeat; // Start angle for this repetition
 
+            const totalWeight = currentList.reduce((sum, p) => sum + (typeof p === 'object' ? (p.weight || 0) : (100 / currentList.length)), 0);
             currentList.forEach((p, i) => {
                 const name = typeof p === 'object' ? p.name : p;
                 const weight = typeof p === 'object' ? p.weight : (100 / currentList.length);
                 // Divide angle by REPEAT_COUNT since we're repeating the pattern
-                const angle = (weight / 100) * (360 / REPEAT_COUNT);
+                const angle = (weight / totalWeight) * (360 / REPEAT_COUNT);
 
                 const startAngle = cumulativeAngle;
                 const endAngle = cumulativeAngle + angle;
@@ -607,14 +615,14 @@ export default function RouletteScreen({ route, navigation }) {
                             shadowRadius: 5
                         }}>
                             <Text style={{ color: Colors.primary, fontSize: 12, fontWeight: '900', letterSpacing: 1 }}>#{t('common.room_id')}: {(roomId || '').toUpperCase()}</Text>
-                            <Text style={{ color: Colors.secondary, fontSize: 11, fontWeight: 'bold', marginTop: 2, letterSpacing: 0.5 }}>{t('common.player').toUpperCase()}: {(mySelectedName || (role === 'owner' ? t('common.host') : t(`common.${role}`)) || t('common.unknown')).toUpperCase()}</Text>
+                            <Text style={{ color: Colors.secondary, fontSize: 10, fontWeight: 'bold', marginTop: 2, opacity: 0.8 }}>{t('common.player').toUpperCase()}: {(mySelectedName || (role === 'owner' ? t('common.host') : t(`common.${role}`)) || t('common.unknown')).toUpperCase()}</Text>
                         </View>
 
-                        <View style={{ flexDirection: 'row', gap: 8, alignItems: 'center' }}>
-                            <TouchableOpacity onPress={() => setShowUsersModal(true)} style={{ padding: 6 }}>
+                        <View style={{ flexDirection: 'row', gap: 2, alignItems: 'center' }}>
+                            <TouchableOpacity onPress={() => setShowUsersModal(true)} style={{ padding: 4 }}>
                                 <ListChecks color={Colors.success} size={24} />
                             </TouchableOpacity>
-                            <TouchableOpacity onPress={() => navigation.navigate('History')} style={{ padding: 6 }}>
+                            <TouchableOpacity onPress={() => navigation.navigate('History', { role, roomId, category })} style={{ padding: 4 }}>
                                 <History color={Colors.primary} size={24} />
                             </TouchableOpacity>
                             {['meal', 'coffee', 'snack'].includes(category) && spinTarget === 'menu' && (
@@ -626,10 +634,10 @@ export default function RouletteScreen({ route, navigation }) {
                                             role,
                                             category,
                                             resetSelection: true,
-                                            initialTab: spinTarget // 현재 룰렛 타입(people/menu)을 전달
+                                            initialTab: spinTarget
                                         });
                                     }}
-                                    style={{ padding: 6 }}
+                                    style={{ padding: 4 }}
                                 >
                                     <UserPlus color={Colors.accent} size={24} />
                                 </TouchableOpacity>
@@ -637,7 +645,7 @@ export default function RouletteScreen({ route, navigation }) {
                             <TouchableOpacity
                                 onPress={() => navigation.navigate('Welcome')}
                                 disabled={spinning}
-                                style={{ padding: 6, opacity: spinning ? 0.3 : 1 }}
+                                style={{ padding: 4, opacity: spinning ? 0.3 : 1 }}
                             >
                                 <LogOut color={Colors.error} size={24} />
                             </TouchableOpacity>

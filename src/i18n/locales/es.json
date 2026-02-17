@@ -29,7 +29,11 @@
         "start_game": "INICIAR JUEGO",
         "enter_room_id_to_proceed": "Por favor ingrese el ID de la sala",
         "room_id_length_error": "El ID de la sala debe tener 6 dígitos",
-        "room_not_found": "Sala no encontrada"
+        "room_not_found": "Sala no encontrada",
+        "resume_session": "¿Reanudar sesión anterior?",
+        "resume_message": "Se encontró una sesión de anfitrión activa para la sala #{{roomId}}. ¿Desea reanudarla?",
+        "resume_confirm": "SÍ,\nREANUDAR",
+        "resume_cancel": "NO,\nNUEVA"
     },
     "name_input": {
         "add_participant": "Agregar participante...",

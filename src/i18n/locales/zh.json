@@ -29,7 +29,11 @@
         "start_game": "开始游戏",
         "enter_room_id_to_proceed": "请输入房间号",
         "room_id_length_error": "房间号必须是6位数字",
-        "room_not_found": "找不到房间"
+        "room_not_found": "找不到房间",
+        "resume_session": "恢复之前的会话？",
+        "resume_message": "找到了房间 #{{roomId}} 的活跃房主会话。是否要恢复？",
+        "resume_confirm": "是，\n恢复",
+        "resume_cancel": "否，\n重新开始"
     },
     "name_input": {
         "add_participant": "添加参与者...",

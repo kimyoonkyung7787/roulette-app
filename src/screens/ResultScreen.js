@@ -74,7 +74,8 @@ export default function ResultScreen({ route, navigation }) {
                 }
 
                 console.log(`ResultScreen: Saving history with ${details.length} details`);
-                historyService.addWinner(winner, type, details);
+                const originalList = type === 'people' ? route.params.participants : route.params.menuItems;
+                historyService.addWinner(winner, type, details, originalList, roomId, category);
                 hasSavedRef.current = true;
             }
         }
@@ -160,19 +161,19 @@ export default function ResultScreen({ route, navigation }) {
                                 <Text style={{ color: Colors.primary, fontSize: 12, fontWeight: '900', letterSpacing: 1 }}>#{t('common.room_id')}: {(roomId || '').toUpperCase()}</Text>
                             </View>
 
-                            <View style={{ flexDirection: 'row', gap: 10, alignItems: 'center' }}>
-                                <TouchableOpacity onPress={handleShare} style={{ padding: 8 }}>
+                            <View style={{ flexDirection: 'row', gap: 2, alignItems: 'center' }}>
+                                <TouchableOpacity onPress={handleShare} style={{ padding: 4 }}>
                                     <Share2 color={Colors.accent} size={24} />
                                 </TouchableOpacity>
-                                <TouchableOpacity onPress={() => setShowUsersModal(true)} style={{ padding: 8 }}>
+                                <TouchableOpacity onPress={() => setShowUsersModal(true)} style={{ padding: 4 }}>
                                     <ListChecks color={Colors.success} size={24} />
                                 </TouchableOpacity>
-                                <TouchableOpacity onPress={() => navigation.navigate('History')} style={{ padding: 8 }}>
+                                <TouchableOpacity onPress={() => navigation.navigate('History', { role, roomId, category })} style={{ padding: 4 }}>
                                     <History color={Colors.primary} size={24} />
                                 </TouchableOpacity>
                                 <TouchableOpacity
                                     onPress={() => navigation.navigate('Welcome')}
-                                    style={{ padding: 8 }}
+                                    style={{ padding: 4 }}
                                 >
                                     <LogOut color={Colors.error} size={24} />
                                 </TouchableOpacity>

@@ -29,7 +29,11 @@
         "start_game": "गेम शुरू करें",
         "enter_room_id_to_proceed": "कृपया रूम आईडी दर्ज करें",
         "room_id_length_error": "रूम आईडी 6 अंकों की होनी चाहिए",
-        "room_not_found": "कमरा नहीं मिला"
+        "room_not_found": "कमरा नहीं मिला",
+        "resume_session": "पिछला सत्र पुनर्प्रारंभ करें?",
+        "resume_message": "कक्ष #{{roomId}} के लिए एक सक्रिय होस्ट सत्र मिला। क्या आप इसे पुनर्प्रारंभ करना चाहेंगे?",
+        "resume_confirm": "हाँ,\nपुनर्प्रारंभ",
+        "resume_cancel": "नहीं,\nनया शुरू"
     },
     "name_input": {
         "add_participant": "प्रतिभागी जोड़ें...",

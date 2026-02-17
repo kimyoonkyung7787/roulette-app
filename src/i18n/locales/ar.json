@@ -29,7 +29,11 @@
         "start_game": "بدء اللعبة",
         "enter_room_id_to_proceed": "يرجى إدخال معرف الغرفة",
         "room_id_length_error": "يجب أن يكون معرف الغرفة 6 أرقام",
-        "room_not_found": "الغرفة غير موجودة"
+        "room_not_found": "الغرفة غير موجودة",
+        "resume_session": "استئناف الجلسة السابقة؟",
+        "resume_message": "تم العثور على جلسة مضيف نشطة للغرفة رقم #{{roomId}}. هل تريد الاستئناف؟",
+        "resume_confirm": "نعم،\nاستئناف",
+        "resume_cancel": "لا،\nبدء جديد"
     },
     "name_input": {
         "add_participant": "إضافة مشارك...",

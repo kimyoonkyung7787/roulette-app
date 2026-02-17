@@ -13,7 +13,8 @@
         "info": "정보",
         "error": "오류",
         "room": "방",
-        "select_language": "언어 선택"
+        "select_language": "언어 선택",
+        "weight": "가중치"
     },
     "categories": {
         "coffee": "커피",
@@ -29,7 +30,11 @@
         "start_game": "게임 시작",
         "enter_room_id_to_proceed": "방 번호를 입력해 주세요",
         "room_id_length_error": "방 번호는 6자리여야 합니다",
-        "room_not_found": "방을 찾을 수 없습니다"
+        "room_not_found": "방을 찾을 수 없습니다",
+        "resume_session": "이전 세션을 복구할까요?",
+        "resume_message": "호스트로 활동하던 방(#{{roomId}})이 있습니다. 다시 입장하시겠습니까?",
+        "resume_confirm": "네,\n복구하기",
+        "resume_cancel": "아니오,\n새로 만들기"
     },
     "name_input": {
         "add_participant": "참가자 추가...",
@@ -52,7 +57,7 @@
         "game_in_progress": "게임 진행 중...",
         "select_name_to_join": "이름을 선택하여 참여하세요",
         "game_finished": "게임 종료",
-        "total_ratio": "전체 비율",
+        "total_ratio": "전체 가중치",
         "please_add_participants": "참가자를 추가해 주세요",
         "host_setting_up": "호스트가 설정 중입니다...",
         "select_menu_error": "선택할 메뉴를 클릭해 주세요",
@@ -86,6 +91,7 @@
     },
     "history": {
         "title": "기록 로그",
-        "no_data": "기록을 찾을 수 없습니다"
+        "no_data": "기록을 찾을 수 없습니다",
+        "restore": "설정 복구"
     }
 }
