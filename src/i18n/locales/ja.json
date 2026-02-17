@@ -13,7 +13,10 @@
         "info": "情報",
         "error": "エラー",
         "room": "ルーム",
-        "select_language": "言語選択"
+        "select_language": "言語選択",
+        "exit_confirm": "本当に終了しますか？",
+        "cancel": "キャンセル",
+        "confirm": "確認"
     },
     "categories": {
         "coffee": "コーヒー",

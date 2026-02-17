@@ -13,7 +13,10 @@
         "info": "信息",
         "error": "错误",
         "room": "房间",
-        "select_language": "选择语言"
+        "select_language": "选择语言",
+        "exit_confirm": "您确定要退出吗？",
+        "cancel": "取消",
+        "confirm": "确认"
     },
     "categories": {
         "coffee": "咖啡",

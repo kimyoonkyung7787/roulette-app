@@ -1,14 +1,15 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, TouchableOpacity, Dimensions, StyleSheet, Text } from 'react-native';
+import { View, TouchableOpacity, Dimensions, StyleSheet, Text, Alert } from 'react-native';
 import { useIsFocused } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { NeonText } from '../components/NeonText';
 import { Colors } from '../theme/colors';
 import { CyberBackground } from '../components/CyberBackground';
+import { CyberAlert } from '../components/CyberAlert';
 import { feedbackService } from '../services/FeedbackService';
 import Svg, { Path, G, Text as SvgText, Circle, Defs, RadialGradient, Stop } from 'react-native-svg';
 import Animated, { useSharedValue, useAnimatedStyle, withTiming, Easing, runOnJS, useAnimatedReaction } from 'react-native-reanimated';
-import { RotateCw, Users, X, Power, History, LogOut, UserPlus, ListChecks } from 'lucide-react-native';
+import { RotateCw, Users, X, Power, LogOut, UserPlus, ListChecks } from 'lucide-react-native';
 import { Modal, ScrollView } from 'react-native';
 import { syncService } from '../services/SyncService';
 import { useTranslation } from 'react-i18next';
@@ -30,6 +31,7 @@ export default function RouletteScreen({ route, navigation }) {
     const [spinning, setSpinning] = useState(false);
     const [onlineUsers, setOnlineUsers] = useState([]);
     const [showUsersModal, setShowUsersModal] = useState(false);
+    const [showExitConfirm, setShowExitConfirm] = useState(false);
     const [remoteSpinState, setRemoteSpinState] = useState(null);
     const [votes, setVotes] = useState([]);
     const isNavigating = useRef(false);
@@ -598,6 +600,10 @@ export default function RouletteScreen({ route, navigation }) {
         return t('roulette.execute');
     };
 
+    const handleExit = () => {
+        setShowExitConfirm(true);
+    };
+
     return (
         <CyberBackground>
             <SafeAreaView style={{ flex: 1 }}>
@@ -622,9 +628,6 @@ export default function RouletteScreen({ route, navigation }) {
                             <TouchableOpacity onPress={() => setShowUsersModal(true)} style={{ padding: 4 }}>
                                 <ListChecks color={Colors.success} size={24} />
                             </TouchableOpacity>
-                            <TouchableOpacity onPress={() => navigation.navigate('History', { role, roomId, category })} style={{ padding: 4 }}>
-                                <History color={Colors.primary} size={24} />
-                            </TouchableOpacity>
                             {['meal', 'coffee', 'snack'].includes(category) && spinTarget === 'menu' && (
                                 <TouchableOpacity
                                     onPress={async () => {
@@ -643,7 +646,7 @@ export default function RouletteScreen({ route, navigation }) {
                                 </TouchableOpacity>
                             )}
                             <TouchableOpacity
-                                onPress={() => navigation.navigate('Welcome')}
+                                onPress={handleExit}
                                 disabled={spinning}
                                 style={{ padding: 4, opacity: spinning ? 0.3 : 1 }}
                             >
@@ -790,7 +793,22 @@ export default function RouletteScreen({ route, navigation }) {
                             </ScrollView>
                         </View>
                     </View>
+
                 </Modal>
+
+                <CyberAlert
+                    visible={showExitConfirm}
+                    title={t('common.alert')}
+                    message={t('common.exit_confirm')}
+                    onConfirm={() => {
+                        setShowExitConfirm(false);
+                        navigation.navigate('Welcome');
+                    }}
+                    onCancel={() => setShowExitConfirm(false)}
+                    confirmText={t('common.confirm')}
+                    cancelText={t('common.cancel')}
+                    type="info"
+                />
             </SafeAreaView>
         </CyberBackground >
     );

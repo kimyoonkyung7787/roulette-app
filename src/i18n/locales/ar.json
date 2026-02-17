@@ -13,7 +13,10 @@
         "info": "معلومات",
         "error": "خطأ",
         "room": "غرفة",
-        "select_language": "اختر اللغة"
+        "select_language": "اختر اللغة",
+        "exit_confirm": "هل تريد حقًا الخروج؟",
+        "cancel": "إلغاء",
+        "confirm": "تأكيد"
     },
     "categories": {
         "coffee": "قهوة",

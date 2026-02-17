@@ -13,7 +13,10 @@
         "info": "जानकारी",
         "error": "त्रुटि",
         "room": "कमरा",
-        "select_language": "भाषा चुनें"
+        "select_language": "भाषा चुनें",
+        "exit_confirm": "क्या आप वास्तव में बाहर निकलना चाहते हैं?",
+        "cancel": "रद्द करें",
+        "confirm": "पुष्टि करें"
     },
     "categories": {
         "coffee": "कॉफी",

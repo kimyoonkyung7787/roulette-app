@@ -1,5 +1,6 @@
+
 import React, { useState, useEffect, useRef } from 'react';
-import { View, TextInput, TouchableOpacity, FlatList, Text, Modal, ScrollView, Platform } from 'react-native';
+import { View, TextInput, TouchableOpacity, FlatList, Text, Modal, ScrollView, Platform, Alert } from 'react-native';
 import { useIsFocused } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Colors } from '../theme/colors';
@@ -10,6 +11,7 @@ import { syncService } from '../services/SyncService';
 import { participantService } from '../services/ParticipantService';
 import { CyberAlert } from '../components/CyberAlert';
 import { useTranslation } from 'react-i18next';
+import { feedbackService } from '../services/FeedbackService';
 
 export default function NameInputScreen({ route, navigation }) {
     const { category = 'coffee', role = 'owner', roomId = 'default', initialTab } = route.params || {};
@@ -24,6 +26,7 @@ export default function NameInputScreen({ route, navigation }) {
     const [editingValue, setEditingValue] = useState('');
     const [editingWeightValue, setEditingWeightValue] = useState('');
     const [mySelectedName, setMySelectedName] = useState(null);
+    const [spinning, setSpinning] = useState(false);
     const [onlineUsers, setOnlineUsers] = useState([]);
     const [votes, setVotes] = useState([]);
     const [showUsersModal, setShowUsersModal] = useState(false);
@@ -31,6 +34,7 @@ export default function NameInputScreen({ route, navigation }) {
     const categoryRef = useRef(category);
     const [alertConfig, setAlertConfig] = useState({ visible: false, title: '', message: '' });
     const [selectedMenuIndex, setSelectedMenuIndex] = useState(null);
+    const [showExitConfirm, setShowExitConfirm] = useState(false);
 
     useEffect(() => {
         categoryRef.current = activeCategory;
@@ -136,7 +140,7 @@ export default function NameInputScreen({ route, navigation }) {
 
             // Subscribe to online users
             unsubs.push(syncService.subscribeToOnlineUsers(users => {
-                console.log(`NameInputScreen: Online users updated: ${users.length}`);
+                console.log(`NameInputScreen: Online users updated: ${users.length} `);
                 setOnlineUsers(users);
             }));
 
@@ -224,7 +228,7 @@ export default function NameInputScreen({ route, navigation }) {
         if (myVote && selectedMenuIndex === null) {
             const index = menuItems.findIndex(item => item.name === myVote.votedFor);
             if (index !== -1) {
-                console.log(`NameInputScreen: Syncing selection with DB vote: ${myVote.votedFor}`);
+                console.log(`NameInputScreen: Syncing selection with DB vote: ${myVote.votedFor} `);
                 setSelectedMenuIndex(index);
             }
         }
@@ -233,7 +237,7 @@ export default function NameInputScreen({ route, navigation }) {
     // Restore tab from initialTab parameter (for retry functionality)
     useEffect(() => {
         if (initialTab && (initialTab === 'people' || initialTab === 'menu')) {
-            console.log(`NameInputScreen: Restoring tab to: ${initialTab}`);
+            console.log(`NameInputScreen: Restoring tab to: ${initialTab} `);
             setActiveTab(initialTab);
             // Clear the param after using it
             navigation.setParams({ initialTab: undefined });
@@ -383,7 +387,7 @@ export default function NameInputScreen({ route, navigation }) {
             if (isGameAlreadyActive) {
                 // If game is active, just submit vote like a participant
                 try {
-                    console.log(`NameInputScreen: Owner joining active session, submitting vote: ${winner}`);
+                    console.log(`NameInputScreen: Owner joining active session, submitting vote: ${winner} `);
                     await syncService.submitVote(winner);
 
                     navigation.navigate('Roulette', {
@@ -402,7 +406,7 @@ export default function NameInputScreen({ route, navigation }) {
             } else {
                 try {
                     // Initialize game session for Menu Selection
-                    console.log(`NameInputScreen: Owner initializing Direct Pick session for menu in room:`, roomId);
+                    console.log(`NameInputScreen: Owner initializing Direct Pick session for menu in room: `, roomId);
                     await syncService.setSpinTarget('menu');
                     await syncService.setRoomPhase('roulette');
 
@@ -541,6 +545,10 @@ export default function NameInputScreen({ route, navigation }) {
 
     const isPeopleTab = activeTab === 'people';
 
+    const handleExit = () => {
+        setShowExitConfirm(true);
+    };
+
     return (
         <CyberBackground>
             <SafeAreaView style={{ flex: 1 }}>
@@ -568,7 +576,7 @@ export default function NameInputScreen({ route, navigation }) {
                                 <History color={Colors.primary} size={24} />
                             </TouchableOpacity>
                             <TouchableOpacity
-                                onPress={() => navigation.navigate('Welcome')}
+                                onPress={handleExit}
                                 style={{ padding: 4 }}
                             >
                                 <LogOut color={Colors.error} size={24} />
@@ -677,10 +685,9 @@ export default function NameInputScreen({ route, navigation }) {
                                             case 'coffee':
                                                 return <Coffee {...iconProps} />;
                                             case 'meal':
-                                                return <Utensils {...iconProps} />;
                                             case 'snack':
                                             default:
-                                                return <Cookie {...iconProps} />;
+                                                return <Utensils {...iconProps} />;
                                         }
                                     })()}
                                 </View>
@@ -1200,7 +1207,22 @@ export default function NameInputScreen({ route, navigation }) {
                         </View>
                     </View>
                 </Modal>
+
+                <CyberAlert
+                    visible={showExitConfirm}
+                    title={t('common.alert')}
+                    message={t('common.exit_confirm')}
+                    onConfirm={() => {
+                        setShowExitConfirm(false);
+                        navigation.navigate('Welcome');
+                    }}
+                    onCancel={() => setShowExitConfirm(false)}
+                    confirmText={t('common.confirm')}
+                    cancelText={t('common.cancel')}
+                    type="info"
+                />
             </SafeAreaView>
         </CyberBackground>
     );
 }
+

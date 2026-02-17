@@ -13,7 +13,10 @@
         "info": "INFO",
         "error": "ERREUR",
         "room": "SALLE",
-        "select_language": "CHOISIR LA LANGUE"
+        "select_language": "CHOISIR LA LANGUE",
+        "exit_confirm": "Voulez-vous vraiment quitter ?",
+        "cancel": "Annuler",
+        "confirm": "Confirmer"
     },
     "categories": {
         "coffee": "CAFÉ",

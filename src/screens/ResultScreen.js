@@ -1,9 +1,10 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { View, TouchableOpacity, StyleSheet, Text, Modal, ScrollView, Share } from 'react-native';
+import { View, TouchableOpacity, StyleSheet, Text, Modal, ScrollView, Share, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { NeonText } from '../components/NeonText';
 import { Colors } from '../theme/colors';
 import { CyberBackground } from '../components/CyberBackground';
+import { CyberAlert } from '../components/CyberAlert';
 import { feedbackService } from '../services/FeedbackService';
 import { historyService } from '../services/HistoryService';
 import { syncService } from '../services/SyncService';
@@ -16,6 +17,7 @@ export default function ResultScreen({ route, navigation }) {
     const [allVoted, setAllVoted] = useState(false);
     const [onlineUsers, setOnlineUsers] = useState([]);
     const [showUsersModal, setShowUsersModal] = useState(false);
+    const [showExitConfirm, setShowExitConfirm] = useState(false);
     const hasSavedRef = useRef(false);
 
     useEffect(() => {
@@ -129,8 +131,11 @@ export default function ResultScreen({ route, navigation }) {
 
     const handleShare = async () => {
         try {
-            const shareTitle = `🎰 ${t('result.share_title')}: ${winner}`;
-            const message = `🏆 ${t('result.winner_label')}: ${winner}\n📍 ${t('common.room')}: ${roomId.toUpperCase()}\n\n${t('result.share_message')} ✨`;
+            const safeWinner = winner || t('common.unknown');
+            const safeRoomId = roomId ? roomId.toUpperCase() : 'UNKNOWN';
+
+            const shareTitle = `🎰 ${t('result.share_title')}: ${safeWinner}`;
+            const message = `🏆 ${t('result.winner_label')}: ${safeWinner}\n📍 ${t('common.room')}: ${safeRoomId}\n\n${t('result.share_message')} ✨`;
 
             await Share.share({
                 title: shareTitle,
@@ -139,6 +144,10 @@ export default function ResultScreen({ route, navigation }) {
         } catch (error) {
             console.error('ResultScreen: Sharing failed', error);
         }
+    };
+
+    const handleExit = () => {
+        setShowExitConfirm(true);
     };
 
     return (
@@ -162,7 +171,7 @@ export default function ResultScreen({ route, navigation }) {
                             </View>
 
                             <View style={{ flexDirection: 'row', gap: 2, alignItems: 'center' }}>
-                                <TouchableOpacity onPress={handleShare} style={{ padding: 4 }}>
+                                <TouchableOpacity onPress={handleShare} style={{ padding: 4 }} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
                                     <Share2 color={Colors.accent} size={24} />
                                 </TouchableOpacity>
                                 <TouchableOpacity onPress={() => setShowUsersModal(true)} style={{ padding: 4 }}>
@@ -172,7 +181,7 @@ export default function ResultScreen({ route, navigation }) {
                                     <History color={Colors.primary} size={24} />
                                 </TouchableOpacity>
                                 <TouchableOpacity
-                                    onPress={() => navigation.navigate('Welcome')}
+                                    onPress={handleExit}
                                     style={{ padding: 4 }}
                                 >
                                     <LogOut color={Colors.error} size={24} />
@@ -304,9 +313,23 @@ export default function ResultScreen({ route, navigation }) {
                             </ScrollView>
                         </View>
                     </View>
+
                 </Modal>
+                <CyberAlert
+                    visible={showExitConfirm}
+                    title={t('common.alert')}
+                    message={t('common.exit_confirm')}
+                    onConfirm={() => {
+                        setShowExitConfirm(false);
+                        navigation.navigate('Welcome');
+                    }}
+                    onCancel={() => setShowExitConfirm(false)}
+                    confirmText={t('common.confirm')}
+                    cancelText={t('common.cancel')}
+                    type="info"
+                />
             </SafeAreaView>
-        </CyberBackground>
+        </CyberBackground >
     );
 }
 

@@ -14,7 +14,10 @@
         "error": "ERROR",
         "room": "ROOM",
         "select_language": "SELECT LANGUAGE",
-        "weight": "Weight"
+        "weight": "Weight",
+        "exit_confirm": "Do you really want to exit?",
+        "cancel": "Cancel",
+        "confirm": "Confirm"
     },
     "categories": {
         "coffee": "COFFEE",
