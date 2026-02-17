@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, TouchableOpacity, StyleSheet, Text, Dimensions, Image, TextInput, Platform } from 'react-native';
+import { View, TouchableOpacity, StyleSheet, Text, Dimensions, Image, TextInput, Platform, KeyboardAvoidingView, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import { NeonText } from '../components/NeonText';

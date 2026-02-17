@@ -15,6 +15,8 @@ import { useTranslation } from 'react-i18next';
 
 const { width } = Dimensions.get('window');
 const ROULETTE_SIZE = Math.min(width * 0.85, 420);
+const REPEAT_COUNT = 3;
+const PATTERN_ANGLE = 360 / REPEAT_COUNT;
 
 export default function RouletteScreen({ route, navigation }) {
     const { t } = useTranslation();
@@ -43,22 +45,22 @@ export default function RouletteScreen({ route, navigation }) {
             const index = currentList.findIndex(item => (typeof item === 'object' ? item.name : item) === votedItem);
 
             if (index !== -1) {
-                // Calculate target angle (Reuse logic from spin)
-                let winnerStartAngle = 0;
+                // Calculate target angle using PATTERN_ANGLE
+                let winnerStartAngleInPattern = 0;
                 for (let i = 0; i < index; i++) {
                     const p = currentList[i];
                     const weight = typeof p === 'object' ? p.weight : (100 / currentList.length);
-                    winnerStartAngle += (weight / 100) * 360;
+                    winnerStartAngleInPattern += (weight / 100) * PATTERN_ANGLE;
                 }
 
                 const winnerItem = currentList[index];
                 const winnerWeight = typeof winnerItem === 'object' ? winnerItem.weight : (100 / currentList.length);
-                const winnerSegmentAngle = (winnerWeight / 100) * 360;
+                const winnerSegmentAngleInPattern = (winnerWeight / 100) * PATTERN_ANGLE;
 
-                // Center of the segment
-                const targetAngleOnWheel = winnerStartAngle + (winnerSegmentAngle / 2);
+                // Center of the segment in the pattern
+                const targetAngleOnWheel = winnerStartAngleInPattern + (winnerSegmentAngleInPattern / 2);
 
-                // Target Rotation (bring to Top/0 deg)
+                // Target Rotation (bring to Top/0 deg) - this works for any repeat
                 const targetRotation = (360 - targetAngleOnWheel) % 360;
 
                 // Set rotation immediately
@@ -145,6 +147,14 @@ export default function RouletteScreen({ route, navigation }) {
             if (unsubMenuItems) unsubMenuItems();
         };
     }, []);
+
+    // Listen for remote spin to start own animation
+    useEffect(() => {
+        if (remoteSpinState?.isSpinning && !spinning && role === 'participant') {
+            console.log('RouletteScreen: Remote spin detected, starting animation for index:', remoteSpinState.winnerIndex);
+            startSpinAnimation(false, remoteSpinState.winnerIndex);
+        }
+    }, [remoteSpinState, spinning, role]);
 
     // Check if everyone has voted
     useEffect(() => {
@@ -242,6 +252,7 @@ export default function RouletteScreen({ route, navigation }) {
     const onSpinFinished = async (finalRotation) => {
         const normalizedRotation = (finalRotation % 360 + 360) % 360;
         const winningAngle = (360 - normalizedRotation) % 360;
+        const winningAngleInPattern = winningAngle % PATTERN_ANGLE;
 
         let cumulativeAngle = 0;
         let winningIndex = 0;
@@ -249,9 +260,9 @@ export default function RouletteScreen({ route, navigation }) {
         for (let i = 0; i < currentList.length; i++) {
             const p = currentList[i];
             const weight = typeof p === 'object' ? p.weight : (100 / currentList.length);
-            const sectorAngle = (weight / 100) * 360;
+            const sectorAngle = (weight / 100) * PATTERN_ANGLE;
 
-            if (winningAngle >= cumulativeAngle && winningAngle < cumulativeAngle + sectorAngle) {
+            if (winningAngleInPattern >= cumulativeAngle && winningAngleInPattern < cumulativeAngle + sectorAngle) {
                 winningIndex = i;
                 break;
             }
@@ -281,14 +292,15 @@ export default function RouletteScreen({ route, navigation }) {
         (currentValue) => {
             const normalizedRotation = (currentValue % 360 + 360) % 360;
             const pointerAngle = (360 - normalizedRotation) % 360;
+            const pointerAngleInPattern = pointerAngle % PATTERN_ANGLE;
 
             let cumulativeAngle = 0;
             let currentIndex = 0;
             for (let i = 0; i < currentList.length; i++) {
                 const p = currentList[i];
                 const weight = typeof p === 'object' ? p.weight : (100 / currentList.length);
-                const sectorAngle = (weight / 100) * 360;
-                if (pointerAngle >= cumulativeAngle && pointerAngle < cumulativeAngle + sectorAngle) {
+                const sectorAngle = (weight / 100) * PATTERN_ANGLE;
+                if (pointerAngleInPattern >= cumulativeAngle && pointerAngleInPattern < cumulativeAngle + sectorAngle) {
                     currentIndex = i;
                     break;
                 }
@@ -336,23 +348,20 @@ export default function RouletteScreen({ route, navigation }) {
         }
 
         // 2. Calculate the center angle of the winner's segment
-        // Calculate start angle of the winner
-        let winnerStartAngle = 0;
+        // Calculate start angle of the winner within a pattern
+        let winnerStartAngleInPattern = 0;
         for (let i = 0; i < winnerIndex; i++) {
             const p = currentList[i];
             const weight = typeof p === 'object' ? p.weight : (100 / currentList.length);
-            winnerStartAngle += (weight / 100) * 360;
+            winnerStartAngleInPattern += (weight / 100) * PATTERN_ANGLE;
         }
 
         const winnerItem = currentList[winnerIndex];
         const winnerWeight = typeof winnerItem === 'object' ? winnerItem.weight : (100 / currentList.length);
-        const winnerSegmentAngle = (winnerWeight / 100) * 360;
+        const winnerSegmentAngleInPattern = (winnerWeight / 100) * PATTERN_ANGLE;
 
         // Target angle is the center of the segment
-        // We want the pointer (at 0 deg / top) to point to this angle on the wheel
-        // The wheel rotates clockwise. At 0 rotation, 0 deg is at top.
-        // To bring angle X to top, we need to rotate by -X (or 360-X).
-        const targetAngleOnWheel = winnerStartAngle + (winnerSegmentAngle / 2);
+        const targetAngleOnWheel = winnerStartAngleInPattern + (winnerSegmentAngleInPattern / 2);
 
         // Calculate required rotation value
         // We want (rotation % 360) to be equivalent to (360 - targetAngleOnWheel) % 360
@@ -367,7 +376,7 @@ export default function RouletteScreen({ route, navigation }) {
         // Add minimum spins (5) + diff
         const extraSpins = 5;
         // Add a small random jitter (+/- 10% of segment width) to avoid looking too mechanical, but keep near center
-        const jitter = (Math.random() - 0.5) * (winnerSegmentAngle * 0.2);
+        const jitter = (Math.random() - 0.5) * (winnerSegmentAngleInPattern * 0.2);
 
         const finalRotation = currentRotation + (extraSpins * 360) + diff + jitter;
 
@@ -406,8 +415,7 @@ export default function RouletteScreen({ route, navigation }) {
     const renderSections = () => {
         if (currentList.length === 0) return null;
 
-        // Repeat the pattern 3 times for more dynamic visual
-        const REPEAT_COUNT = 3;
+        // Repeat the pattern for more dynamic visual
         const sections = [];
 
         for (let repeat = 0; repeat < REPEAT_COUNT; repeat++) {
