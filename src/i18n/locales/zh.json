@@ -12,6 +12,7 @@
         "alert": "提示",
         "info": "信息",
         "error": "错误",
+        "room": "房间",
         "select_language": "选择语言"
     },
     "categories": {
@@ -26,7 +27,7 @@
         "room_id_placeholder": "6位房间号",
         "host_mode_active": "主人模式",
         "start_game": "开始游戏",
-        "enter_room_id_to_proceed": "请输入房间号以继续",
+        "enter_room_id_to_proceed": "请输入房间号",
         "room_id_length_error": "房间号必须是6位数字",
         "room_not_found": "找不到房间"
     },
@@ -42,11 +43,12 @@
         "execute": "执行",
         "people": "参与者",
         "menu": "菜单",
-        "who": "选人",
-        "what": "选什么",
-        "pick_now": "立即选择",
-        "waiting_for_host": "等待主人...",
-        "please_select_name": "请选择您的名字",
+        "who": "谁会选中？",
+        "what": "旋转",
+        "pick_now": "我的选择",
+        "waiting_for_host": "等待房主...",
+        "selected": "已选择",
+        "please_select_name": "请选择您的姓名",
         "game_in_progress": "游戏进行中...",
         "select_name_to_join": "选择名字加入",
         "game_finished": "游戏结束",
@@ -54,7 +56,8 @@
         "please_add_participants": "请添加参与者",
         "host_setting_up": "主人正在设置中...",
         "select_menu_error": "请点击菜单项进行选择",
-        "connection_error": "连接房间失败"
+        "connection_error": "连接房间失败",
+        "min_participants_error": "至少需要2名参与者"
     },
     "roulette": {
         "spin_center": "旋转",

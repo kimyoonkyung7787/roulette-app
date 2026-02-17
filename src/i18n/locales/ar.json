@@ -1,0 +1,91 @@
+{
+    "common": {
+        "roulette_game": "لعبة الروليت",
+        "room_id": "الغرفة",
+        "player": "لاعب",
+        "host": "المضيف",
+        "participant": "مشارك",
+        "unknown": "غير معروف",
+        "me": "(أنا)",
+        "menu": "القائمة",
+        "people": "الأشخاص",
+        "alert": "تنبيه",
+        "info": "معلومات",
+        "error": "خطأ",
+        "room": "غرفة",
+        "select_language": "اختر اللغة"
+    },
+    "categories": {
+        "coffee": "قهوة",
+        "meal": "وجبة",
+        "snack": "وجبة خفيفة"
+    },
+    "welcome": {
+        "select_category": "اختر الفئة",
+        "choose_role": "اختر الدور",
+        "enter_room_id": "أدخل معرف الغرفة",
+        "room_id_placeholder": "معرف مكون من 6 أرقام",
+        "host_mode_active": "وضع المضيف",
+        "start_game": "بدء اللعبة",
+        "enter_room_id_to_proceed": "يرجى إدخال معرف الغرفة",
+        "room_id_length_error": "يجب أن يكون معرف الغرفة 6 أرقام",
+        "room_not_found": "الغرفة غير موجودة"
+    },
+    "name_input": {
+        "add_participant": "إضافة مشارك...",
+        "add_menu_item": "إضافة عنصر قائمة...",
+        "participant_status": "حالة المشاركين",
+        "voter": "مصوت",
+        "winner": "الفائز",
+        "waiting": "انتظار...",
+        "participants": "المشاركون",
+        "menu_items": "عناصر القائمة",
+        "execute": "تنفيذ",
+        "people": "الأشخاص",
+        "menu": "القائمة",
+        "who": "من سيتم اختياره",
+        "what": "تدوير",
+        "pick_now": "اختياري",
+        "waiting_for_host": "في انتظار المضيف...",
+        "selected": "محدد",
+        "please_select_name": "يرجى اختيار اسمك",
+        "game_in_progress": "اللعبة قيد التنفيذ...",
+        "select_name_to_join": "اختر اسماً للانضمام",
+        "game_finished": "انتهت اللعبة",
+        "total_ratio": "النسبة الإجمالية",
+        "please_add_participants": "يرجى إضافة مشاركين",
+        "host_setting_up": "المضيف يقوم بالإعداد...",
+        "select_menu_error": "يرجى النقر فوق عنصر قائمة للاختيار",
+        "connection_error": "فشل الاتصال بالغرفة",
+        "min_participants_error": "مطلوب مشاركين اثنين على الأقل"
+    },
+    "roulette": {
+        "spin_center": "تدوير",
+        "spinning": "دوران...",
+        "remote_spinning": "{{name}} يقوم بالتدوير...",
+        "waiting_for_others": "انتظار...",
+        "ready": "جاهز! دور الآن",
+        "execute": "تنفيذ",
+        "spinning_roulette": "دوران الروليت",
+        "gourmet_selection": "اختيار الطهاة",
+        "force_result": "فرض النتيجة",
+        "no_participants": "لا يوجد مشاركون"
+    },
+    "result": {
+        "share_title": "نتيجة الروليت",
+        "winner_label": "الفائز",
+        "share_message": "هذه هي النتيجة التي قررناها معاً! تفقدها!",
+        "tie_detected": "تم اكتشاف تعادل!",
+        "congratulations": "تهانينا!",
+        "voting_in_progress": "التصويت قيد التنفيذ...",
+        "tie_subtext": "تم اكتشاف عدة فائزين بسبب التعادل!",
+        "vote": "صوت",
+        "votes": "أصوات",
+        "waiting_for_others": "في انتظار الآخرين...",
+        "retry": "إعادة المحاولة"
+    },
+    "history": {
+        "title": "سجل العمليات",
+        "no_data": "لم يتم العثور على سجلات"
+    }
+}

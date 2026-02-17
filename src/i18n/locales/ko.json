@@ -12,6 +12,7 @@
         "alert": "알림",
         "info": "정보",
         "error": "오류",
+        "room": "방",
         "select_language": "언어 선택"
     },
     "categories": {
@@ -26,7 +27,7 @@
         "room_id_placeholder": "6자리 방 번호",
         "host_mode_active": "호스트 모드",
         "start_game": "게임 시작",
-        "enter_room_id_to_proceed": "계속하려면 방 번호를 입력하세요",
+        "enter_room_id_to_proceed": "방 번호를 입력해 주세요",
         "room_id_length_error": "방 번호는 6자리여야 합니다",
         "room_not_found": "방을 찾을 수 없습니다"
     },
@@ -42,10 +43,11 @@
         "execute": "실행",
         "people": "참가자",
         "menu": "메뉴",
-        "who": "누군가 선택",
-        "what": "무엇인가 선택",
-        "pick_now": "지금 선택하기",
+        "who": "누가 걸릴까",
+        "what": "돌리기",
+        "pick_now": "나의 픽",
         "waiting_for_host": "호스트를 기다리는 중...",
+        "selected": "선택됨",
         "please_select_name": "당신의 이름을 선택해 주세요",
         "game_in_progress": "게임 진행 중...",
         "select_name_to_join": "이름을 선택하여 참여하세요",
@@ -54,7 +56,8 @@
         "please_add_participants": "참가자를 추가해 주세요",
         "host_setting_up": "호스트가 설정 중입니다...",
         "select_menu_error": "선택할 메뉴를 클릭해 주세요",
-        "connection_error": "방에 연결하는 데 실패했습니다"
+        "connection_error": "방 연결에 실패했습니다",
+        "min_participants_error": "최소 2명의 참여자가 필요합니다"
     },
     "roulette": {
         "spin_center": "회전",

@@ -1,0 +1,32 @@
+﻿Running 17 checks on your project...
+15/17 checks passed. 2 checks failed. Possible issues detected:
+Use the --verbose flag to see more details about passed checks.
+
+??Check that required peer dependencies are installed
+Missing peer dependency: react-native-worklets
+Required by: react-native-reanimated
+Advice:
+Install missing required peer dependency with "npx expo install react-native-worklets"
+Your app may crash outside of Expo Go without this dependency. Native module peer dependencies must be installed directly.
+
+??Check that no duplicate dependencies are installed
+Your project contains duplicate native module dependencies, which should be de-duplicated.
+Native builds may only contain one version of any given native module, and having multiple versions of a single Native module installed may lead to unexpected build errors.
+Found duplicates for react:
+  ?쒋? react@19.1.0 (at: node_modules\react)
+  ?붴? react@19.2.4 (at: node_modules\moti\node_modules\react)
+Advice:
+Resolve your dependency issues and deduplicate your dependencies. Learn more: https://expo.fyi/resolving-dependency-issues
+
+node.exe : 2 checks failed, indicating possible i
+ssues with the project.
+위치 줄:1 문자:1
++ & "C:\Program Files\nodejs/node.exe" "C:\Progra
+m Files\nodejs/node_mo ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (2 c 
+   hecks failed...th the project.:String) [], R  
+  emoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 

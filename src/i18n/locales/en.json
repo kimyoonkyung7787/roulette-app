@@ -12,6 +12,7 @@
         "alert": "ALERT",
         "info": "INFO",
         "error": "ERROR",
+        "room": "ROOM",
         "select_language": "SELECT LANGUAGE"
     },
     "categories": {
@@ -26,7 +27,7 @@
         "room_id_placeholder": "6-DIGIT ROOM ID",
         "host_mode_active": "HOST MODE",
         "start_game": "START GAME",
-        "enter_room_id_to_proceed": "Please enter Room ID to proceed",
+        "enter_room_id_to_proceed": "Please enter Room ID",
         "room_id_length_error": "Room ID must be 6 digits",
         "room_not_found": "Room not found"
     },
@@ -43,9 +44,10 @@
         "people": "PEOPLE",
         "menu": "MENU",
         "who": "WHO TO PICK",
-        "what": "WHAT TO PICK",
-        "pick_now": "PICK NOW",
+        "what": "SPIN",
+        "pick_now": "MY PICK",
         "waiting_for_host": "Waiting for host...",
+        "selected": "SELECTED",
         "please_select_name": "Please select your name",
         "game_in_progress": "Game in progress...",
         "select_name_to_join": "Select name to join",
@@ -54,7 +56,8 @@
         "please_add_participants": "Please add participants",
         "host_setting_up": "Host is setting up...",
         "select_menu_error": "Please click a menu item to select",
-        "connection_error": "Failed to connect to room"
+        "connection_error": "Failed to connect to room",
+        "min_participants_error": "At least 2 participants are required"
     },
     "roulette": {
         "spin_center": "SPIN",

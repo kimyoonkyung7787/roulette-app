@@ -12,6 +12,7 @@
         "alert": "アラート",
         "info": "情報",
         "error": "エラー",
+        "room": "ルーム",
         "select_language": "言語選択"
     },
     "categories": {
@@ -26,7 +27,7 @@
         "room_id_placeholder": "6桁のルームID",
         "host_mode_active": "ホストモード",
         "start_game": "ゲーム開始",
-        "enter_room_id_to_proceed": "進むにはルームIDを入力してください",
+        "enter_room_id_to_proceed": "ルームIDを入力してください",
         "room_id_length_error": "ルームIDは6桁である必要があります",
         "room_not_found": "ルームが見つかりません"
     },
@@ -42,10 +43,11 @@
         "execute": "実行",
         "people": "参加者",
         "menu": "メニュー",
-        "who": "誰かを選ぶ",
-        "what": "何を選ぶ",
-        "pick_now": "今すぐ選ぶ",
+        "who": "誰が当たるかな",
+        "what": "スピン",
+        "pick_now": "マイピック",
         "waiting_for_host": "ホストを待っています...",
+        "selected": "選択済み",
         "please_select_name": "名前を選択してください",
         "game_in_progress": "ゲーム進行中...",
         "select_name_to_join": "名前を選択して参加",
@@ -54,7 +56,8 @@
         "please_add_participants": "参加者を追加してください",
         "host_setting_up": "ホストが設定中です...",
         "select_menu_error": "選択するメニューをクリックしてください",
-        "connection_error": "ルームへの接続に失敗しました"
+        "connection_error": "ルームへの接続に失敗しました",
+        "min_participants_error": "少なくとも2人の参加者が必要です"
     },
     "roulette": {
         "spin_center": "回転",

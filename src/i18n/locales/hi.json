@@ -1,0 +1,91 @@
+{
+    "common": {
+        "roulette_game": "रूले गेम",
+        "room_id": "कमरा",
+        "player": "खिलाड़ी",
+        "host": "मेज़बान",
+        "participant": "प्रतिभागी",
+        "unknown": "अज्ञात",
+        "me": "(मैं)",
+        "menu": "मेन्यू",
+        "people": "लोग",
+        "alert": "चेतावनी",
+        "info": "जानकारी",
+        "error": "त्रुटि",
+        "room": "कमरा",
+        "select_language": "भाषा चुनें"
+    },
+    "categories": {
+        "coffee": "कॉफी",
+        "meal": "भोजन",
+        "snack": "नाश्ता"
+    },
+    "welcome": {
+        "select_category": "श्रेणी चुनें",
+        "choose_role": "भूमिका चुनें",
+        "enter_room_id": "रूम आईडी दर्ज करें",
+        "room_id_placeholder": "6-अंकों की रूम आईडी",
+        "host_mode_active": "होस्ट मोड",
+        "start_game": "गेम शुरू करें",
+        "enter_room_id_to_proceed": "कृपया रूम आईडी दर्ज करें",
+        "room_id_length_error": "रूम आईडी 6 अंकों की होनी चाहिए",
+        "room_not_found": "कमरा नहीं मिला"
+    },
+    "name_input": {
+        "add_participant": "प्रतिभागी जोड़ें...",
+        "add_menu_item": "मेन्यू आइटम जोड़ें...",
+        "participant_status": "प्रतिभागी स्थिति",
+        "voter": "मतदाता",
+        "winner": "विजेता",
+        "waiting": "प्रतीक्षा कर रहा है...",
+        "participants": "प्रतिभागी",
+        "menu_items": "मेन्यू आइटम",
+        "execute": "निष्पादित करें",
+        "people": "लोग",
+        "menu": "मेन्यू",
+        "who": "किसे चुनें",
+        "what": "घुमाएं",
+        "pick_now": "मेरी पसंद",
+        "waiting_for_host": "होस्ट की प्रतीक्षा है...",
+        "selected": "चयनित",
+        "please_select_name": "कृपया अपना नाम चुनें",
+        "game_in_progress": "गेम चल रहा है...",
+        "select_name_to_join": "शामिल होने के लिए नाम चुनें",
+        "game_finished": "गेम समाप्त",
+        "total_ratio": "कुल अनुपात",
+        "please_add_participants": "कृपया प्रतिभागी जोड़ें",
+        "host_setting_up": "होस्ट सेटअप कर रहा है...",
+        "select_menu_error": "कृपया चुनने के लिए आइटम पर क्लिक करें",
+        "connection_error": "कमरे से जुड़ने में विफल",
+        "min_participants_error": "कम से कम 2 प्रतिभागी आवश्यक हैं"
+    },
+    "roulette": {
+        "spin_center": "घुमाएं",
+        "spinning": "घूम रहा है...",
+        "remote_spinning": "{{name}} घुमा रहा है...",
+        "waiting_for_others": "प्रतीक्षा कर रहा है...",
+        "ready": "तैयार! अब घुमाएं",
+        "execute": "निष्पादित करें",
+        "spinning_roulette": "रूले घूम रहा है",
+        "gourmet_selection": "गॉरमेट चयन",
+        "force_result": "परिणाम बाध्य करें",
+        "no_participants": "कोई प्रतिभागी नहीं"
+    },
+    "result": {
+        "share_title": "रूले परिणाम",
+        "winner_label": "विजेता",
+        "share_message": "यह वह परिणाम है जिसे हमने मिलकर तय किया है! इसे देखें!",
+        "tie_detected": "टाई का पता चला!",
+        "congratulations": "बधाई हो!",
+        "voting_in_progress": "मतदान चल रहा है...",
+        "tie_subtext": "टाई के कारण कई विजेताओं का पता चला!",
+        "vote": "वोट",
+        "votes": "वोट",
+        "waiting_for_others": "दूसरों की प्रतीक्षा है...",
+        "retry": "पुन: प्रयास करें"
+    },
+    "history": {
+        "title": "लॉग इतिहास",
+        "no_data": "कोई लॉग नहीं मिला"
+    }
+}

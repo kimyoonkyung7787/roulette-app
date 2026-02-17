@@ -12,6 +12,7 @@
         "alert": "ALERTA",
         "info": "INFO",
         "error": "ERROR",
+        "room": "SALA",
         "select_language": "SELECCIONAR IDIOMA"
     },
     "categories": {
@@ -26,7 +27,7 @@
         "room_id_placeholder": "ID DE 6 DÍGITOS",
         "host_mode_active": "MODO ANFITRIÓN",
         "start_game": "INICIAR JUEGO",
-        "enter_room_id_to_proceed": "Por favor ingrese el ID de la sala para continuar",
+        "enter_room_id_to_proceed": "Por favor ingrese el ID de la sala",
         "room_id_length_error": "El ID de la sala debe tener 6 dígitos",
         "room_not_found": "Sala no encontrada"
     },
@@ -42,10 +43,11 @@
         "execute": "EJECUTAR",
         "people": "PERSONAS",
         "menu": "MENÚ",
-        "who": "QUIÉN ELIGE",
-        "what": "QUÉ ELEGIR",
-        "pick_now": "ELEGIR AHORA",
+        "who": "QUIÉN SERÁ ELEGIDO",
+        "what": "GIRAR",
+        "pick_now": "MI ELECCIÓN",
         "waiting_for_host": "Esperando al anfitrión...",
+        "selected": "SELECCIONADO",
         "please_select_name": "Por favor seleccione su nombre",
         "game_in_progress": "Juego en progreso...",
         "select_name_to_join": "Seleccione nombre para unirse",
@@ -54,7 +56,8 @@
         "please_add_participants": "Por favor agregue participantes",
         "host_setting_up": "El anfitrión está configurando...",
         "select_menu_error": "Por favor haga clic en un plato para seleccionar",
-        "connection_error": "Error al conectar con la sala"
+        "connection_error": "Error al conectar con la sala",
+        "min_participants_error": "Se requieren al menos 2 participantes"
     },
     "roulette": {
         "spin_center": "GIRAR",

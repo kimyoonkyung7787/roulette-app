@@ -1,5 +1,5 @@
-import React from 'react';
-import { View, Modal, TouchableOpacity, StyleSheet, Text } from 'react-native';
+import React, { useMemo } from 'react';
+import { View, Modal, TouchableOpacity, StyleSheet, Text, Platform } from 'react-native';
 import { Colors } from '../theme/colors';
 import { NeonText } from './NeonText';
 import { AlertTriangle, Info, CheckCircle2 } from 'lucide-react-native';
@@ -28,7 +28,10 @@ export const CyberAlert = ({
             onRequestClose={onConfirm}
         >
             <View style={styles.overlay}>
-                <View style={[styles.container, { borderColor: themeColor, shadowColor: themeColor }]}>
+                <View style={[styles.container, {
+                    borderColor: themeColor,
+                    ...(Platform.OS === 'web' ? { boxShadow: `0 0 20px ${themeColor}` } : { shadowColor: themeColor })
+                }]}>
                     <View style={styles.header}>
                         <Icon color={themeColor} size={20} style={{ marginRight: 10 }} />
                         <NeonText className="text-xl" style={{ color: themeColor }}>{title}</NeonText>
@@ -67,8 +70,10 @@ const styles = StyleSheet.create({
         borderRadius: 16,
         padding: 24,
         borderWidth: 2,
-        shadowOpacity: 0.5,
-        shadowRadius: 20,
+        ...(Platform.OS === 'web' ? { boxShadow: '0 0 10px rgba(0,0,0,0.5)' } : {
+            shadowOpacity: 0.5,
+            shadowRadius: 20,
+        }),
         elevation: 10,
     },
     header: {

@@ -1,0 +1,91 @@
+{
+    "common": {
+        "roulette_game": "ROULETTE-SPIEL",
+        "room_id": "RAUM",
+        "player": "SPIELER",
+        "host": "HOST",
+        "participant": "TEILNEHMER",
+        "unknown": "UNBEKANNT",
+        "me": "(ICH)",
+        "menu": "MENÜ",
+        "people": "LEUTE",
+        "alert": "ALARM",
+        "info": "INFO",
+        "error": "FEHLER",
+        "room": "RAUM",
+        "select_language": "SPRACHE WÄHLEN"
+    },
+    "categories": {
+        "coffee": "KAFFEE",
+        "meal": "MAHLZEIT",
+        "snack": "SNACK"
+    },
+    "welcome": {
+        "select_category": "KATEGORIE WÄHLEN",
+        "choose_role": "ROLLE WÄHLEN",
+        "enter_room_id": "RAUM-ID EINGEBEN",
+        "room_id_placeholder": "6-STELLIGE RAUM-ID",
+        "host_mode_active": "HOST-MODUS",
+        "start_game": "SPIEL STARTEN",
+        "enter_room_id_to_proceed": "Bitte Room-ID eingeben",
+        "room_id_length_error": "Raum-ID muss 6-stellig sein",
+        "room_not_found": "Raum nicht gefunden"
+    },
+    "name_input": {
+        "add_participant": "Teilnehmer hinzufügen...",
+        "add_menu_item": "Menüpunkt hinzufügen...",
+        "participant_status": "TEILNEHMERSTATUS",
+        "voter": "WÄHLER",
+        "winner": "GEWINNER",
+        "waiting": "WARTEN...",
+        "participants": "TEILNEHMER",
+        "menu_items": "MENÜPUNKTE",
+        "execute": "AUSFÜHREN",
+        "people": "LEUTE",
+        "menu": "MENÜ",
+        "who": "WER WIRD GEWÄHLT",
+        "what": "DREHEN",
+        "pick_now": "MEINE WAHL",
+        "waiting_for_host": "Warten auf Host...",
+        "selected": "AUSGEWÄHLT",
+        "please_select_name": "Bitte wählen Sie Ihren Namen",
+        "game_in_progress": "Spiel läuft...",
+        "select_name_to_join": "Namen wählen zum Beitreten",
+        "game_finished": "Spiel beendet",
+        "total_ratio": "Gesamtverhältnis",
+        "please_add_participants": "Bitte Teilnehmer hinzufügen",
+        "host_setting_up": "Host richtet ein...",
+        "select_menu_error": "Bitte klicken Sie auf einen Menüpunkt",
+        "connection_error": "Verbindung zum Raum fehlgeschlagen",
+        "min_participants_error": "Mindestens 2 Teilnehmer sind erforderlich"
+    },
+    "roulette": {
+        "spin_center": "DREHEN",
+        "spinning": "DREHEN...",
+        "remote_spinning": "{{name}} DREHT...",
+        "waiting_for_others": "WARTEN...",
+        "ready": "BEREIT! JETZT DREHEN",
+        "execute": "AUSFÜHREN",
+        "spinning_roulette": "ROULETTE DREHT SICH",
+        "gourmet_selection": "GOURMET-AUSWAHL",
+        "force_result": "ERGEBNIS ERZWINGEN",
+        "no_participants": "KEINE TEILNEHMER"
+    },
+    "result": {
+        "share_title": "Roulette-Ergebnis",
+        "winner_label": "GEWINNER",
+        "share_message": "Das ist das Ergebnis, das wir zusammen entschieden haben! Schau es dir an!",
+        "tie_detected": "GLEICHSTAND ERKANNT!",
+        "congratulations": "HERZLICHEN GLÜCKWUNSCH!",
+        "voting_in_progress": "ABSTIMMUNG LÄUFT...",
+        "tie_subtext": "Mehrere Gewinner aufgrund eines Gleichstands!",
+        "vote": "STIMME",
+        "votes": "STIMMEN",
+        "waiting_for_others": "WARTEN AUF ANDERE...",
+        "retry": "WIEDERHOLEN"
+    },
+    "history": {
+        "title": "PROTOKOLLVERLAUF",
+        "no_data": "KEINE PROTOKOLLE GEFUNDEN"
+    }
+}

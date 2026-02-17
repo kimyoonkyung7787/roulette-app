@@ -436,7 +436,7 @@ export default function NameInputScreen({ route, navigation }) {
                 setAlertConfig({
                     visible: true,
                     title: t('common.info'),
-                    message: t('name_input.wait_for_host')
+                    message: t('name_input.waiting_for_host')
                 });
                 return;
             }
@@ -898,7 +898,7 @@ export default function NameInputScreen({ route, navigation }) {
                                                 setAlertConfig({
                                                     visible: true,
                                                     title: t('common.info'),
-                                                    message: t('name_input.wait_for_host')
+                                                    message: t('name_input.waiting_for_host')
                                                 });
                                             }
                                         }
@@ -963,7 +963,7 @@ export default function NameInputScreen({ route, navigation }) {
                                                     setAlertConfig({
                                                         visible: true,
                                                         title: t('common.info'),
-                                                        message: t('name_input.wait_for_host')
+                                                        message: t('name_input.waiting_for_host')
                                                     });
                                                     return;
                                                 }

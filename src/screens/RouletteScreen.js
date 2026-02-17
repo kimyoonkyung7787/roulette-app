@@ -150,18 +150,20 @@ export default function RouletteScreen({ route, navigation }) {
     useEffect(() => {
         if (!isFocused || spinning || isNavigating.current || votes.length === 0) return;
 
-        // Determine expected voter count based on mode
-        const expectedVoterCount = spinTarget === 'people'
-            ? participantsState.length
-            : onlineUsers.length;
+        // Determine expected voter count
+        // FIX: Always prioritize participantsState.length as the minimum expected voters.
+        // In menu mode, onlineUsers.length might be inaccurate (1) during transitions,
+        // causing premature finalization before others have even loaded the screen.
+        // This ensures the game waits for all defined participants to vote.
+        const expectedVoterCount = Math.max(participantsState.length, onlineUsers.length);
 
         // AUTO-FINALIZE: When all registered participants have voted
         // Works for both spin and "Pick Now" scenarios
         if (votes.length >= expectedVoterCount && expectedVoterCount > 0) {
-            console.log(`RouletteScreen: All ${expectedVoterCount} participants voted (${spinTarget} mode). Finalizing...`);
+            console.log(`RouletteScreen: All ${expectedVoterCount} participants voted. Finalizing...`);
             processFinalResult(false);
         }
-    }, [votes, currentList, spinning, remoteSpinState, spinTarget, onlineUsers]);
+    }, [votes, participantsState, spinning, isNavigating.current, spinTarget, onlineUsers]);
 
     const processFinalResult = async (isManualForce = false) => {
         if (isNavigating.current) return;
@@ -573,7 +575,8 @@ export default function RouletteScreen({ route, navigation }) {
         // If I have voted, show appropriate status
         if (myVote) return t('roulette.waiting_for_others');
 
-        const allVoted = votes.length >= participantsState.length && participantsState.length > 0;
+        const expectedVoterCount = Math.max(participantsState.length, onlineUsers.length);
+        const allVoted = votes.length >= expectedVoterCount && expectedVoterCount > 0;
         if (allVoted) return t('roulette.ready');
 
         return t('roulette.execute');
@@ -701,7 +704,7 @@ export default function RouletteScreen({ route, navigation }) {
                         </TouchableOpacity>
 
                         {/* Force Result Button for Owner if some but not all have voted */}
-                        {role === 'owner' && votes.length > 0 && votes.length < currentList.length && (
+                        {role === 'owner' && votes.length > 0 && votes.length < Math.max(participantsState.length, onlineUsers.length) && (
                             <TouchableOpacity
                                 onPress={() => processFinalResult(true)}
                                 style={{

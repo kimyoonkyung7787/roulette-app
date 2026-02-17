@@ -12,6 +12,7 @@
         "alert": "ALERTE",
         "info": "INFO",
         "error": "ERREUR",
+        "room": "SALLE",
         "select_language": "CHOISIR LA LANGUE"
     },
     "categories": {
@@ -26,7 +27,7 @@
         "room_id_placeholder": "ID À 6 CHIFFRES",
         "host_mode_active": "MODE HÔTE",
         "start_game": "LANCER LE JEU",
-        "enter_room_id_to_proceed": "Veuillez entrer l'ID de la salle pour continuer",
+        "enter_room_id_to_proceed": "Veuillez entrer l'ID de la salle",
         "room_id_length_error": "L'ID de la salle doit comporter 6 chiffres",
         "room_not_found": "Salle non trouvée"
     },
@@ -42,10 +43,11 @@
         "execute": "EXÉCUTER",
         "people": "PERSONNES",
         "menu": "MENU",
-        "who": "QUI CHOISIR",
-        "what": "QUE CHOISIR",
-        "pick_now": "CHOISIR MAINTENANT",
+        "who": "QUI SERA CHOISI",
+        "what": "TOURNER",
+        "pick_now": "MON CHOIX",
         "waiting_for_host": "En attente de l'hôte...",
+        "selected": "SÉLECTIONNÉ",
         "please_select_name": "Veuillez sélectionner votre nom",
         "game_in_progress": "Jeu en cours...",
         "select_name_to_join": "Sélectionnez un nom pour rejoindre",
@@ -54,7 +56,8 @@
         "please_add_participants": "Veuillez ajouter des participants",
         "host_setting_up": "L'hôte est en train de configurer...",
         "select_menu_error": "Veuillez cliquer sur un plat pour sélectionner",
-        "connection_error": "Échec de la connexion à la salle"
+        "connection_error": "Échec de la connexion à la salle",
+        "min_participants_error": "Au moins 2 participants sont requis"
     },
     "roulette": {
         "spin_center": "TOURNER",

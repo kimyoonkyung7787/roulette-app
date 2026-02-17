@@ -79,101 +79,111 @@ export default function WelcomeScreen({ navigation }) {
     return (
         <CyberBackground>
             <SafeAreaView style={{ flex: 1 }}>
-                <View style={[styles.container, { width: '100%', maxWidth: 500, alignSelf: 'center' }]}>
-                    {/* Top Header with Language Selector */}
-                    <View style={styles.topHeader}>
-                        <LanguageSelector />
-                    </View>
-
-                    {/* Header Image Placeholder / Roulette Aesthetic */}
-                    <View style={styles.heroContainer}>
-                        <View style={styles.rouletteCircle}>
-                            <View style={[styles.innerCircle, { borderColor: CATEGORIES.find(c => c.id === selectedCategory).color }]}>
-                                {React.createElement(CATEGORIES.find(c => c.id === selectedCategory).icon, {
-                                    size: 60,
-                                    color: CATEGORIES.find(c => c.id === selectedCategory).color
-                                })}
-                            </View>
-                            <NeonText className="mt-4 text-2xl tracking-[0.2em]" style={{ color: CATEGORIES.find(c => c.id === selectedCategory).color }}>
-                                {t('common.roulette_game')}
-                            </NeonText>
-                        </View>
-                    </View>
-
-                    <View style={styles.content}>
-                        <View style={styles.section}>
-                            <NeonText className="text-sm mb-4 opacity-70">{t('welcome.select_category')}</NeonText>
-                            <View style={styles.categoryGrid}>
-                                {CATEGORIES.map((cat) => (
-                                    <TouchableOpacity
-                                        key={cat.id}
-                                        onPress={() => setSelectedCategory(cat.id)}
-                                        style={[
-                                            styles.categoryCard,
-                                            selectedCategory === cat.id && { borderColor: cat.color, backgroundColor: `${cat.color}15` }
-                                        ]}
-                                    >
-                                        <cat.icon size={24} color={selectedCategory === cat.id ? cat.color : Colors.textSecondary} />
-                                        <Text style={[
-                                            styles.cardLabel,
-                                            { color: selectedCategory === cat.id ? cat.color : Colors.textSecondary }
-                                        ]}>{t(`categories.${cat.label}`)}</Text>
-                                    </TouchableOpacity>
-                                ))}
-                            </View>
-                        </View>
-
-                        <View style={styles.section}>
-                            <NeonText className="text-sm mb-4 opacity-70">{t('welcome.choose_role')}</NeonText>
-                            <View style={styles.roleContainer}>
-                                {ROLES.map((role) => (
-                                    <TouchableOpacity
-                                        key={role.id}
-                                        onPress={() => setSelectedRole(role.id)}
-                                        style={[
-                                            styles.roleCard,
-                                            selectedRole === role.id && { borderColor: Colors.primary, backgroundColor: 'rgba(0, 255, 255, 0.1)' }
-                                        ]}
-                                    >
-                                        <View style={styles.roleIconBox}>
-                                            <role.icon size={18} color={selectedRole === role.id ? Colors.primary : Colors.textSecondary} />
-                                        </View>
-                                        <Text style={[styles.roleLabel, selectedRole === role.id && { color: Colors.primary }]}>{t(`common.${role.label}`)}</Text>
-                                        {selectedRole === role.id && <View style={styles.checkMark} />}
-                                    </TouchableOpacity>
-                                ))}
+                <KeyboardAvoidingView
+                    behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+                    style={{ flex: 1 }}
+                >
+                    <ScrollView
+                        contentContainerStyle={styles.scrollContent}
+                        showsVerticalScrollIndicator={false}
+                    >
+                        <View style={[styles.container, { width: '100%', maxWidth: 500, alignSelf: 'center' }]}>
+                            {/* Top Header with Language Selector */}
+                            <View style={styles.topHeader}>
+                                <LanguageSelector />
                             </View>
 
-                            <View style={styles.inputAreaWrapper}>
-                                {selectedRole === 'participant' ? (
-                                    <View style={styles.roomIdInputContainer}>
-                                        <TextInput
-                                            style={styles.roomIdInput}
-                                            placeholder={t('welcome.room_id_placeholder')}
-                                            placeholderTextColor="rgba(255,255,255,0.3)"
-                                            keyboardType="number-pad"
-                                            maxLength={6}
-                                            value={inputRoomId}
-                                            onChangeText={setInputRoomId}
-                                        />
+                            {/* Header Image Placeholder / Roulette Aesthetic */}
+                            <View style={styles.heroContainer}>
+                                <View style={styles.rouletteCircle}>
+                                    <View style={[styles.innerCircle, { borderColor: CATEGORIES.find(c => c.id === selectedCategory).color }]}>
+                                        {React.createElement(CATEGORIES.find(c => c.id === selectedCategory).icon, {
+                                            size: 60,
+                                            color: CATEGORIES.find(c => c.id === selectedCategory).color
+                                        })}
                                     </View>
-                                ) : (
-                                    <View style={styles.inputPlaceholder}>
-                                        <Text style={styles.placeholderText}>{t('welcome.host_mode_active')}</Text>
+                                    <NeonText className="mt-4 text-2xl tracking-[0.2em]" style={{ color: CATEGORIES.find(c => c.id === selectedCategory).color }}>
+                                        {t('common.roulette_game')}
+                                    </NeonText>
+                                </View>
+                            </View>
+
+                            <View style={styles.content}>
+                                <View style={styles.section}>
+                                    <NeonText className="text-sm mb-4 opacity-70">{t('welcome.select_category')}</NeonText>
+                                    <View style={styles.categoryGrid}>
+                                        {CATEGORIES.map((cat) => (
+                                            <TouchableOpacity
+                                                key={cat.id}
+                                                onPress={() => setSelectedCategory(cat.id)}
+                                                style={[
+                                                    styles.categoryCard,
+                                                    selectedCategory === cat.id && { borderColor: cat.color, backgroundColor: `${cat.color}15` }
+                                                ]}
+                                            >
+                                                <cat.icon size={24} color={selectedCategory === cat.id ? cat.color : Colors.textSecondary} />
+                                                <Text style={[
+                                                    styles.cardLabel,
+                                                    { color: selectedCategory === cat.id ? cat.color : Colors.textSecondary }
+                                                ]}>{t(`categories.${cat.label}`)}</Text>
+                                            </TouchableOpacity>
+                                        ))}
                                     </View>
-                                )}
+                                </View>
+
+                                <View style={styles.section}>
+                                    <NeonText className="text-sm mb-4 opacity-70">{t('welcome.choose_role')}</NeonText>
+                                    <View style={styles.roleContainer}>
+                                        {ROLES.map((role) => (
+                                            <TouchableOpacity
+                                                key={role.id}
+                                                onPress={() => setSelectedRole(role.id)}
+                                                style={[
+                                                    styles.roleCard,
+                                                    selectedRole === role.id && { borderColor: Colors.primary, backgroundColor: 'rgba(0, 255, 255, 0.1)' }
+                                                ]}
+                                            >
+                                                <View style={styles.roleIconBox}>
+                                                    <role.icon size={18} color={selectedRole === role.id ? Colors.primary : Colors.textSecondary} />
+                                                </View>
+                                                <Text style={[styles.roleLabel, selectedRole === role.id && { color: Colors.primary }]}>{t(`common.${role.label}`)}</Text>
+                                                {selectedRole === role.id && <View style={styles.checkMark} />}
+                                            </TouchableOpacity>
+                                        ))}
+                                    </View>
+
+                                    <View style={styles.inputAreaWrapper}>
+                                        {selectedRole === 'participant' ? (
+                                            <View style={styles.roomIdInputContainer}>
+                                                <TextInput
+                                                    style={styles.roomIdInput}
+                                                    placeholder={t('welcome.room_id_placeholder')}
+                                                    placeholderTextColor="rgba(255,255,255,0.3)"
+                                                    keyboardType="number-pad"
+                                                    maxLength={6}
+                                                    value={inputRoomId}
+                                                    onChangeText={setInputRoomId}
+                                                />
+                                            </View>
+                                        ) : (
+                                            <View style={styles.inputPlaceholder}>
+                                                <Text style={styles.placeholderText}>{t('welcome.host_mode_active')}</Text>
+                                            </View>
+                                        )}
+                                    </View>
+                                </View>
+
+                                <TouchableOpacity
+                                    style={[styles.startButton, { shadowColor: Colors.primary }]}
+                                    onPress={handleStart}
+                                >
+                                    <Text style={styles.startButtonText}>{t('welcome.start_game')}</Text>
+                                    <ArrowRight color="black" size={20} style={{ marginLeft: 10 }} />
+                                </TouchableOpacity>
                             </View>
                         </View>
-
-                        <TouchableOpacity
-                            style={[styles.startButton, { shadowColor: Colors.primary }]}
-                            onPress={handleStart}
-                        >
-                            <Text style={styles.startButtonText}>{t('welcome.start_game')}</Text>
-                            <ArrowRight color="black" size={20} style={{ marginLeft: 10 }} />
-                        </TouchableOpacity>
-                    </View>
-                </View>
+                    </ScrollView>
+                </KeyboardAvoidingView>
 
                 <CyberAlert
                     visible={alertConfig.visible}
@@ -188,9 +198,12 @@ export default function WelcomeScreen({ navigation }) {
 }
 
 const styles = StyleSheet.create({
+    scrollContent: {
+        flexGrow: 1,
+    },
     container: {
-        flex: 1,
         paddingHorizontal: 25,
+        paddingBottom: 20,
     },
     topHeader: {
         flexDirection: 'row',
@@ -216,9 +229,8 @@ const styles = StyleSheet.create({
         backgroundColor: 'rgba(255,255,255,0.03)',
     },
     content: {
-        flex: 1,
         justifyContent: 'center',
-        paddingBottom: 60,
+        paddingBottom: 30,
     },
     section: {
         marginBottom: 20,

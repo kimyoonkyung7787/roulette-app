@@ -129,7 +129,7 @@ export default function ResultScreen({ route, navigation }) {
     const handleShare = async () => {
         try {
             const shareTitle = `🎰 ${t('result.share_title')}: ${winner}`;
-            const message = `[Gourmet Selection - ${t('result.share_title')}]\n\n🏆 ${t('result.winner_label')}: ${winner}\n📍 ${t('common.room')}: ${roomId.toUpperCase()}\n\n${t('result.share_message')} ✨`;
+            const message = `🏆 ${t('result.winner_label')}: ${winner}\n📍 ${t('common.room')}: ${roomId.toUpperCase()}\n\n${t('result.share_message')} ✨`;
 
             await Share.share({
                 title: shareTitle,

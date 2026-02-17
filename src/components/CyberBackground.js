@@ -39,15 +39,14 @@ export const CyberBackground = ({ children }) => {
                     repeatReverse: false,
                     easing: (t) => t, // Linear
                 }}
-                style={styles.movingScanline}
-                pointerEvents="none"
+                style={[styles.movingScanline, { pointerEvents: 'none' }]}
             />
 
             {/* Fixed Scanlines Effect */}
-            <View style={styles.scanlines} pointerEvents="none" />
+            <View style={[styles.scanlines, { pointerEvents: 'none' }]} />
 
             {/* Overlay Gradientish Glow */}
-            <View style={styles.glow} pointerEvents="none" />
+            <View style={[styles.glow, { pointerEvents: 'none' }]} />
 
             {children}
         </View>
