@@ -26,10 +26,16 @@ try {
     }
 } catch (e) {
     console.warn('SyncService: Firebase initialization warning:', e);
-    app = getApp();
+    // Try to get fallback app, but don't crash if it fails
+    try {
+        app = getApp();
+    } catch (err) {
+        console.error('SyncService: No Firebase app found after failure:', err);
+    }
 }
 
-const db = getDatabase(app);
+// Only initialize DB if app was successfully found or created
+const db = app ? getDatabase(app) : null;
 
 class SyncService {
     constructor() {

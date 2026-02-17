@@ -9,9 +9,11 @@ import { UserPlus, Trash2, Play, History, CheckCircle2, ListChecks, Users, X, Lo
 import { syncService } from '../services/SyncService';
 import { participantService } from '../services/ParticipantService';
 import { CyberAlert } from '../components/CyberAlert';
+import { useTranslation } from 'react-i18next';
 
 export default function NameInputScreen({ route, navigation }) {
     const { category = 'coffee', role = 'owner', roomId = 'default', initialTab } = route.params || {};
+    const { t } = useTranslation();
     const [name, setName] = useState('');
     const [participants, setParticipants] = useState([]);
     const [menuItems, setMenuItems] = useState([]);
@@ -358,8 +360,8 @@ export default function NameInputScreen({ route, navigation }) {
         if (selectedMenuIndex === null) {
             setAlertConfig({
                 visible: true,
-                title: 'ALERT',
-                message: 'PLEASE SELECT A MENU FIRST!'
+                title: t('common.alert'),
+                message: t('name_input.select_menu_error')
             });
             return;
         }
@@ -421,8 +423,8 @@ export default function NameInputScreen({ route, navigation }) {
                     console.error('Direct pick failed:', err);
                     setAlertConfig({
                         visible: true,
-                        title: 'ERROR',
-                        message: 'Failed to start selection. Check connection.'
+                        title: t('common.error'),
+                        message: t('name_input.connection_error')
                     });
                 }
             }
@@ -433,8 +435,8 @@ export default function NameInputScreen({ route, navigation }) {
             if (!isGameActive) {
                 setAlertConfig({
                     visible: true,
-                    title: 'INFO',
-                    message: 'Owner has not started yet. Please wait for the game to begin!'
+                    title: t('common.info'),
+                    message: t('name_input.wait_for_host')
                 });
                 return;
             }
@@ -461,8 +463,8 @@ export default function NameInputScreen({ route, navigation }) {
             if (participants.length < 2) {
                 setAlertConfig({
                     visible: true,
-                    title: 'ALERT',
-                    message: 'At least 2 participants required!'
+                    title: t('common.alert'),
+                    message: t('name_input.min_participants_error')
                 });
                 return;
             }
@@ -471,8 +473,8 @@ export default function NameInputScreen({ route, navigation }) {
             if (Math.abs(totalWeight - 100) > 0.01) {
                 setAlertConfig({
                     visible: true,
-                    title: 'ALERT',
-                    message: `Total ratio must be 100% (Current: ${Number(totalWeight.toFixed(1))}%)`
+                    title: t('common.alert'),
+                    message: t('name_input.ratio_error', { ratio: Number(totalWeight.toFixed(1)) })
                 });
                 return;
             }
@@ -480,8 +482,8 @@ export default function NameInputScreen({ route, navigation }) {
             if (menuItems.length < 2) {
                 setAlertConfig({
                     visible: true,
-                    title: 'ALERT',
-                    message: 'At least 2 menu items required!'
+                    title: t('common.alert'),
+                    message: t('name_input.min_menu_error')
                 });
                 return;
             }
@@ -547,7 +549,7 @@ export default function NameInputScreen({ route, navigation }) {
                             shadowOpacity: 0.3,
                             shadowRadius: 5
                         }}>
-                            <Text style={{ color: Colors.primary, fontSize: 12, fontWeight: '900', letterSpacing: 1 }}>#ROOM ID: {roomId.toUpperCase()}</Text>
+                            <Text style={{ color: Colors.primary, fontSize: 12, fontWeight: '900', letterSpacing: 1 }}>#{t('common.room_id')}: {roomId.toUpperCase()}</Text>
                         </View>
 
                         <View style={{ flexDirection: 'row', gap: 8, alignItems: 'center' }}>
@@ -582,16 +584,16 @@ export default function NameInputScreen({ route, navigation }) {
                                         borderColor: catColor
                                     }}>
                                         <Text style={{ color: catColor, fontSize: 10, fontWeight: 'bold' }}>
-                                            {(activeCategory || '').toUpperCase()}
+                                            {t(`categories.${activeCategory}`).toUpperCase()}
                                         </Text>
                                     </View>
                                 );
                             })()}
                             <View style={{ backgroundColor: 'rgba(255,255,255,0.05)', paddingHorizontal: 8, paddingVertical: 2, borderRadius: 4, borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)' }}>
-                                <Text style={{ color: Colors.textSecondary, fontSize: 10, fontWeight: 'bold' }}>{(role === 'owner' ? 'HOST' : (role || '')).toUpperCase()}</Text>
+                                <Text style={{ color: Colors.textSecondary, fontSize: 10, fontWeight: 'bold' }}>{t(`common.${role === 'owner' ? 'host' : 'participant'}`).toUpperCase()}</Text>
                             </View>
                         </View>
-                        <NeonText className="text-4xl">{activeTab === 'people' ? 'PARTICIPANTS' : 'MENU ITEMS'}</NeonText>
+                        <NeonText className="text-4xl">{activeTab === 'people' ? t('name_input.participants') : t('name_input.menu_items')}</NeonText>
                         <View style={{ height: 2, width: 100, backgroundColor: activeTab === 'people' ? Colors.primary : activeMenuColor, marginTop: 10, shadowColor: activeTab === 'people' ? Colors.primary : activeMenuColor, shadowOpacity: 0.8, shadowRadius: 10, elevation: 5 }} />
                     </View>
 
@@ -609,7 +611,7 @@ export default function NameInputScreen({ route, navigation }) {
                                 borderColor: Colors.primary
                             }}
                         >
-                            <Text style={{ color: activeTab === 'people' ? Colors.primary : 'rgba(255,255,255,0.5)', fontSize: 13, fontWeight: '900', letterSpacing: 1 }}>PEOPLE</Text>
+                            <Text style={{ color: activeTab === 'people' ? Colors.primary : 'rgba(255,255,255,0.5)', fontSize: 13, fontWeight: '900', letterSpacing: 1 }}>{t('name_input.people')}</Text>
                         </TouchableOpacity>
                         <TouchableOpacity
                             onPress={() => setActiveTab('menu')}
@@ -623,7 +625,7 @@ export default function NameInputScreen({ route, navigation }) {
                                 borderColor: activeMenuColor
                             }}
                         >
-                            <Text style={{ color: activeTab === 'menu' ? activeMenuColor : 'rgba(255,255,255,0.5)', fontSize: 13, fontWeight: '900', letterSpacing: 1 }}>MENU</Text>
+                            <Text style={{ color: activeTab === 'menu' ? activeMenuColor : 'rgba(255,255,255,0.5)', fontSize: 13, fontWeight: '900', letterSpacing: 1 }}>{t('name_input.menu')}</Text>
                         </TouchableOpacity>
                     </View>
 
@@ -632,7 +634,7 @@ export default function NameInputScreen({ route, navigation }) {
                             <View style={{ flex: 1, backgroundColor: 'rgba(255,255,255,0.12)', borderRadius: 12, borderWidth: 1, borderColor: 'rgba(255,255,255,0.15)', marginRight: 10, overflow: 'hidden' }}>
                                 <TextInput
                                     style={{ color: 'white', padding: 16, fontSize: 16 }}
-                                    placeholder={activeTab === 'people' ? "Add participant..." : "Add menu item..."}
+                                    placeholder={activeTab === 'people' ? t('name_input.add_participant') : t('name_input.add_menu_item')}
                                     placeholderTextColor="rgba(255,255,255,0.3)"
                                     value={name}
                                     onChangeText={setName}
@@ -756,7 +758,7 @@ export default function NameInputScreen({ route, navigation }) {
                                                     letterSpacing: 1,
                                                     opacity: isMe ? 1 : 0.8,
                                                     textDecorationLine: isTakenByOther && !isMe ? 'line-through' : 'none'
-                                                }}>{item.name}{isMe ? <Text style={{ fontSize: 13 }}> (ME)</Text> : ''}</Text>
+                                                }}>{item.name}{isMe ? <Text style={{ fontSize: 13 }}> {t('common.me')}</Text> : ''}</Text>
 
                                                 {/* Show Crown if this name is taken by an owner */}
                                                 {isPeopleTab && onlineUsers.some(u => u.name === item.name && u.role === 'owner') && (
@@ -775,7 +777,7 @@ export default function NameInputScreen({ route, navigation }) {
                                                         shadowRadius: 5
                                                     }}>
                                                         <Crown color={Colors.accent} size={12} fill={Colors.accent} style={{ marginRight: 4 }} />
-                                                        <Text style={{ color: Colors.accent, fontSize: 10, fontWeight: '900', letterSpacing: 0.5 }}>HOST</Text>
+                                                        <Text style={{ color: Colors.accent, fontSize: 10, fontWeight: '900', letterSpacing: 0.5 }}>{t('common.host').toUpperCase()}</Text>
                                                     </View>
                                                 )}
 
@@ -788,7 +790,7 @@ export default function NameInputScreen({ route, navigation }) {
                                                         paddingVertical: 2,
                                                         borderRadius: 4,
                                                     }}>
-                                                        <Text style={{ color: 'rgba(255,255,255,0.5)', fontSize: 9, fontWeight: 'bold' }}>SELECTED</Text>
+                                                        <Text style={{ color: 'rgba(255,255,255,0.5)', fontSize: 9, fontWeight: 'bold' }}>{t('name_input.selected').toUpperCase()}</Text>
                                                     </View>
                                                 )}
                                             </TouchableOpacity>
@@ -854,7 +856,7 @@ export default function NameInputScreen({ route, navigation }) {
                                 marginTop: 5,
                                 marginBottom: 15
                             }}>
-                                <Text style={{ color: 'rgba(255,255,255,0.4)', fontSize: 12, marginRight: 10 }}>TOTAL_RATIO:</Text>
+                                <Text style={{ color: 'rgba(255,255,255,0.4)', fontSize: 12, marginRight: 10 }}>{t('name_input.total_ratio').toUpperCase()}:</Text>
                                 <Text style={{
                                     color: Math.abs(participants.reduce((sum, p) => sum + (p.weight || 0), 0) - 100) < 0.01 ? Colors.secondary : Colors.error,
                                     fontSize: 14,
@@ -867,7 +869,7 @@ export default function NameInputScreen({ route, navigation }) {
                         ListEmptyComponent={
                             <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', marginTop: 50 }}>
                                 <Text style={{ color: 'rgba(255,255,255,0.3)', fontSize: 16 }}>
-                                    {role === 'owner' ? 'PLEASE ADD PARTICIPANTS' : 'THE HOST IS SETTING UP...'}
+                                    {role === 'owner' ? t('name_input.please_add_participants') : t('name_input.host_setting_up')}
                                 </Text>
                             </View>
                         }
@@ -895,8 +897,8 @@ export default function NameInputScreen({ route, navigation }) {
                                             } else {
                                                 setAlertConfig({
                                                     visible: true,
-                                                    title: 'INFO',
-                                                    message: 'THE HOST HAS NOT STARTED YET. PLEASE WAIT!'
+                                                    title: t('common.info'),
+                                                    message: t('name_input.wait_for_host')
                                                 });
                                             }
                                         }
@@ -920,7 +922,7 @@ export default function NameInputScreen({ route, navigation }) {
                                 >
                                     <Users color={Colors.primary} size={20} style={{ marginRight: 8 }} />
                                     <NeonText className="text-lg" style={{ color: Colors.primary }}>
-                                        WHO
+                                        {t('name_input.who')}
                                     </NeonText>
                                 </TouchableOpacity>
                             ) : (
@@ -946,7 +948,7 @@ export default function NameInputScreen({ route, navigation }) {
                                         }}
                                     >
                                         <Target color={Colors.secondary} size={20} style={{ marginRight: 8 }} />
-                                        <NeonText className="text-lg" style={{ color: Colors.secondary }}>PICK NOW</NeonText>
+                                        <NeonText className="text-lg" style={{ color: Colors.secondary }}>{t('name_input.pick_now')}</NeonText>
                                     </TouchableOpacity>
 
                                     <TouchableOpacity
@@ -960,8 +962,8 @@ export default function NameInputScreen({ route, navigation }) {
                                                 if (!isGameActive) {
                                                     setAlertConfig({
                                                         visible: true,
-                                                        title: 'INFO',
-                                                        message: 'THE HOST HAS NOT STARTED YET. PLEASE WAIT!'
+                                                        title: t('common.info'),
+                                                        message: t('name_input.wait_for_host')
                                                     });
                                                     return;
                                                 }
@@ -1000,7 +1002,7 @@ export default function NameInputScreen({ route, navigation }) {
                                             <Zap color={activeMenuColor} size={20} fill={activeMenuColor} />
                                         </View>
                                         <NeonText className="text-lg" style={{ color: activeMenuColor }}>
-                                            WHAT
+                                            {t('name_input.what')}
                                         </NeonText>
                                     </TouchableOpacity>
                                 </>
@@ -1019,10 +1021,10 @@ export default function NameInputScreen({ route, navigation }) {
                         <Loader color={Colors.primary} size={20} style={{ marginBottom: 8 }} />
                         <Text style={{ color: Colors.textSecondary, fontSize: 13, fontWeight: 'bold', letterSpacing: 2 }}>
                             {finalResults
-                                ? 'GAME FINISHED! CHECK RESULTS...'
+                                ? t('name_input.game_finished')
                                 : (roomPhase === 'roulette' || votes.length > 0 || remoteSpinState?.isSpinning)
-                                    ? (mySelectedName ? 'GAME IN PROGRESS...' : 'SELECT YOUR NAME TO JOIN!')
-                                    : (mySelectedName ? 'WAITING FOR HOST TO START...' : 'PLEASE SELECT YOUR NAME ABOVE')
+                                    ? (mySelectedName ? t('name_input.game_in_progress') : t('name_input.select_name_to_join'))
+                                    : (mySelectedName ? t('name_input.waiting_for_host') : t('name_input.please_select_name'))
                             }
                         </Text>
                     </View>
@@ -1069,7 +1071,7 @@ export default function NameInputScreen({ route, navigation }) {
                                 alignItems: 'center',
                                 marginBottom: 15
                             }}>
-                                <NeonText className="text-2xl">PARTICIPANT STATUS</NeonText>
+                                <NeonText className="text-2xl">{t('name_input.participant_status')}</NeonText>
                                 <TouchableOpacity onPress={() => setShowUsersModal(false)}>
                                     <X color={Colors.primary} size={24} />
                                 </TouchableOpacity>
@@ -1098,14 +1100,14 @@ export default function NameInputScreen({ route, navigation }) {
                                     fontWeight: 'bold',
                                     letterSpacing: 1.5,
                                     textTransform: 'uppercase'
-                                }}>VOTER</Text>
+                                }}>{t('name_input.voter')}</Text>
                                 <Text style={{
                                     color: Colors.primary,
                                     fontSize: 13,
                                     fontWeight: 'bold',
                                     letterSpacing: 1.5,
                                     textTransform: 'uppercase'
-                                }}>WINNER</Text>
+                                }}>{t('name_input.winner')}</Text>
                             </View>
 
                             <ScrollView style={{ maxHeight: 400 }}>
@@ -1141,7 +1143,7 @@ export default function NameInputScreen({ route, navigation }) {
                                                     fontWeight: '500',
                                                     letterSpacing: 1
                                                 }}>
-                                                    {user.name} {user.id === syncService.myId ? <Text style={{ fontSize: 11 }}> (ME)</Text> : ''}
+                                                    {user.name} {user.id === syncService.myId ? <Text style={{ fontSize: 11 }}> {t('common.me')}</Text> : ''}
                                                 </Text>
                                             </View>
                                             <View style={{
@@ -1157,7 +1159,7 @@ export default function NameInputScreen({ route, navigation }) {
                                                     fontSize: 12,
                                                     fontWeight: 'bold'
                                                 }}>
-                                                    {userVote ? userVote.votedFor : 'WAITING...'}
+                                                    {userVote ? userVote.votedFor : t('name_input.waiting').toUpperCase()}
                                                 </Text>
                                             </View>
                                         </View>

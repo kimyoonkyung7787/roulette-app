@@ -1,0 +1,88 @@
+{
+    "common": {
+        "roulette_game": "룰렛 게임",
+        "room_id": "방 번호",
+        "player": "플레이어",
+        "host": "호스트",
+        "participant": "참가자",
+        "unknown": "알 수 없음",
+        "me": "(나)",
+        "menu": "메뉴",
+        "people": "참가자",
+        "alert": "알림",
+        "info": "정보",
+        "error": "오류",
+        "select_language": "언어 선택"
+    },
+    "categories": {
+        "coffee": "커피",
+        "meal": "식사",
+        "snack": "간식"
+    },
+    "welcome": {
+        "select_category": "카테고리 선택",
+        "choose_role": "역할 선택",
+        "enter_room_id": "방 번호를 입력하세요",
+        "room_id_placeholder": "6자리 방 번호",
+        "host_mode_active": "호스트 모드",
+        "start_game": "게임 시작",
+        "enter_room_id_to_proceed": "계속하려면 방 번호를 입력하세요",
+        "room_id_length_error": "방 번호는 6자리여야 합니다",
+        "room_not_found": "방을 찾을 수 없습니다"
+    },
+    "name_input": {
+        "add_participant": "참가자 추가...",
+        "add_menu_item": "메뉴 추가...",
+        "participant_status": "참가자 상태",
+        "voter": "투표자",
+        "winner": "당첨자",
+        "waiting": "대기 중...",
+        "participants": "참가자 목록",
+        "menu_items": "메뉴 항목",
+        "execute": "실행",
+        "people": "참가자",
+        "menu": "메뉴",
+        "who": "누군가 선택",
+        "what": "무엇인가 선택",
+        "pick_now": "지금 선택하기",
+        "waiting_for_host": "호스트를 기다리는 중...",
+        "please_select_name": "당신의 이름을 선택해 주세요",
+        "game_in_progress": "게임 진행 중...",
+        "select_name_to_join": "이름을 선택하여 참여하세요",
+        "game_finished": "게임 종료",
+        "total_ratio": "전체 비율",
+        "please_add_participants": "참가자를 추가해 주세요",
+        "host_setting_up": "호스트가 설정 중입니다...",
+        "select_menu_error": "선택할 메뉴를 클릭해 주세요",
+        "connection_error": "방에 연결하는 데 실패했습니다"
+    },
+    "roulette": {
+        "spin_center": "회전",
+        "spinning": "회전 중...",
+        "remote_spinning": "{{name}}님이 회전 시키는 중...",
+        "waiting_for_others": "대기 중...",
+        "ready": "준비됨! 회전 시작",
+        "execute": "실행",
+        "spinning_roulette": "룰렛 회전",
+        "gourmet_selection": "미식 선택",
+        "force_result": "결과 강제 확인",
+        "no_participants": "참가자 없음"
+    },
+    "result": {
+        "share_title": "룰렛 결과",
+        "winner_label": "당첨자",
+        "share_message": "우리 같이 정한 결과예요! 확인해 보세요!",
+        "tie_detected": "동점 발생!",
+        "congratulations": "축하합니다!",
+        "voting_in_progress": "투표 진행 중...",
+        "tie_subtext": "동점으로 인해 여러 당첨자가 발생했습니다!",
+        "vote": "표",
+        "votes": "표",
+        "waiting_for_others": "다른 플레이어를 기다리는 중...",
+        "retry": "다시 하기"
+    },
+    "history": {
+        "title": "기록 로그",
+        "no_data": "기록을 찾을 수 없습니다"
+    }
+}

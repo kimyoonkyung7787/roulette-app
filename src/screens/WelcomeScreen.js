@@ -1,27 +1,30 @@
 import React, { useState } from 'react';
 import { View, TouchableOpacity, StyleSheet, Text, Dimensions, Image, TextInput, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useTranslation } from 'react-i18next';
 import { NeonText } from '../components/NeonText';
 import { Colors } from '../theme/colors';
 import { CyberBackground } from '../components/CyberBackground';
 import { Coffee, Utensils, Pizza, Crown, User, ArrowRight } from 'lucide-react-native';
 import { CyberAlert } from '../components/CyberAlert';
 import { syncService } from '../services/SyncService';
+import { LanguageSelector } from '../components/LanguageSelector';
 
 const { width } = Dimensions.get('window');
 
 const CATEGORIES = [
-    { id: 'coffee', label: 'COFFEE', icon: Coffee, color: Colors.neonPink },
-    { id: 'meal', label: 'MEAL', icon: Utensils, color: Colors.success },
-    { id: 'snack', label: 'SNACK', icon: Pizza, color: Colors.accent },
+    { id: 'coffee', label: 'coffee', icon: Coffee, color: Colors.neonPink },
+    { id: 'meal', label: 'meal', icon: Utensils, color: Colors.success },
+    { id: 'snack', label: 'snack', icon: Pizza, color: Colors.accent },
 ];
 
 const ROLES = [
-    { id: 'owner', label: 'HOST', icon: Crown, description: 'Manage participants' },
-    { id: 'participant', label: 'PARTICIPANT', icon: User, description: 'Join existing list' },
+    { id: 'owner', label: 'host', icon: Crown, description: 'Manage participants' },
+    { id: 'participant', label: 'participant', icon: User, description: 'Join existing list' },
 ];
 
 export default function WelcomeScreen({ navigation }) {
+    const { t } = useTranslation();
     const [selectedCategory, setSelectedCategory] = useState('coffee');
     const [selectedRole, setSelectedRole] = useState('participant');
     const [inputRoomId, setInputRoomId] = useState('');
@@ -40,16 +43,16 @@ export default function WelcomeScreen({ navigation }) {
             if (!inputRoomId || inputRoomId.trim().length === 0) {
                 setAlertConfig({
                     visible: true,
-                    title: 'ALERT',
-                    message: 'Please enter 6-digit ROOM ID to proceed.'
+                    title: t('common.alert'),
+                    message: t('welcome.enter_room_id_to_proceed')
                 });
                 return;
             }
             if (inputRoomId.length !== 6) {
                 setAlertConfig({
                     visible: true,
-                    title: 'ALERT',
-                    message: 'ROOM ID must be exactly 6 digits.'
+                    title: t('common.alert'),
+                    message: t('welcome.room_id_length_error')
                 });
                 return;
             }
@@ -59,8 +62,8 @@ export default function WelcomeScreen({ navigation }) {
             if (!exists) {
                 setAlertConfig({
                     visible: true,
-                    title: 'ALERT',
-                    message: 'ROOM NOT FOUND. PLEASE CHECK THE ROOM ID.'
+                    title: t('common.alert'),
+                    message: t('welcome.room_not_found')
                 });
                 return;
             }
@@ -77,6 +80,11 @@ export default function WelcomeScreen({ navigation }) {
         <CyberBackground>
             <SafeAreaView style={{ flex: 1 }}>
                 <View style={[styles.container, { width: '100%', maxWidth: 500, alignSelf: 'center' }]}>
+                    {/* Top Header with Language Selector */}
+                    <View style={styles.topHeader}>
+                        <LanguageSelector />
+                    </View>
+
                     {/* Header Image Placeholder / Roulette Aesthetic */}
                     <View style={styles.heroContainer}>
                         <View style={styles.rouletteCircle}>
@@ -87,14 +95,14 @@ export default function WelcomeScreen({ navigation }) {
                                 })}
                             </View>
                             <NeonText className="mt-4 text-2xl tracking-[0.2em]" style={{ color: CATEGORIES.find(c => c.id === selectedCategory).color }}>
-                                ROULETTE GAME
+                                {t('common.roulette_game')}
                             </NeonText>
                         </View>
                     </View>
 
                     <View style={styles.content}>
                         <View style={styles.section}>
-                            <NeonText className="text-sm mb-4 opacity-70">SELECT CATEGORY</NeonText>
+                            <NeonText className="text-sm mb-4 opacity-70">{t('welcome.select_category')}</NeonText>
                             <View style={styles.categoryGrid}>
                                 {CATEGORIES.map((cat) => (
                                     <TouchableOpacity
@@ -109,14 +117,14 @@ export default function WelcomeScreen({ navigation }) {
                                         <Text style={[
                                             styles.cardLabel,
                                             { color: selectedCategory === cat.id ? cat.color : Colors.textSecondary }
-                                        ]}>{cat.label}</Text>
+                                        ]}>{t(`categories.${cat.label}`)}</Text>
                                     </TouchableOpacity>
                                 ))}
                             </View>
                         </View>
 
                         <View style={styles.section}>
-                            <NeonText className="text-sm mb-4 opacity-70">CHOOSE YOUR ROLE</NeonText>
+                            <NeonText className="text-sm mb-4 opacity-70">{t('welcome.choose_role')}</NeonText>
                             <View style={styles.roleContainer}>
                                 {ROLES.map((role) => (
                                     <TouchableOpacity
@@ -130,7 +138,7 @@ export default function WelcomeScreen({ navigation }) {
                                         <View style={styles.roleIconBox}>
                                             <role.icon size={18} color={selectedRole === role.id ? Colors.primary : Colors.textSecondary} />
                                         </View>
-                                        <Text style={[styles.roleLabel, selectedRole === role.id && { color: Colors.primary }]}>{role.label}</Text>
+                                        <Text style={[styles.roleLabel, selectedRole === role.id && { color: Colors.primary }]}>{t(`common.${role.label}`)}</Text>
                                         {selectedRole === role.id && <View style={styles.checkMark} />}
                                     </TouchableOpacity>
                                 ))}
@@ -141,7 +149,7 @@ export default function WelcomeScreen({ navigation }) {
                                     <View style={styles.roomIdInputContainer}>
                                         <TextInput
                                             style={styles.roomIdInput}
-                                            placeholder="ENTER 6-DIGIT ROOM_ID"
+                                            placeholder={t('welcome.room_id_placeholder')}
                                             placeholderTextColor="rgba(255,255,255,0.3)"
                                             keyboardType="number-pad"
                                             maxLength={6}
@@ -151,7 +159,7 @@ export default function WelcomeScreen({ navigation }) {
                                     </View>
                                 ) : (
                                     <View style={styles.inputPlaceholder}>
-                                        <Text style={styles.placeholderText}>HOST_MODE_ACTIVE</Text>
+                                        <Text style={styles.placeholderText}>{t('welcome.host_mode_active')}</Text>
                                     </View>
                                 )}
                             </View>
@@ -161,7 +169,7 @@ export default function WelcomeScreen({ navigation }) {
                             style={[styles.startButton, { shadowColor: Colors.primary }]}
                             onPress={handleStart}
                         >
-                            <Text style={styles.startButtonText}>START GAME</Text>
+                            <Text style={styles.startButtonText}>{t('welcome.start_game')}</Text>
                             <ArrowRight color="black" size={20} style={{ marginLeft: 10 }} />
                         </TouchableOpacity>
                     </View>
@@ -184,9 +192,14 @@ const styles = StyleSheet.create({
         flex: 1,
         paddingHorizontal: 25,
     },
+    topHeader: {
+        flexDirection: 'row',
+        justifyContent: 'flex-end',
+        paddingVertical: 10,
+    },
     heroContainer: {
         alignItems: 'center',
-        paddingVertical: 40,
+        paddingVertical: 20,
     },
     rouletteCircle: {
         alignItems: 'center',

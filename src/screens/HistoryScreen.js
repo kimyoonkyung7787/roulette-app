@@ -6,8 +6,10 @@ import { Colors } from '../theme/colors';
 import { CyberBackground } from '../components/CyberBackground';
 import { historyService } from '../services/HistoryService';
 import { History as HistoryIcon, ArrowLeft, Trash2 } from 'lucide-react-native';
+import { useTranslation } from 'react-i18next';
 
 export default function HistoryScreen({ navigation }) {
+    const { t } = useTranslation();
     const [history, setHistory] = useState([]);
 
     useEffect(() => {
@@ -42,7 +44,7 @@ export default function HistoryScreen({ navigation }) {
                             borderColor: Colors.accent
                         }}>
                             <Text style={{ color: Colors.accent, fontSize: 8, fontWeight: 'bold' }}>
-                                {item.type === 'menu' ? 'MENU' : 'PEOPLE'}
+                                {item.type === 'menu' ? t('common.menu').toUpperCase() : t('common.people').toUpperCase()}
                             </Text>
                         </View>
                         <NeonText className="text-xl" color={Colors.accent}>{item.name}</NeonText>
@@ -52,11 +54,11 @@ export default function HistoryScreen({ navigation }) {
                     {/* Check if details exist and render them */}
                     {item.details && item.details.length > 0 && (
                         <View style={{ marginTop: 10, paddingTop: 10, borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.05)' }}>
-                            <Text style={{ color: 'rgba(255,255,255,0.4)', fontSize: 10, marginBottom: 5 }}>VOTES:</Text>
+                            <Text style={{ color: 'rgba(255,255,255,0.4)', fontSize: 10, marginBottom: 5 }}>{t('result.votes').toUpperCase()}:</Text>
                             {item.details.map((detail, idx) => (
                                 <View key={idx} style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 2 }}>
                                     <Text style={{ color: detail.isMe ? Colors.success : 'rgba(255,255,255,0.7)', fontSize: 11 }}>
-                                        {detail.name} {detail.isMe ? <Text style={{ fontSize: 8 }}> (ME)</Text> : ''}
+                                        {detail.name} {detail.isMe ? <Text style={{ fontSize: 8 }}> {t('common.me')}</Text> : ''}
                                     </Text>
                                     <Text style={{ color: Colors.secondary, fontSize: 11, fontWeight: 'bold' }}>
                                         {detail.votedFor}
@@ -67,7 +69,7 @@ export default function HistoryScreen({ navigation }) {
                     )}
                 </View>
                 <View style={[styles.statusBadge, { borderColor: Colors.primary, backgroundColor: 'rgba(0, 255, 255, 0.1)', alignSelf: 'flex-start' }]}>
-                    <Text style={[styles.statusText, { color: Colors.primary }]}>WINNER</Text>
+                    <Text style={[styles.statusText, { color: Colors.primary }]}>{t('result.winner_label').toUpperCase()}</Text>
                 </View>
             </View>
         );
@@ -83,7 +85,7 @@ export default function HistoryScreen({ navigation }) {
                         </TouchableOpacity>
                         <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                             <HistoryIcon color={Colors.primary} size={24} style={{ marginRight: 10 }} />
-                            <NeonText className="text-2xl tracking-widest">LOG_HISTORY</NeonText>
+                            <NeonText className="text-2xl tracking-widest">{t('history.title').toUpperCase()}</NeonText>
                         </View>
                         <TouchableOpacity onPress={clearHistory} style={styles.clearButton}>
                             <Trash2 color={Colors.textSecondary} size={18} opacity={0.6} />
@@ -97,7 +99,7 @@ export default function HistoryScreen({ navigation }) {
                         contentContainerStyle={styles.listContent}
                         ListEmptyComponent={
                             <View style={styles.emptyContainer}>
-                                <Text style={styles.emptyText}>NO DATA LOGS FOUND</Text>
+                                <Text style={styles.emptyText}>{t('history.no_data').toUpperCase()}</Text>
                             </View>
                         }
                     />

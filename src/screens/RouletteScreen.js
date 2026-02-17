@@ -11,11 +11,13 @@ import Animated, { useSharedValue, useAnimatedStyle, withTiming, Easing, runOnJS
 import { RotateCw, Users, X, Power, History, LogOut, UserPlus, ListChecks } from 'lucide-react-native';
 import { Modal, ScrollView } from 'react-native';
 import { syncService } from '../services/SyncService';
+import { useTranslation } from 'react-i18next';
 
 const { width } = Dimensions.get('window');
 const ROULETTE_SIZE = Math.min(width * 0.85, 420);
 
 export default function RouletteScreen({ route, navigation }) {
+    const { t } = useTranslation();
     const { participants = [], menuItems = [], mySelectedName, roomId = 'default', role = 'participant', category = 'coffee', votedItem = null } = route.params || {};
     const [participantsState, setParticipantsState] = useState(participants);
     const [menuItemsState, setMenuItemsState] = useState(menuItems);
@@ -549,7 +551,7 @@ export default function RouletteScreen({ route, navigation }) {
                 textAnchor="middle"
                 letterSpacing={2}
             >
-                SPIN
+                {t('roulette.spin_center').toUpperCase()}
             </SvgText>
         </G>
     );
@@ -561,20 +563,20 @@ export default function RouletteScreen({ route, navigation }) {
             onlineUsers.some(u => u.name === remoteSpinState.starter);
 
         if (isRemoteSpinning) {
-            return `${remoteSpinState.starter} IS SPINNING...`;
+            return t('roulette.remote_spinning', { name: remoteSpinState.starter });
         }
 
-        if (spinning) return 'SPINNING...';
+        if (spinning) return t('roulette.spinning');
 
         const myVote = votes.find(v => v.userId === syncService.myId);
 
         // If I have voted, show appropriate status
-        if (myVote) return 'WAITING FOR OTHERS...';
+        if (myVote) return t('roulette.waiting_for_others');
 
         const allVoted = votes.length >= participantsState.length && participantsState.length > 0;
-        if (allVoted) return 'READY! SPIN NOW';
+        if (allVoted) return t('roulette.ready');
 
-        return 'EXECUTE';
+        return t('roulette.execute');
     };
 
     return (
@@ -593,8 +595,8 @@ export default function RouletteScreen({ route, navigation }) {
                             shadowOpacity: 0.3,
                             shadowRadius: 5
                         }}>
-                            <Text style={{ color: Colors.primary, fontSize: 12, fontWeight: '900', letterSpacing: 1 }}>#ROOM: {(roomId || '').toUpperCase()}</Text>
-                            <Text style={{ color: Colors.secondary, fontSize: 11, fontWeight: 'bold', marginTop: 2, letterSpacing: 0.5 }}>PLAYER: {(mySelectedName || (role === 'owner' ? 'HOST' : role) || 'UNKNOWN').toUpperCase()}</Text>
+                            <Text style={{ color: Colors.primary, fontSize: 12, fontWeight: '900', letterSpacing: 1 }}>#{t('common.room_id')}: {(roomId || '').toUpperCase()}</Text>
+                            <Text style={{ color: Colors.secondary, fontSize: 11, fontWeight: 'bold', marginTop: 2, letterSpacing: 0.5 }}>{t('common.player').toUpperCase()}: {(mySelectedName || (role === 'owner' ? t('common.host') : t(`common.${role}`)) || t('common.unknown')).toUpperCase()}</Text>
                         </View>
 
                         <View style={{ flexDirection: 'row', gap: 8, alignItems: 'center' }}>
@@ -631,7 +633,7 @@ export default function RouletteScreen({ route, navigation }) {
                         </View>
                     </View>
                     <View style={styles.header}>
-                        <NeonText className="text-3xl tracking-widest">{spinTarget === 'people' ? 'SPINNING ROULETTE' : 'GOURMET SELECTION'}</NeonText>
+                        <NeonText className="text-3xl tracking-widest">{spinTarget === 'people' ? t('roulette.spinning_roulette') : t('roulette.gourmet_selection')}</NeonText>
                         <View style={[styles.headerLine, { backgroundColor: spinTarget === 'people' ? Colors.primary : Colors.secondary, shadowColor: spinTarget === 'people' ? Colors.primary : Colors.secondary }]} />
                     </View>
 
@@ -714,7 +716,7 @@ export default function RouletteScreen({ route, navigation }) {
                                     width: '100%'
                                 }}
                             >
-                                <Text style={{ color: Colors.error, fontSize: 13, fontWeight: 'bold', letterSpacing: 1 }}>⚡ FORCE RESULT (HOST)</Text>
+                                <Text style={{ color: Colors.error, fontSize: 13, fontWeight: 'bold', letterSpacing: 1 }}>⚡ {t('roulette.force_result').toUpperCase()} ({t('common.host').toUpperCase()})</Text>
                             </TouchableOpacity>
                         )}
 
@@ -731,7 +733,7 @@ export default function RouletteScreen({ route, navigation }) {
                     <View style={styles.modalOverlay}>
                         <View style={styles.modalContent}>
                             <View style={styles.modalHeader}>
-                                <Text style={styles.modalTitle}>PARTICIPANT STATUS</Text>
+                                <Text style={styles.modalTitle}>{t('name_input.participant_status').toUpperCase()}</Text>
                                 <TouchableOpacity onPress={() => setShowUsersModal(false)}>
                                     <X color={Colors.primary} size={24} />
                                 </TouchableOpacity>
@@ -740,8 +742,8 @@ export default function RouletteScreen({ route, navigation }) {
 
                             {/* Column Headers */}
                             <View style={styles.tableHeader}>
-                                <Text style={styles.tableHeaderText}>VOTER</Text>
-                                <Text style={styles.tableHeaderText}>WINNER</Text>
+                                <Text style={styles.tableHeaderText}>{t('name_input.voter').toUpperCase()}</Text>
+                                <Text style={styles.tableHeaderText}>{t('name_input.winner').toUpperCase()}</Text>
                             </View>
 
                             <ScrollView style={{ maxHeight: 400 }}>
@@ -752,19 +754,19 @@ export default function RouletteScreen({ route, navigation }) {
                                             <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center' }}>
                                                 <View style={[styles.userStatusDot, { backgroundColor: userVote ? Colors.success : Colors.primary }]} />
                                                 <Text style={styles.userName}>
-                                                    {user.name} {user.id === syncService.myId ? <Text style={{ fontSize: 11 }}> (ME)</Text> : ''}
+                                                    {user.name} {user.id === syncService.myId ? <Text style={{ fontSize: 11 }}> {t('common.me')}</Text> : ''}
                                                 </Text>
                                             </View>
                                             <View style={{ backgroundColor: 'rgba(255,255,255,0.05)', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 6, borderWidth: 1, borderColor: userVote ? 'rgba(57, 255, 20, 0.2)' : 'rgba(255,255,255,0.1)' }}>
                                                 <Text style={{ color: userVote ? Colors.success : 'rgba(255,255,255,0.3)', fontSize: 12, fontWeight: 'bold' }}>
-                                                    {userVote ? userVote.votedFor : 'WAITING...'}
+                                                    {userVote ? userVote.votedFor : t('name_input.waiting').toUpperCase()}
                                                 </Text>
                                             </View>
                                         </View>
                                     );
                                 })}
                                 {onlineUsers.length === 0 && (
-                                    <Text style={{ color: 'rgba(255,255,255,0.5)', textAlign: 'center', marginVertical: 20 }}>NO PARTICIPANTS DETECTED</Text>
+                                    <Text style={{ color: 'rgba(255,255,255,0.5)', textAlign: 'center', marginVertical: 20 }}>{t('roulette.no_participants').toUpperCase()}</Text>
                                 )}
                             </ScrollView>
                         </View>

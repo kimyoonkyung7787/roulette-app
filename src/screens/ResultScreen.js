@@ -6,10 +6,12 @@ import { Colors } from '../theme/colors';
 import { CyberBackground } from '../components/CyberBackground';
 import { feedbackService } from '../services/FeedbackService';
 import { historyService } from '../services/HistoryService';
-import { Trophy, RefreshCw, Home, ListChecks, Loader, Power, History, LogOut, X, Share2 } from 'lucide-react-native';
 import { syncService } from '../services/SyncService';
+import { useTranslation } from 'react-i18next';
+import { Share2, ListChecks, History, LogOut, Trophy, Loader, RefreshCw, X } from 'lucide-react-native';
 
 export default function ResultScreen({ route, navigation }) {
+    const { t } = useTranslation();
     const { winner = 'Unknown', isTie = false, tally = {}, totalParticipants = 0, roomId = 'default', role = 'participant', isForced = false, finalVotes = [], type = 'people', category = 'coffee' } = route.params || {};
     const [allVoted, setAllVoted] = useState(false);
     const [onlineUsers, setOnlineUsers] = useState([]);
@@ -126,8 +128,8 @@ export default function ResultScreen({ route, navigation }) {
 
     const handleShare = async () => {
         try {
-            const shareTitle = `🎰 룰렛 결과: ${winner}`;
-            const message = `[Gourmet Selection - 룰렛 결과]\n\n🏆 당첨: ${winner}\n📍 방 번호: ${roomId.toUpperCase()}\n\n우리 같이 정한 결과예요! 확인해 보세요! ✨`;
+            const shareTitle = `🎰 ${t('result.share_title')}: ${winner}`;
+            const message = `[Gourmet Selection - ${t('result.share_title')}]\n\n🏆 ${t('result.winner_label')}: ${winner}\n📍 ${t('common.room')}: ${roomId.toUpperCase()}\n\n${t('result.share_message')} ✨`;
 
             await Share.share({
                 title: shareTitle,
@@ -155,7 +157,7 @@ export default function ResultScreen({ route, navigation }) {
                                 shadowOpacity: 0.3,
                                 shadowRadius: 5
                             }}>
-                                <Text style={{ color: Colors.primary, fontSize: 12, fontWeight: '900', letterSpacing: 1 }}>#ROOM: {(roomId || '').toUpperCase()}</Text>
+                                <Text style={{ color: Colors.primary, fontSize: 12, fontWeight: '900', letterSpacing: 1 }}>#{t('common.room_id')}: {(roomId || '').toUpperCase()}</Text>
                             </View>
 
                             <View style={{ flexDirection: 'row', gap: 10, alignItems: 'center' }}>
@@ -194,8 +196,8 @@ export default function ResultScreen({ route, navigation }) {
                         <View style={styles.resultBox}>
                             <Text style={styles.label}>
                                 {allVoted
-                                    ? (isTie ? 'TIE DETECTED' : 'CONGRATULATIONS!')
-                                    : 'VOTING IN PROGRESS...'}
+                                    ? (isTie ? t('result.tie_detected') : t('result.congratulations'))
+                                    : t('result.voting_in_progress')}
                             </Text>
                             <View style={styles.winnerNameContainer}>
                                 <NeonText
@@ -209,7 +211,7 @@ export default function ResultScreen({ route, navigation }) {
                                     {winner}
                                 </NeonText>
                             </View>
-                            {allVoted && isTie && <Text style={styles.tieSubText}>Multiple winners detected due to a tie!</Text>}
+                            {allVoted && isTie && <Text style={styles.tieSubText}>{t('result.tie_subtext')}</Text>}
 
                             {/* Tally Chart */}
                             <View style={styles.tallyContainer}>
@@ -229,14 +231,14 @@ export default function ResultScreen({ route, navigation }) {
                                         </View>
                                         <View style={styles.tallyCountContainer}>
                                             <Text style={styles.tallyCountValue}>{count}</Text>
-                                            <Text style={styles.tallyCountLabel}>{count === 1 ? 'VOTE' : 'VOTES'}</Text>
+                                            <Text style={styles.tallyCountLabel}>{count === 1 ? t('result.vote') : t('result.votes')}</Text>
                                         </View>
                                     </View>
                                 ))}
                             </View>
 
                             <Text style={styles.subText}>
-                                {!allVoted && 'WAITING FOR OTHER PLAYERS...'}
+                                {!allVoted && t('result.waiting_for_others')}
                             </Text>
                         </View>
 
@@ -248,7 +250,7 @@ export default function ResultScreen({ route, navigation }) {
                                     style={styles.retryButton}
                                 >
                                     <RefreshCw color={Colors.primary} size={18} style={{ marginRight: 8 }} />
-                                    <Text style={styles.retryText}>RETRY</Text>
+                                    <Text style={styles.retryText}>{t('result.retry').toUpperCase()}</Text>
                                 </TouchableOpacity>
                             </View>
                         ) : null}
@@ -266,14 +268,14 @@ export default function ResultScreen({ route, navigation }) {
                     <View style={styles.modalOverlay}>
                         <View style={styles.modalContent}>
                             <View style={styles.modalHeader}>
-                                <Text style={styles.modalTitle}>PARTICIPANT STATUS</Text>
+                                <Text style={styles.modalTitle}>{t('name_input.participant_status').toUpperCase()}</Text>
                                 <TouchableOpacity onPress={() => setShowUsersModal(false)}>
                                     <X color={Colors.primary} size={24} />
                                 </TouchableOpacity>
                             </View>
                             <View style={styles.tableHeader}>
-                                <Text style={styles.tableHeaderText}>VOTER</Text>
-                                <Text style={styles.tableHeaderText}>WINNER</Text>
+                                <Text style={styles.tableHeaderText}>{t('name_input.voter').toUpperCase()}</Text>
+                                <Text style={styles.tableHeaderText}>{t('name_input.winner').toUpperCase()}</Text>
                             </View>
 
                             <ScrollView style={{ maxHeight: 400 }}>
@@ -284,19 +286,19 @@ export default function ResultScreen({ route, navigation }) {
                                             <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center' }}>
                                                 <View style={[styles.userStatusDot, { backgroundColor: userVote ? Colors.success : Colors.primary }]} />
                                                 <Text style={styles.userName}>
-                                                    {user.name} {user.id === syncService.myId ? <Text style={{ fontSize: 10 }}> (ME)</Text> : ''}
+                                                    {user.name} {user.id === syncService.myId ? <Text style={{ fontSize: 10 }}> {t('common.me')}</Text> : ''}
                                                 </Text>
                                             </View>
                                             <View style={{ backgroundColor: 'rgba(255,255,255,0.05)', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 6, borderWidth: 1, borderColor: userVote ? 'rgba(57, 255, 20, 0.2)' : 'rgba(255,255,255,0.1)' }}>
                                                 <Text style={{ color: userVote ? Colors.success : 'rgba(255,255,255,0.3)', fontSize: 12, fontWeight: 'bold' }}>
-                                                    {userVote ? userVote.votedFor : 'SPINNING...'}
+                                                    {userVote ? userVote.votedFor : t('roulette.spinning')}
                                                 </Text>
                                             </View>
                                         </View>
                                     );
                                 })}
                                 {onlineUsers.length === 0 && (
-                                    <Text style={{ color: 'rgba(255,255,255,0.5)', textAlign: 'center', marginVertical: 20 }}>NO PARTICIPANTS DETECTED</Text>
+                                    <Text style={{ color: 'rgba(255,255,255,0.5)', textAlign: 'center', marginVertical: 20 }}>{t('roulette.no_participants').toUpperCase()}</Text>
                                 )}
                             </ScrollView>
                         </View>

@@ -1,0 +1,88 @@
+{
+    "common": {
+        "roulette_game": "JEU DE ROULETTE",
+        "room_id": "SALLE",
+        "player": "JOUEUR",
+        "host": "HÔTE",
+        "participant": "PARTICIPANT",
+        "unknown": "INCONNU",
+        "me": "(MOI)",
+        "menu": "MENU",
+        "people": "PERSONNES",
+        "alert": "ALERTE",
+        "info": "INFO",
+        "error": "ERREUR",
+        "select_language": "CHOISIR LA LANGUE"
+    },
+    "categories": {
+        "coffee": "CAFÉ",
+        "meal": "REPAS",
+        "snack": "GOÛTER"
+    },
+    "welcome": {
+        "select_category": "SÉLECTIONNER CATÉGORIE",
+        "choose_role": "CHOISIR RÔLE",
+        "enter_room_id": "ENTRER ID SALLE",
+        "room_id_placeholder": "ID À 6 CHIFFRES",
+        "host_mode_active": "MODE HÔTE",
+        "start_game": "LANCER LE JEU",
+        "enter_room_id_to_proceed": "Veuillez entrer l'ID de la salle pour continuer",
+        "room_id_length_error": "L'ID de la salle doit comporter 6 chiffres",
+        "room_not_found": "Salle non trouvée"
+    },
+    "name_input": {
+        "add_participant": "Ajouter un participant...",
+        "add_menu_item": "Ajouter un plat...",
+        "participant_status": "ÉTAT DES PARTICIPANTS",
+        "voter": "VOTANT",
+        "winner": "GAGNANT",
+        "waiting": "EN ATTENTE...",
+        "participants": "PARTICIPANTS",
+        "menu_items": "PLATS",
+        "execute": "EXÉCUTER",
+        "people": "PERSONNES",
+        "menu": "MENU",
+        "who": "QUI CHOISIR",
+        "what": "QUE CHOISIR",
+        "pick_now": "CHOISIR MAINTENANT",
+        "waiting_for_host": "En attente de l'hôte...",
+        "please_select_name": "Veuillez sélectionner votre nom",
+        "game_in_progress": "Jeu en cours...",
+        "select_name_to_join": "Sélectionnez un nom pour rejoindre",
+        "game_finished": "Jeu terminé",
+        "total_ratio": "Ratio Total",
+        "please_add_participants": "Veuillez ajouter des participants",
+        "host_setting_up": "L'hôte est en train de configurer...",
+        "select_menu_error": "Veuillez cliquer sur un plat pour sélectionner",
+        "connection_error": "Échec de la connexion à la salle"
+    },
+    "roulette": {
+        "spin_center": "TOURNER",
+        "spinning": "ROTATION...",
+        "remote_spinning": "{{name}} FAIT TOURNER...",
+        "waiting_for_others": "EN ATTENTE...",
+        "ready": "PRÊT ! TOURNEZ MAINTENANT",
+        "execute": "EXÉCUTER",
+        "spinning_roulette": "ROULETTE EN ROTATION",
+        "gourmet_selection": "SÉLECTION GOURMET",
+        "force_result": "FORCER LE RÉSULTAT",
+        "no_participants": "PAS DE PARTICIPANTS"
+    },
+    "result": {
+        "share_title": "Résultat de la Roulette",
+        "winner_label": "GAGNANT",
+        "share_message": "Voici le résultat que nous avons décidé ensemble ! Découvrez-le !",
+        "tie_detected": "ÉGALITÉ DÉTECTÉE !",
+        "congratulations": "FÉLICITATIONS !",
+        "voting_in_progress": "VOTE EN COURS...",
+        "tie_subtext": "Plusieurs gagnants détectés suite à une égalité !",
+        "vote": "VOTE",
+        "votes": "VOTES",
+        "waiting_for_others": "EN ATTENTE DES AUTRES...",
+        "retry": "RÉESSAYER"
+    },
+    "history": {
+        "title": "HISTORIQUE DES JOURNAUX",
+        "no_data": "AUCUN JOURNAL TROUVÉ"
+    }
+}

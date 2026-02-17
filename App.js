@@ -1,4 +1,5 @@
 import "./global.css";
+import "./src/i18n";
 import React, { useEffect } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';

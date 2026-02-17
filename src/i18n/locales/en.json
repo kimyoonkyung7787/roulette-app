@@ -1,0 +1,88 @@
+{
+    "common": {
+        "roulette_game": "ROULETTE GAME",
+        "room_id": "ROOM",
+        "player": "PLAYER",
+        "host": "HOST",
+        "participant": "PARTICIPANT",
+        "unknown": "UNKNOWN",
+        "me": "(ME)",
+        "menu": "MENU",
+        "people": "PEOPLE",
+        "alert": "ALERT",
+        "info": "INFO",
+        "error": "ERROR",
+        "select_language": "SELECT LANGUAGE"
+    },
+    "categories": {
+        "coffee": "COFFEE",
+        "meal": "MEAL",
+        "snack": "SNACK"
+    },
+    "welcome": {
+        "select_category": "SELECT CATEGORY",
+        "choose_role": "CHOOSE ROLE",
+        "enter_room_id": "ENTER ROOM ID",
+        "room_id_placeholder": "6-DIGIT ROOM ID",
+        "host_mode_active": "HOST MODE",
+        "start_game": "START GAME",
+        "enter_room_id_to_proceed": "Please enter Room ID to proceed",
+        "room_id_length_error": "Room ID must be 6 digits",
+        "room_not_found": "Room not found"
+    },
+    "name_input": {
+        "add_participant": "Add participant...",
+        "add_menu_item": "Add menu item...",
+        "participant_status": "PARTICIPANT STATUS",
+        "voter": "VOTER",
+        "winner": "WINNER",
+        "waiting": "WAITING...",
+        "participants": "PARTICIPANTS",
+        "menu_items": "MENU ITEMS",
+        "execute": "EXECUTE",
+        "people": "PEOPLE",
+        "menu": "MENU",
+        "who": "WHO TO PICK",
+        "what": "WHAT TO PICK",
+        "pick_now": "PICK NOW",
+        "waiting_for_host": "Waiting for host...",
+        "please_select_name": "Please select your name",
+        "game_in_progress": "Game in progress...",
+        "select_name_to_join": "Select name to join",
+        "game_finished": "Game finished",
+        "total_ratio": "Total Ratio",
+        "please_add_participants": "Please add participants",
+        "host_setting_up": "Host is setting up...",
+        "select_menu_error": "Please click a menu item to select",
+        "connection_error": "Failed to connect to room"
+    },
+    "roulette": {
+        "spin_center": "SPIN",
+        "spinning": "SPINNING...",
+        "remote_spinning": "{{name}} IS SPINNING...",
+        "waiting_for_others": "WAITING...",
+        "ready": "READY! SPIN NOW",
+        "execute": "EXECUTE",
+        "spinning_roulette": "SPINNING ROULETTE",
+        "gourmet_selection": "GOURMET SELECTION",
+        "force_result": "FORCE RESULT",
+        "no_participants": "NO PARTICIPANTS"
+    },
+    "result": {
+        "share_title": "Roulette Result",
+        "winner_label": "WINNER",
+        "share_message": "This is the result we decided together! Check it out!",
+        "tie_detected": "TIE DETECTED!",
+        "congratulations": "CONGRATULATIONS!",
+        "voting_in_progress": "VOTING IN PROGRESS...",
+        "tie_subtext": "Multiple winners detected due to a tie!",
+        "vote": "VOTE",
+        "votes": "VOTES",
+        "waiting_for_others": "WAITING FOR OTHERS...",
+        "retry": "RETRY"
+    },
+    "history": {
+        "title": "LOG HISTORY",
+        "no_data": "NO DATA LOGS FOUND"
+    }
+}

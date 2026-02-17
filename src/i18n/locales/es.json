@@ -1,0 +1,88 @@
+{
+    "common": {
+        "roulette_game": "JUEGO DE RULETA",
+        "room_id": "SALA",
+        "player": "JUGADOR",
+        "host": "ANFITRIÓN",
+        "participant": "PARTICIPANTE",
+        "unknown": "DESCONOCIDO",
+        "me": "(YO)",
+        "menu": "MENÚ",
+        "people": "PERSONAS",
+        "alert": "ALERTA",
+        "info": "INFO",
+        "error": "ERROR",
+        "select_language": "SELECCIONAR IDIOMA"
+    },
+    "categories": {
+        "coffee": "CAFÉ",
+        "meal": "COMIDA",
+        "snack": "MERIENDA"
+    },
+    "welcome": {
+        "select_category": "SELECCIONAR CATEGORÍA",
+        "choose_role": "ELEGIR ROL",
+        "enter_room_id": "INGRESAR ID DE SALA",
+        "room_id_placeholder": "ID DE 6 DÍGITOS",
+        "host_mode_active": "MODO ANFITRIÓN",
+        "start_game": "INICIAR JUEGO",
+        "enter_room_id_to_proceed": "Por favor ingrese el ID de la sala para continuar",
+        "room_id_length_error": "El ID de la sala debe tener 6 dígitos",
+        "room_not_found": "Sala no encontrada"
+    },
+    "name_input": {
+        "add_participant": "Agregar participante...",
+        "add_menu_item": "Agregar plato...",
+        "participant_status": "ESTADO DE PARTICIPANTES",
+        "voter": "VOTANTE",
+        "winner": "GANADOR",
+        "waiting": "ESPERANDO...",
+        "participants": "PARTICIPANTES",
+        "menu_items": "PLATOS",
+        "execute": "EJECUTAR",
+        "people": "PERSONAS",
+        "menu": "MENÚ",
+        "who": "QUIÉN ELIGE",
+        "what": "QUÉ ELEGIR",
+        "pick_now": "ELEGIR AHORA",
+        "waiting_for_host": "Esperando al anfitrión...",
+        "please_select_name": "Por favor seleccione su nombre",
+        "game_in_progress": "Juego en progreso...",
+        "select_name_to_join": "Seleccione nombre para unirse",
+        "game_finished": "Juego terminado",
+        "total_ratio": "Ratio Total",
+        "please_add_participants": "Por favor agregue participantes",
+        "host_setting_up": "El anfitrión está configurando...",
+        "select_menu_error": "Por favor haga clic en un plato para seleccionar",
+        "connection_error": "Error al conectar con la sala"
+    },
+    "roulette": {
+        "spin_center": "GIRAR",
+        "spinning": "GIRANDO...",
+        "remote_spinning": "{{name}} ESTÁ GIRANDO...",
+        "waiting_for_others": "ESPERANDO...",
+        "ready": "¡LISTO! GIRA AHORA",
+        "execute": "EJECUTAR",
+        "spinning_roulette": "GIRANDO RULETA",
+        "gourmet_selection": "SELECCIÓN GOURMET",
+        "force_result": "FORZAR RESULTADO",
+        "no_participants": "SIN PARTICIPANTES"
+    },
+    "result": {
+        "share_title": "Resultado de la Ruleta",
+        "winner_label": "GANADOR",
+        "share_message": "¡Este es el resultado que decidimos juntos! ¡Compruébalo!",
+        "tie_detected": "¡EMPATE DETECTADO!",
+        "congratulations": "¡FELICIDADES!",
+        "voting_in_progress": "VOTACIÓN EN PROGRESO...",
+        "tie_subtext": "¡Se detectaron múltiples ganadores debido a un empate!",
+        "vote": "VOTO",
+        "votes": "VOTOS",
+        "waiting_for_others": "ESPERANDO A OTROS...",
+        "retry": "REINTENTAR"
+    },
+    "history": {
+        "title": "HISTORIAL DE REGISTROS",
+        "no_data": "NO SE ENCONTRARON REGISTROS"
+    }
+}

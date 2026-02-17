@@ -1,0 +1,88 @@
+{
+    "common": {
+        "roulette_game": "轮盘游戏",
+        "room_id": "房间号",
+        "player": "玩家",
+        "host": "主人",
+        "participant": "参与者",
+        "unknown": "未知",
+        "me": "(我)",
+        "menu": "菜单",
+        "people": "参与者",
+        "alert": "提示",
+        "info": "信息",
+        "error": "错误",
+        "select_language": "选择语言"
+    },
+    "categories": {
+        "coffee": "咖啡",
+        "meal": "正餐",
+        "snack": "零食"
+    },
+    "welcome": {
+        "select_category": "选择类别",
+        "choose_role": "选择角色",
+        "enter_room_id": "输入房间号",
+        "room_id_placeholder": "6位房间号",
+        "host_mode_active": "主人模式",
+        "start_game": "开始游戏",
+        "enter_room_id_to_proceed": "请输入房间号以继续",
+        "room_id_length_error": "房间号必须是6位数字",
+        "room_not_found": "找不到房间"
+    },
+    "name_input": {
+        "add_participant": "添加参与者...",
+        "add_menu_item": "添加菜单项...",
+        "participant_status": "参与状态",
+        "voter": "投票者",
+        "winner": "获奖者",
+        "waiting": "等待中...",
+        "participants": "参与者列表",
+        "menu_items": "菜单项",
+        "execute": "执行",
+        "people": "参与者",
+        "menu": "菜单",
+        "who": "选人",
+        "what": "选什么",
+        "pick_now": "立即选择",
+        "waiting_for_host": "等待主人...",
+        "please_select_name": "请选择您的名字",
+        "game_in_progress": "游戏进行中...",
+        "select_name_to_join": "选择名字加入",
+        "game_finished": "游戏结束",
+        "total_ratio": "总计比例",
+        "please_add_participants": "请添加参与者",
+        "host_setting_up": "主人正在设置中...",
+        "select_menu_error": "请点击菜单项进行选择",
+        "connection_error": "连接房间失败"
+    },
+    "roulette": {
+        "spin_center": "旋转",
+        "spinning": "旋转中...",
+        "remote_spinning": "{{name}} 正在旋转...",
+        "waiting_for_others": "等待中...",
+        "ready": "准备就绪！现在旋转",
+        "execute": "执行",
+        "spinning_roulette": "轮盘旋转中",
+        "gourmet_selection": "美食选择",
+        "force_result": "强制查看结果",
+        "no_participants": "无参与者"
+    },
+    "result": {
+        "share_title": "轮盘结果",
+        "winner_label": "获奖者",
+        "share_message": "这是我们共同决定的结果！快来看看吧！",
+        "tie_detected": "发现平局！",
+        "congratulations": "恭喜！",
+        "voting_in_progress": "投票进行中...",
+        "tie_subtext": "由于平局，产生了多位获奖者！",
+        "vote": "票",
+        "votes": "票",
+        "waiting_for_others": "等待其他玩家...",
+        "retry": "重试"
+    },
+    "history": {
+        "title": "记录历史",
+        "no_data": "未找到记录日志"
+    }
+}

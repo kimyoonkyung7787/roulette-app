@@ -1,0 +1,88 @@
+{
+    "common": {
+        "roulette_game": "ルーレットゲーム",
+        "room_id": "ルームID",
+        "player": "プレイヤー",
+        "host": "ホスト",
+        "participant": "参加者",
+        "unknown": "不明",
+        "me": "(自分)",
+        "menu": "メニュー",
+        "people": "参加者",
+        "alert": "アラート",
+        "info": "情報",
+        "error": "エラー",
+        "select_language": "言語選択"
+    },
+    "categories": {
+        "coffee": "コーヒー",
+        "meal": "食事",
+        "snack": "おやつ"
+    },
+    "welcome": {
+        "select_category": "カテゴリを選択",
+        "choose_role": "役割を選択",
+        "enter_room_id": "ルームIDを入力",
+        "room_id_placeholder": "6桁のルームID",
+        "host_mode_active": "ホストモード",
+        "start_game": "ゲーム開始",
+        "enter_room_id_to_proceed": "進むにはルームIDを入力してください",
+        "room_id_length_error": "ルームIDは6桁である必要があります",
+        "room_not_found": "ルームが見つかりません"
+    },
+    "name_input": {
+        "add_participant": "参加者を追加...",
+        "add_menu_item": "メニュー項目を追加...",
+        "participant_status": "参加ステータス",
+        "voter": "投票者",
+        "winner": "当選者",
+        "waiting": "待機中...",
+        "participants": "参加者リスト",
+        "menu_items": "メニュー項目",
+        "execute": "実行",
+        "people": "参加者",
+        "menu": "メニュー",
+        "who": "誰かを選ぶ",
+        "what": "何を選ぶ",
+        "pick_now": "今すぐ選ぶ",
+        "waiting_for_host": "ホストを待っています...",
+        "please_select_name": "名前を選択してください",
+        "game_in_progress": "ゲーム進行中...",
+        "select_name_to_join": "名前を選択して参加",
+        "game_finished": "ゲーム終了",
+        "total_ratio": "合計比率",
+        "please_add_participants": "参加者を追加してください",
+        "host_setting_up": "ホストが設定中です...",
+        "select_menu_error": "選択するメニューをクリックしてください",
+        "connection_error": "ルームへの接続に失敗しました"
+    },
+    "roulette": {
+        "spin_center": "回転",
+        "spinning": "回転中...",
+        "remote_spinning": "{{name}}さんが回転させています...",
+        "waiting_for_others": "待機中...",
+        "ready": "準備完了！回転開始",
+        "execute": "実行",
+        "spinning_roulette": "ルーレット回転中",
+        "gourmet_selection": "グルメ選択",
+        "force_result": "強制的に結果を確認",
+        "no_participants": "参加者なし"
+    },
+    "result": {
+        "share_title": "ルーレット結果",
+        "winner_label": "当選者",
+        "share_message": "一緒に決めた結果です！確認してみてください！",
+        "tie_detected": "引き分け発生！",
+        "congratulations": "おめでとうございます！",
+        "voting_in_progress": "投票進行中...",
+        "tie_subtext": "引き分けにより複数の当選者が発生しました！",
+        "vote": "票",
+        "votes": "票",
+        "waiting_for_others": "他のプレイヤーを待っています...",
+        "retry": "もう一度"
+    },
+    "history": {
+        "title": "履歴ログ",
+        "no_data": "履歴が見つかりません"
+    }
+}
