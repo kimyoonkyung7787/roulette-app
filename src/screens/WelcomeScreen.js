@@ -208,11 +208,13 @@ const styles = StyleSheet.create({
     topHeader: {
         flexDirection: 'row',
         justifyContent: 'flex-end',
-        paddingVertical: 10,
+        paddingTop: 0,
+        paddingBottom: 5,
     },
     heroContainer: {
         alignItems: 'center',
-        paddingVertical: 20,
+        paddingBottom: 15,
+        paddingTop: 0,
     },
     rouletteCircle: {
         alignItems: 'center',
