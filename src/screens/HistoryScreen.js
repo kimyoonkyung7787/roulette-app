@@ -11,7 +11,7 @@ import { useTranslation } from 'react-i18next';
 export default function HistoryScreen({ route, navigation }) {
     const { t } = useTranslation();
     const [history, setHistory] = useState([]);
-    const { role, roomId, category } = route.params || {};
+    const { role, roomId, mode = 'online', category } = route.params || {};
 
     useEffect(() => {
         loadHistory();
@@ -30,10 +30,30 @@ export default function HistoryScreen({ route, navigation }) {
     const handleRestore = (item) => {
         if (!item.originalList || item.originalList.length === 0) return;
 
+        if (mode === 'offline') {
+            // Check if we need to convert from participants format to input format
+            // Old history might have saved 'name' instead of 'text'
+            let itemsToRestore = item.originalList;
+            if (itemsToRestore.length > 0 && !itemsToRestore[0].text && itemsToRestore[0].name) {
+                itemsToRestore = itemsToRestore.map((p, i) => ({
+                    id: i + 1,
+                    text: p.name,
+                    color: p.color
+                }));
+            }
+
+            navigation.navigate('OfflineInput', {
+                items: itemsToRestore,
+                mode: 'offline'
+            });
+            return;
+        }
+
         // Navigate back to NameInput with the restored data AND original session info
         navigation.navigate('NameInput', {
             roomId,
             role,
+            mode,
             category: category || item.category || 'coffee',
             restoredData: {
                 type: item.type,
@@ -55,15 +75,15 @@ export default function HistoryScreen({ route, navigation }) {
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
                         <View style={{
-                            backgroundColor: `${item.type === 'menu' ? Colors.secondary : Colors.primary}20`,
+                            backgroundColor: `${item.roomId === 'offline' ? '#666666' : (item.type === 'menu' ? Colors.secondary : Colors.primary)}20`,
                             paddingHorizontal: 6,
                             paddingVertical: 1,
                             borderRadius: 3,
                             borderWidth: 0.5,
-                            borderColor: item.type === 'menu' ? Colors.secondary : Colors.primary
+                            borderColor: item.roomId === 'offline' ? '#666666' : (item.type === 'menu' ? Colors.secondary : Colors.primary)
                         }}>
-                            <Text style={{ color: item.type === 'menu' ? Colors.secondary : Colors.primary, fontSize: 8, fontWeight: 'bold' }}>
-                                {item.type === 'menu' ? t('common.menu').toUpperCase() : t('common.people').toUpperCase()}
+                            <Text style={{ color: item.roomId === 'offline' ? '#AAAAAA' : (item.type === 'menu' ? Colors.secondary : Colors.primary), fontSize: 8, fontWeight: 'bold' }}>
+                                {item.roomId === 'offline' ? t('entry.offline_title') : (item.type === 'menu' ? t('common.menu').toUpperCase() : t('common.people').toUpperCase())}
                             </Text>
                         </View>
                         <NeonText className="text-xl" color={Colors.accent}>{item.name}</NeonText>
@@ -80,7 +100,7 @@ export default function HistoryScreen({ route, navigation }) {
                 {/* Middle Row: Date and Room ID */}
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
                     <Text style={styles.timeText}>{dateString} {timeString}</Text>
-                    {item.roomId && (
+                    {item.roomId && mode === 'online' && (
                         <Text style={{
                             color: 'rgba(255,255,255,0.8)', // Further increased visibility
                             fontSize: 12,

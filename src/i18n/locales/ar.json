@@ -16,7 +16,9 @@
         "select_language": "اختر اللغة",
         "exit_confirm": "هل تريد حقًا الخروج؟",
         "cancel": "إلغاء",
-        "confirm": "تأكيد"
+        "confirm": "تأكيد",
+        "item": "Item",
+        "weight": "Weight"
     },
     "categories": {
         "coffee": "قهوة",
@@ -76,7 +78,9 @@
         "spinning_roulette": "دوران الروليت",
         "gourmet_selection": "اختيار الطهاة",
         "force_result": "فرض النتيجة",
-        "no_participants": "لا يوجد مشاركون"
+        "no_participants": "لا يوجد مشاركون",
+        "ready_shout": "READY !",
+        "go_shout": "GO !"
     },
     "result": {
         "share_title": "نتيجة الروليت",
@@ -89,10 +93,24 @@
         "vote": "صوت",
         "votes": "أصوات",
         "waiting_for_others": "في انتظار الآخرين...",
-        "retry": "إعادة المحاولة"
+        "retry": "إعادة المحاولة",
+        "winner_shout": "WINNER!"
+    },
+    "entry": {
+        "offline_title": "OFFLINE",
+        "offline_desc": "Gathered together.\nOne person spins to win!",
+        "online_title": "ONLINE",
+        "online_desc": "Remote gathering.\nEveryone spins to win!",
+        "select_mode": "SELECT GAME MODE"
+    },
+    "offline": {
+        "title": "ROULETTE",
+        "item_placeholder": "Enter Item",
+        "default_item": "Item"
     },
     "history": {
         "title": "سجل العمليات",
-        "no_data": "لم يتم العثور على سجلات"
+        "no_data": "لم يتم العثور على سجلات",
+        "restore": "RESTORE SETTINGS"
     }
 }

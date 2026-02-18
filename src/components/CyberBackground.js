@@ -66,12 +66,14 @@ const styles = StyleSheet.create({
         width: 1,
         height: '100%',
         backgroundColor: Colors.primary,
+        opacity: 0.15,
     },
     hLine: {
         position: 'absolute',
         width: '100%',
         height: 1,
         backgroundColor: Colors.primary,
+        opacity: 0.15,
     },
     movingScanline: {
         position: 'absolute',

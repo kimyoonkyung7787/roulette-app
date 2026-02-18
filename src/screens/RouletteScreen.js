@@ -16,16 +16,33 @@ import { useTranslation } from 'react-i18next';
 
 const { width } = Dimensions.get('window');
 const ROULETTE_SIZE = Math.min(width * 0.85, 420);
-const REPEAT_COUNT = 3;
-const PATTERN_ANGLE = 360 / REPEAT_COUNT;
+
+// Helper for offline mode colors
+const hexToRgba = (hex, opacity) => {
+    let r = 0, g = 0, b = 0;
+    if (hex.length === 4) {
+        r = parseInt(hex[1] + hex[1], 16);
+        g = parseInt(hex[2] + hex[2], 16);
+        b = parseInt(hex[3] + hex[3], 16);
+    } else if (hex.length === 7) {
+        r = parseInt(hex.substring(1, 3), 16);
+        g = parseInt(hex.substring(3, 5), 16);
+        b = parseInt(hex.substring(5, 7), 16);
+    }
+    return `rgba(${r}, ${g}, ${b}, ${opacity})`;
+};
 
 export default function RouletteScreen({ route, navigation }) {
     const { t } = useTranslation();
-    const { participants = [], menuItems = [], mySelectedName, roomId = 'default', role = 'participant', category = 'coffee', votedItem = null } = route.params || {};
+    const { participants = [], menuItems = [], mySelectedName, roomId = 'default', mode = 'online', role = 'participant', category = 'coffee', votedItem = null } = route.params || {};
     const [participantsState, setParticipantsState] = useState(participants);
     const [menuItemsState, setMenuItemsState] = useState(menuItems);
     const [spinTarget, setSpinTarget] = useState(route.params?.spinTarget || 'people'); // Initialize from params
     const currentList = spinTarget === 'people' ? participantsState : menuItemsState;
+
+    // Offline mode uses 1:1, online uses 3x repeat
+    const REPEAT_COUNT = mode === 'offline' ? 1 : 3;
+    const PATTERN_ANGLE = 360 / REPEAT_COUNT;
 
     const rotation = useSharedValue(0);
     const [spinning, setSpinning] = useState(false);
@@ -88,6 +105,11 @@ export default function RouletteScreen({ route, navigation }) {
         let unsubUsers, unsubSpin, unsubVotes, unsubFinal, unsubParticipants, unsubMenuItems;
 
         const initSync = async () => {
+            if (mode === 'offline') {
+                console.log('RouletteScreen: Offline mode detected. Skipping sync.');
+                return;
+            }
+
             await syncService.init(mySelectedName, roomId, role);
             feedbackService.loadAssets();
             console.log('RouletteScreen: Session joined in room:', roomId);
@@ -150,8 +172,18 @@ export default function RouletteScreen({ route, navigation }) {
             });
         };
 
-        initSync();
+        if (isFocused) {
+            initSync();
 
+            if (mode === 'offline' && route.params?.autoSpin && !hasAutoSpun.current) {
+                console.log('RouletteScreen: Auto-spinning for offline mode...');
+                hasAutoSpun.current = true;
+                const timer = setTimeout(() => {
+                    startSpinAnimation(false);
+                }, 800);
+                return () => clearTimeout(timer);
+            }
+        }
         return () => {
             console.log('RouletteScreen: Cleaning up subscriptions');
             if (unsubUsers) unsubUsers();
@@ -179,15 +211,28 @@ export default function RouletteScreen({ route, navigation }) {
         }
     }, [isFocused, route.params?.autoStartSpin, spinning]);
 
+    useEffect(() => {
+        if (!isFocused || spinning) return;
+
+        // If I already voted, don't follow remote spin animation (Stay on my result)
+        const hasIVoted = votes.some(v => v.userId === syncService.myId);
+        if (hasIVoted) return;
+
+        const isRemoteSpinning = remoteSpinState?.isSpinning &&
+            remoteSpinState.starter !== mySelectedName &&
+            onlineUsers.some(u => u.name === remoteSpinState.starter);
+
+        if (isRemoteSpinning && remoteSpinState?.winnerIndex !== undefined) {
+            console.log('RouletteScreen: Remote spin detected, syncing local animation...');
+            startSpinAnimation(false, remoteSpinState.winnerIndex);
+        }
+    }, [remoteSpinState, isFocused, spinning, onlineUsers, votes]);
+
     // Check if everyone has voted
     useEffect(() => {
         if (!isFocused || spinning || isNavigating.current || votes.length === 0) return;
 
         // Determine expected voter count
-        // FIX: Always prioritize participantsState.length as the minimum expected voters.
-        // In menu mode, onlineUsers.length might be inaccurate (1) during transitions,
-        // causing premature finalization before others have even loaded the screen.
-        // This ensures the game waits for all defined participants to vote.
         const expectedVoterCount = Math.max(participantsState.length, onlineUsers.length);
 
         // AUTO-FINALIZE: When all registered participants have voted
@@ -303,6 +348,26 @@ export default function RouletteScreen({ route, navigation }) {
 
         console.log(`Spin Finished - Winner: ${winner}`);
 
+        if (mode === 'offline') {
+            setSpinning(false);
+            navigation.navigate('Result', {
+                winner,
+                isTie: false,
+                tally: { [winner]: 1 },
+                totalParticipants: 1,
+                roomId: 'offline',
+                mode: 'offline',
+                role: 'owner',
+                category: category,
+                type: currentTarget,
+                finalVotes: [{ userId: 'local', userName: 'Local', votedFor: winner }],
+                participants: currentDataList,
+                menuItems: currentDataList,
+                originalItems: route.params?.originalItems // Preserve the original input items
+            });
+            return;
+        }
+
         // Only submit vote if I AM the one who started this spin
         // Using ref isInitiator for reliability over synced state
         if (isInitiator.current) {
@@ -410,8 +475,8 @@ export default function RouletteScreen({ route, navigation }) {
             if (winnerIndex === -1 || winnerIndex === null) winnerIndex = currentList.length - 1;
         }
 
-        // 2. Sync start if I am the starter
-        if (shouldSyncStart) {
+        // 2. Sync start if I am the starter (and not offline)
+        if (shouldSyncStart && mode !== 'offline') {
             syncService.startSpin(mySelectedName || 'Unknown User', winnerIndex, role);
         }
 
@@ -525,16 +590,6 @@ export default function RouletteScreen({ route, navigation }) {
                 if (name.length > 12) calculatedFontSize *= 0.8;
                 calculatedFontSize = Math.max(7.5, calculatedFontSize); // Minimum readable size
 
-                let hue;
-                if (spinTarget === 'people') {
-                    hue = (180 + (i * (140 / Math.max(1, totalItems - 1)))) % 360;
-                } else {
-                    hue = (330 + (i * (200 / Math.max(1, totalItems - 1)))) % 360;
-                }
-
-                const color = `hsla(${hue}, 80%, 15%, 0.9)`; // Deeper, more solid dark base
-                const strokeColor = `hsl(${hue}, 100%, 70%)`; // Slightly brighter neon edge
-
                 // Perfect Radial Inward Style (Reference Image Style)
                 // Text stands vertically (radially) and grows from border towards center
                 const textAngle = startAngle + angle / 2;
@@ -542,10 +597,34 @@ export default function RouletteScreen({ route, navigation }) {
                 // Rotates text 90 degrees relative to the arc to point at the center center
                 const finalRotation = textAngle + 90;
 
-                // Position at the outer edge (0.465)
-                const textDist = 0.465;
+                // Position at the outer edge
+                const textDist = REPEAT_COUNT === 1 ? 0.45 : 0.465;
                 const tx = ROULETTE_SIZE / 2 + (ROULETTE_SIZE * textDist) * Math.cos((textAngle - 90) * (Math.PI / 180));
                 const ty = ROULETTE_SIZE / 2 + (ROULETTE_SIZE * textDist) * Math.sin((textAngle - 90) * (Math.PI / 180));
+
+                // Calculate colors
+                let color, strokeColor;
+                if (mode === 'offline' && p.color) {
+                    // Use the color from OfflineInputScreen
+                    color = hexToRgba(p.color, 0.4);
+                    strokeColor = p.color;
+                } else {
+                    // Dynamic Neon Generation using HSL (Online Mode)
+                    let hue;
+                    if (spinTarget === 'people') {
+                        hue = (180 + (i * (140 / Math.max(1, totalItems - 1)))) % 360;
+                    } else {
+                        hue = (330 + (i * (200 / Math.max(1, totalItems - 1)))) % 360;
+                    }
+                    color = `hsla(${hue}, 80%, 15%, 0.9)`;
+                    strokeColor = `hsl(${hue}, 100%, 70%)`;
+                }
+
+                // Adjust font size for 1:1 mode
+                if (REPEAT_COUNT === 1) {
+                    calculatedFontSize *= 1.4; // Make it bigger since there's more space
+                    calculatedFontSize = Math.min(18, calculatedFontSize);
+                }
 
                 sections.push(
                     <G key={`${repeat}-${i}`}>
@@ -586,7 +665,7 @@ export default function RouletteScreen({ route, navigation }) {
                 cy={ROULETTE_SIZE / 2}
                 r={26}
                 fill="transparent"
-                stroke={Colors.primary}
+                stroke="#666666"
                 strokeWidth="0.3"
                 opacity={0.4}
             />
@@ -596,7 +675,7 @@ export default function RouletteScreen({ route, navigation }) {
                 cy={ROULETTE_SIZE / 2}
                 r={22}
                 fill={Colors.background}
-                stroke={Colors.primary}
+                stroke="#666666"
                 strokeWidth="1.5"
             />
             {/* Inner Glass Glow Layer */}
@@ -604,20 +683,20 @@ export default function RouletteScreen({ route, navigation }) {
                 cx={ROULETTE_SIZE / 2}
                 cy={ROULETTE_SIZE / 2}
                 r={18}
-                fill="rgba(0, 255, 255, 0.08)"
+                fill="rgba(102, 102, 102, 0.3)"
             />
             {/* Spinning Indicator SVG Path (Arrows) */}
             <Path
                 d={`M ${ROULETTE_SIZE / 2 - 7} ${ROULETTE_SIZE / 2} A 7 7 0 0 1 ${ROULETTE_SIZE / 2 + 7} ${ROULETTE_SIZE / 2}`}
                 fill="none"
-                stroke={Colors.primary}
+                stroke="#666666"
                 strokeWidth="2.5"
                 strokeLinecap="round"
             />
             <Path
                 d={`M ${ROULETTE_SIZE / 2 + 5} ${ROULETTE_SIZE / 2 - 3} L ${ROULETTE_SIZE / 2 + 7} ${ROULETTE_SIZE / 2} L ${ROULETTE_SIZE / 2 + 10} ${ROULETTE_SIZE / 2 - 3}`}
                 fill="none"
-                stroke={Colors.primary}
+                stroke="#666666"
                 strokeWidth="2.5"
                 strokeLinecap="round"
             />
@@ -647,6 +726,8 @@ export default function RouletteScreen({ route, navigation }) {
 
         if (spinning) return t('roulette.spinning');
 
+        if (mode === 'offline') return t('roulette.go_shout');
+
         const myVote = votes.find(v => v.userId === syncService.myId);
 
         // If I have voted, show appropriate status
@@ -668,25 +749,30 @@ export default function RouletteScreen({ route, navigation }) {
             <SafeAreaView style={{ flex: 1 }}>
                 <View style={styles.container}>
                     <View style={{ width: '100%', marginBottom: 15, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <View style={{
-                            backgroundColor: 'rgba(0, 255, 255, 0.1)',
-                            paddingHorizontal: 10,
-                            paddingVertical: 5,
-                            borderRadius: 8,
-                            borderWidth: 1,
-                            borderColor: Colors.primary,
-                            shadowColor: Colors.primary,
-                            shadowOpacity: 0.3,
-                            shadowRadius: 5
-                        }}>
-                            <Text style={{ color: Colors.primary, fontSize: 12, fontWeight: '900', letterSpacing: 1 }}>#{t('common.room_id')}: {(roomId || '').toUpperCase()}</Text>
-                            <Text style={{ color: Colors.secondary, fontSize: 10, fontWeight: 'bold', marginTop: 2, opacity: 0.8 }}>{t('common.player').toUpperCase()}: {(mySelectedName || (role === 'owner' ? t('common.host') : t(`common.${role}`)) || t('common.unknown')).toUpperCase()}</Text>
-                        </View>
+                        {mode === 'online' && (
+                            <View style={{
+                                backgroundColor: 'rgba(0, 255, 255, 0.1)',
+                                paddingHorizontal: 12,
+                                paddingVertical: 6,
+                                borderRadius: 12,
+                                borderWidth: 1,
+                                borderColor: Colors.primary,
+                                shadowColor: Colors.primary,
+                                shadowOpacity: 0.3,
+                                shadowRadius: 5
+                            }}>
+                                <Text style={{ color: Colors.primary, fontSize: 13, fontWeight: '900', letterSpacing: 1 }}>#{t('common.room_id')}: {(roomId || '').toUpperCase()}</Text>
+                                <Text style={{ color: Colors.secondary, fontSize: 10, fontWeight: 'bold', marginTop: 1, opacity: 0.8 }}>{t('common.player').toUpperCase()}: {(mySelectedName || (role === 'owner' ? t('common.host') : t(`common.${role}`)) || t('common.unknown')).toUpperCase()}</Text>
+                            </View>
+                        )}
+                        {mode === 'offline' && <View />}
 
                         <View style={{ flexDirection: 'row', gap: 2, alignItems: 'center' }}>
-                            <TouchableOpacity onPress={() => setShowUsersModal(true)} style={{ padding: 4 }}>
-                                <ListChecks color={Colors.success} size={24} />
-                            </TouchableOpacity>
+                            {mode !== 'offline' && (
+                                <TouchableOpacity onPress={() => setShowUsersModal(true)} style={{ padding: 4 }}>
+                                    <ListChecks color={Colors.success} size={24} />
+                                </TouchableOpacity>
+                            )}
                             {['meal', 'coffee', 'snack'].includes(category) && spinTarget === 'menu' && (
                                 <TouchableOpacity
                                     onPress={async () => {
@@ -720,12 +806,12 @@ export default function RouletteScreen({ route, navigation }) {
 
 
                     <View style={styles.wheelContainer}>
-                        <View style={[styles.wheelGlow, { backgroundColor: spinTarget === 'people' ? Colors.primary : Colors.secondary }]} />
+                        <View style={[styles.wheelGlow, { backgroundColor: '#666666' }]} />
                         <Animated.View style={[animatedStyle, { width: ROULETTE_SIZE, height: ROULETTE_SIZE }]}>
                             <Svg width={ROULETTE_SIZE} height={ROULETTE_SIZE}>
                                 <Defs>
                                     <RadialGradient id="innerGlow" cx="50%" cy="50%" r="50%">
-                                        <Stop offset="0%" stopColor={spinTarget === 'people' ? Colors.primary : Colors.secondary} stopOpacity="0.2" />
+                                        <Stop offset="0%" stopColor="#666666" stopOpacity="0.2" />
                                         <Stop offset="100%" stopColor="transparent" stopOpacity="0" />
                                     </RadialGradient>
                                 </Defs>
@@ -750,7 +836,7 @@ export default function RouletteScreen({ route, navigation }) {
                                     cy={ROULETTE_SIZE / 2}
                                     r={ROULETTE_SIZE / 2 - 1}
                                     fill="transparent"
-                                    stroke={Colors.primary}
+                                    stroke="#666666"
                                     strokeWidth="1"
                                     pointerEvents="none"
                                 />
@@ -861,7 +947,7 @@ export default function RouletteScreen({ route, navigation }) {
                     message={t('common.exit_confirm')}
                     onConfirm={() => {
                         setShowExitConfirm(false);
-                        navigation.navigate('Welcome');
+                        navigation.reset({ index: 0, routes: [{ name: 'Entry' }] });
                     }}
                     onCancel={() => setShowExitConfirm(false)}
                     confirmText={t('common.confirm')}
@@ -891,10 +977,7 @@ const styles = StyleSheet.create({
         width: 100,
         backgroundColor: Colors.primary,
         marginTop: 10,
-        shadowColor: Colors.primary,
-        shadowOpacity: 0.8,
-        shadowRadius: 10,
-        elevation: 5,
+        opacity: 0.8,
     },
     wheelContainer: {
         alignItems: 'center',
@@ -942,15 +1025,11 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',
-        borderWidth: 2,
+        borderWidth: 1.5,
         borderColor: Colors.primary,
-        paddingVertical: 12,
-        borderRadius: 12,
-        backgroundColor: 'rgba(255,255,255,0.02)',
-        shadowColor: Colors.primary,
-        shadowOpacity: 0.3,
-        shadowRadius: 15,
-        elevation: 10,
+        paddingVertical: 14,
+        borderRadius: 16,
+        backgroundColor: 'transparent',
     },
     disabledButton: {
         borderColor: Colors.textSecondary,
@@ -980,11 +1059,7 @@ const styles = StyleSheet.create({
         borderRadius: 20,
         padding: 24,
         borderWidth: 1,
-        borderColor: Colors.primary,
-        shadowColor: Colors.primary,
-        shadowOpacity: 0.5,
-        shadowRadius: 20,
-        elevation: 20,
+        borderColor: 'rgba(255,255,255,0.1)',
     },
     modalHeader: {
         flexDirection: 'row',
@@ -1018,10 +1093,6 @@ const styles = StyleSheet.create({
         height: 8,
         borderRadius: 4,
         marginRight: 15,
-        shadowColor: Colors.primary,
-        shadowOpacity: 0.8,
-        shadowRadius: 5,
-        elevation: 5,
     },
     userName: {
         color: 'white',

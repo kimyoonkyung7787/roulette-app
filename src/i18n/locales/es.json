@@ -16,7 +16,9 @@
         "select_language": "SELECCIONAR IDIOMA",
         "exit_confirm": "¿Realmente quieres salir?",
         "cancel": "Cancelar",
-        "confirm": "Confirmar"
+        "confirm": "Confirmar",
+        "item": "Item",
+        "weight": "Weight"
     },
     "categories": {
         "coffee": "CAFÉ",
@@ -76,7 +78,9 @@
         "spinning_roulette": "GIRANDO RULETA",
         "gourmet_selection": "SELECCIÓN GOURMET",
         "force_result": "FORZAR RESULTADO",
-        "no_participants": "SIN PARTICIPANTES"
+        "no_participants": "SIN PARTICIPANTES",
+        "ready_shout": "READY !",
+        "go_shout": "GO !"
     },
     "result": {
         "share_title": "Resultado de la Ruleta",
@@ -89,10 +93,24 @@
         "vote": "VOTO",
         "votes": "VOTOS",
         "waiting_for_others": "ESPERANDO A OTROS...",
-        "retry": "REINTENTAR"
+        "retry": "REINTENTAR",
+        "winner_shout": "WINNER!"
+    },
+    "entry": {
+        "offline_title": "OFFLINE",
+        "offline_desc": "Gathered together.\nOne person spins to win!",
+        "online_title": "ONLINE",
+        "online_desc": "Remote gathering.\nEveryone spins to win!",
+        "select_mode": "SELECT GAME MODE"
+    },
+    "offline": {
+        "title": "ROULETTE",
+        "item_placeholder": "Enter Item",
+        "default_item": "Item"
     },
     "history": {
         "title": "HISTORIAL DE REGISTROS",
-        "no_data": "NO SE ENCONTRARON REGISTROS"
+        "no_data": "NO SE ENCONTRARON REGISTROS",
+        "restore": "RESTORE SETTINGS"
     }
 }

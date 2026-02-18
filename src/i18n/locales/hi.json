@@ -16,7 +16,9 @@
         "select_language": "भाषा चुनें",
         "exit_confirm": "क्या आप वास्तव में बाहर निकलना चाहते हैं?",
         "cancel": "रद्द करें",
-        "confirm": "पुष्टि करें"
+        "confirm": "पुष्टि करें",
+        "item": "Item",
+        "weight": "Weight"
     },
     "categories": {
         "coffee": "कॉफी",
@@ -76,7 +78,9 @@
         "spinning_roulette": "रूले घूम रहा है",
         "gourmet_selection": "गॉरमेट चयन",
         "force_result": "परिणाम बाध्य करें",
-        "no_participants": "कोई प्रतिभागी नहीं"
+        "no_participants": "कोई प्रतिभागी नहीं",
+        "ready_shout": "READY !",
+        "go_shout": "GO !"
     },
     "result": {
         "share_title": "रूले परिणाम",
@@ -89,10 +93,24 @@
         "vote": "वोट",
         "votes": "वोट",
         "waiting_for_others": "दूसरों की प्रतीक्षा है...",
-        "retry": "पुन: प्रयास करें"
+        "retry": "पुन: प्रयास करें",
+        "winner_shout": "WINNER!"
+    },
+    "entry": {
+        "offline_title": "OFFLINE",
+        "offline_desc": "Gathered together.\nOne person spins to win!",
+        "online_title": "ONLINE",
+        "online_desc": "Remote gathering.\nEveryone spins to win!",
+        "select_mode": "SELECT GAME MODE"
+    },
+    "offline": {
+        "title": "ROULETTE",
+        "item_placeholder": "Enter Item",
+        "default_item": "Item"
     },
     "history": {
         "title": "लॉग इतिहास",
-        "no_data": "कोई लॉग नहीं मिला"
+        "no_data": "कोई लॉग नहीं मिला",
+        "restore": "RESTORE SETTINGS"
     }
 }

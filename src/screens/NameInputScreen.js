@@ -1,12 +1,12 @@
 
 import React, { useState, useEffect, useRef } from 'react';
-import { View, TextInput, TouchableOpacity, FlatList, Text, Modal, ScrollView, Platform, Alert } from 'react-native';
+import { View, TextInput, TouchableOpacity, FlatList, Text, Modal, ScrollView, Platform, Alert, StyleSheet } from 'react-native';
 import { useIsFocused } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Colors } from '../theme/colors';
 import { CyberBackground } from '../components/CyberBackground';
 import { NeonText } from '../components/NeonText';
-import { UserPlus, Trash2, Play, History, CheckCircle2, ListChecks, Users, X, Loader, LogOut, Crown, Utensils, Coffee, Cookie, User, HelpCircle, Circle, Zap, Target } from 'lucide-react-native';
+import { UserPlus, Trash2, Play, History, CheckCircle2, ListChecks, Users, X, Loader, LogOut, Crown, Utensils, Coffee, Cookie, User, HelpCircle, Circle, Zap, Target, Home } from 'lucide-react-native';
 import { syncService } from '../services/SyncService';
 import { participantService } from '../services/ParticipantService';
 import { CyberAlert } from '../components/CyberAlert';
@@ -14,12 +14,12 @@ import { useTranslation } from 'react-i18next';
 import { feedbackService } from '../services/FeedbackService';
 
 export default function NameInputScreen({ route, navigation }) {
-    const { category = 'coffee', role = 'owner', roomId = 'default', initialTab } = route.params || {};
+    const { category = 'coffee', role = 'owner', roomId = 'default', mode = 'online', initialTab } = route.params || {};
     const { t } = useTranslation();
     const [name, setName] = useState('');
     const [participants, setParticipants] = useState([]);
     const [menuItems, setMenuItems] = useState([]);
-    const [activeTab, setActiveTab] = useState(initialTab || 'people'); // 'people' | 'menu' - initialTab으로 복원
+    const [activeTab, setActiveTab] = useState(initialTab || 'people');
     const [isLoaded, setIsLoaded] = useState(false);
     const [editingIndex, setEditingIndex] = useState(null);
     const [editingWeightIndex, setEditingWeightIndex] = useState(null);
@@ -193,6 +193,7 @@ export default function NameInputScreen({ route, navigation }) {
                 ...finalResults,
                 roomId,
                 role: 'participant',
+                mode,
                 category: activeCategory
             });
             return;
@@ -410,6 +411,7 @@ export default function NameInputScreen({ route, navigation }) {
                         menuItems,
                         mySelectedName,
                         roomId,
+                        mode,
                         role,
                         category: activeCategory,
                         votedItem: winner,
@@ -440,6 +442,7 @@ export default function NameInputScreen({ route, navigation }) {
                         menuItems,
                         mySelectedName,
                         roomId,
+                        mode,
                         role,
                         category: activeCategory,
                         votedItem: winner,
@@ -477,6 +480,7 @@ export default function NameInputScreen({ route, navigation }) {
                 menuItems,
                 mySelectedName,
                 roomId,
+                mode,
                 role,
                 category: activeCategory,
                 votedItem: winner,
@@ -555,17 +559,39 @@ export default function NameInputScreen({ route, navigation }) {
                 menuItems,
                 mySelectedName,
                 roomId,
+                mode,
                 role,
                 category: activeCategory,
                 spinTarget: target, // Explicitly pass the target mode
                 autoStartSpin: true
             });
+        } else {
+            // Participant handling for SPIN button
+            const isGameActive = roomPhase === 'roulette' || remoteSpinState?.isSpinning;
+            if (!isGameActive) {
+                setAlertConfig({
+                    visible: true,
+                    title: t('common.info'),
+                    message: t('name_input.waiting_for_host')
+                });
+                return;
+            }
+
+            navigation.navigate('Roulette', {
+                participants,
+                menuItems,
+                mySelectedName,
+                roomId,
+                mode,
+                role,
+                category: activeCategory,
+                spinTarget: target,
+                autoStartSpin: true
+            });
         }
     };
 
-    const activeMenuColor = activeCategory === 'coffee' ? Colors.neonPink :
-        activeCategory === 'meal' ? Colors.success :
-            Colors.accent;
+    const activeMenuColor = Colors.primary;
 
     const isPeopleTab = activeTab === 'people';
 
@@ -573,30 +599,36 @@ export default function NameInputScreen({ route, navigation }) {
         setShowExitConfirm(true);
     };
 
+    const totalParticipantsWeight = participants.reduce((sum, p) => sum + (p.weight || 0), 0);
+
     return (
         <CyberBackground>
             <SafeAreaView style={{ flex: 1 }}>
                 <View style={{ flex: 1, paddingHorizontal: 24, paddingVertical: 20, width: '100%', maxWidth: 500, alignSelf: 'center' }}>
                     <View style={{ marginBottom: 30, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <View style={{
-                            backgroundColor: 'rgba(0, 255, 255, 0.1)',
-                            paddingHorizontal: 10,
-                            paddingVertical: 5,
-                            borderRadius: 8,
-                            borderWidth: 1,
-                            borderColor: Colors.primary,
-                            shadowColor: Colors.primary,
-                            shadowOpacity: 0.3,
-                            shadowRadius: 5
-                        }}>
-                            <Text style={{ color: Colors.primary, fontSize: 12, fontWeight: '900', letterSpacing: 1 }}>#{t('common.room_id')}: {roomId.toUpperCase()}</Text>
-                        </View>
+                        {mode === 'online' && (
+                            <View style={{
+                                backgroundColor: 'rgba(0, 255, 255, 0.1)',
+                                paddingHorizontal: 12,
+                                paddingVertical: 6,
+                                borderRadius: 12,
+                                borderWidth: 1,
+                                borderColor: Colors.primary,
+                                shadowColor: Colors.primary,
+                                shadowOpacity: 0.3,
+                                shadowRadius: 5,
+                                alignSelf: 'center'
+                            }}>
+                                <Text style={{ color: Colors.primary, fontSize: 13, fontWeight: '900', letterSpacing: 1 }}>#{t('common.room_id')}: {roomId.toUpperCase()}</Text>
+                            </View>
+                        )}
+                        {mode === 'offline' && <View />}
 
                         <View style={{ flexDirection: 'row', gap: 2, alignItems: 'center' }}>
                             <TouchableOpacity onPress={() => setShowUsersModal(true)} style={{ padding: 4 }}>
                                 <ListChecks color={Colors.success} size={24} />
                             </TouchableOpacity>
-                            <TouchableOpacity onPress={() => navigation.navigate('History', { role, roomId, category: activeCategory })} style={{ padding: 4 }}>
+                            <TouchableOpacity onPress={() => navigation.navigate('History', { role, roomId, mode, category: activeCategory })} style={{ padding: 4 }}>
                                 <History color={Colors.primary} size={24} />
                             </TouchableOpacity>
                             <TouchableOpacity
@@ -610,7 +642,10 @@ export default function NameInputScreen({ route, navigation }) {
 
                     <View style={{ marginBottom: 20 }}>
                         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 5 }}>
-                            {(() => {
+                            <View style={{ backgroundColor: 'rgba(255,255,255,0.05)', paddingHorizontal: 8, paddingVertical: 2, borderRadius: 4, borderWidth: 1, borderColor: 'rgba(255,255,255,0.4)' }}>
+                                <Text style={{ color: Colors.textSecondary, fontSize: 10, fontWeight: 'bold' }}>{t(`common.${role === 'owner' ? 'host' : 'participant'}`).toUpperCase()}</Text>
+                            </View>
+                            {activeTab !== 'people' && (() => {
                                 const catColor = activeCategory === 'coffee' ? Colors.neonPink :
                                     activeCategory === 'meal' ? Colors.success :
                                         Colors.accent;
@@ -629,45 +664,12 @@ export default function NameInputScreen({ route, navigation }) {
                                     </View>
                                 );
                             })()}
-                            <View style={{ backgroundColor: 'rgba(255,255,255,0.05)', paddingHorizontal: 8, paddingVertical: 2, borderRadius: 4, borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)' }}>
-                                <Text style={{ color: Colors.textSecondary, fontSize: 10, fontWeight: 'bold' }}>{t(`common.${role === 'owner' ? 'host' : 'participant'}`).toUpperCase()}</Text>
-                            </View>
                         </View>
                         <NeonText className="text-4xl">{activeTab === 'people' ? t('name_input.participants') : t('name_input.menu_items')}</NeonText>
                         <View style={{ height: 2, width: 100, backgroundColor: activeTab === 'people' ? Colors.primary : activeMenuColor, marginTop: 10, shadowColor: activeTab === 'people' ? Colors.primary : activeMenuColor, shadowOpacity: 0.8, shadowRadius: 10, elevation: 5 }} />
                     </View>
 
-                    {/* Tab Switcher */}
-                    <View style={{ flexDirection: 'row', marginBottom: 20, backgroundColor: 'rgba(255,255,255,0.05)', borderRadius: 12, padding: 4 }}>
-                        <TouchableOpacity
-                            onPress={() => setActiveTab('people')}
-                            style={{
-                                flex: 1,
-                                paddingVertical: 10,
-                                alignItems: 'center',
-                                backgroundColor: activeTab === 'people' ? 'rgba(0, 255, 255, 0.15)' : 'transparent',
-                                borderRadius: 10,
-                                borderWidth: activeTab === 'people' ? 1 : 0,
-                                borderColor: Colors.primary
-                            }}
-                        >
-                            <Text style={{ color: activeTab === 'people' ? Colors.primary : 'rgba(255,255,255,0.5)', fontSize: 13, fontWeight: '900', letterSpacing: 1 }}>{t('name_input.people')}</Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity
-                            onPress={() => setActiveTab('menu')}
-                            style={{
-                                flex: 1,
-                                paddingVertical: 10,
-                                alignItems: 'center',
-                                backgroundColor: activeTab === 'menu' ? `${activeMenuColor}25` : 'transparent',
-                                borderRadius: 10,
-                                borderWidth: activeTab === 'menu' ? 1 : 0,
-                                borderColor: activeMenuColor
-                            }}
-                        >
-                            <Text style={{ color: activeTab === 'menu' ? activeMenuColor : 'rgba(255,255,255,0.5)', fontSize: 13, fontWeight: '900', letterSpacing: 1 }}>{t('name_input.menu')}</Text>
-                        </TouchableOpacity>
-                    </View>
+
 
                     {role === 'owner' && (
                         <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 25 }}>
@@ -726,6 +728,7 @@ export default function NameInputScreen({ route, navigation }) {
                             const nameToCheck = item.name || item;
                             const isTakenByOther = isPeopleTab && onlineUsers.some(u => u.name === nameToCheck && u.id !== syncService.myId);
                             const isMe = isPeopleTab && mySelectedName === nameToCheck;
+                            const isHost = isPeopleTab && (mode === 'online' ? onlineUsers.some(u => u.name === nameToCheck && u.role === 'owner') : (isMe && role === 'owner'));
                             const activeThemeColor = isPeopleTab ? Colors.primary : activeMenuColor;
                             const currentList = activeTab === 'people' ? participants : menuItems;
                             let totalWeight = 1;
@@ -792,486 +795,292 @@ export default function NameInputScreen({ route, navigation }) {
                                             />
                                         ) : (
                                             <TouchableOpacity
-                                                onPress={() => {
-                                                    if (activeTab === 'menu') {
-                                                        if (role === 'owner') setSelectedMenuIndex(index);
-                                                    } else {
-                                                        if (!isTakenByOther && role === 'owner') startEditing(index);
-                                                        else if (isPeopleTab && !isTakenByOther) toggleMe(nameToCheck);
-                                                    }
-                                                }}
-                                                activeOpacity={isTakenByOther ? 1 : 0.7}
+                                                disabled={role !== 'owner'}
+                                                onPress={() => startEditing(index)}
                                                 style={{ flex: 1, flexDirection: 'row', alignItems: 'center' }}
                                             >
                                                 <Text style={{
-                                                    color: isTakenByOther && !isMe ? 'rgba(255,255,255,0.4)' : activeThemeColor,
+                                                    color: isTakenByOther ? Colors.textSecondary : 'white',
                                                     fontSize: 18,
-                                                    fontWeight: '500',
-                                                    letterSpacing: 1,
-                                                    opacity: isMe ? 1 : 0.8,
-                                                    textDecorationLine: isTakenByOther && !isMe ? 'line-through' : 'none'
-                                                }}>{item.name}{isMe ? <Text style={{ fontSize: 13 }}> {t('common.me')}</Text> : ''}</Text>
-
-                                                {/* Show Crown if this name is taken by an owner */}
-                                                {isPeopleTab && onlineUsers.some(u => u.name === item.name && u.role === 'owner') && (
+                                                    fontWeight: '500'
+                                                }}>
+                                                    {nameToCheck} {isMe && <Text style={{ color: Colors.primary, fontSize: 14 }}>{t('common.me')}</Text>}
+                                                    {isTakenByOther && <Text style={{ color: Colors.textSecondary, fontSize: 12 }}> (ONLINE)</Text>}
+                                                </Text>
+                                                {isHost && (
                                                     <View style={{
+                                                        backgroundColor: `${Colors.accent}25`,
+                                                        borderColor: Colors.accent,
+                                                        borderWidth: 1.5,
+                                                        borderRadius: 6,
+                                                        paddingHorizontal: 6,
+                                                        paddingVertical: 1,
+                                                        marginLeft: 8,
                                                         flexDirection: 'row',
                                                         alignItems: 'center',
-                                                        marginLeft: 8,
-                                                        backgroundColor: 'rgba(255, 255, 0, 0.15)',
-                                                        paddingHorizontal: 8,
-                                                        paddingVertical: 3,
-                                                        borderRadius: 6,
-                                                        borderWidth: 1,
-                                                        borderColor: Colors.accent,
                                                         shadowColor: Colors.accent,
-                                                        shadowOpacity: 0.5,
-                                                        shadowRadius: 5
+                                                        shadowOffset: { width: 0, height: 0 },
+                                                        shadowOpacity: 0.8,
+                                                        shadowRadius: 6,
+                                                        elevation: 3
                                                     }}>
-                                                        <Crown color={Colors.accent} size={12} fill={Colors.accent} style={{ marginRight: 4 }} />
-                                                        <Text style={{ color: Colors.accent, fontSize: 10, fontWeight: '900', letterSpacing: 0.5 }}>{t('common.host').toUpperCase()}</Text>
-                                                    </View>
-                                                )}
-
-                                                {/* Show Status Badge if taken */}
-                                                {isPeopleTab && isTakenByOther && !isMe && (
-                                                    <View style={{
-                                                        marginLeft: 8,
-                                                        backgroundColor: 'rgba(255, 255, 255, 0.1)',
-                                                        paddingHorizontal: 6,
-                                                        paddingVertical: 2,
-                                                        borderRadius: 4,
-                                                    }}>
-                                                        <Text style={{ color: 'rgba(255,255,255,0.5)', fontSize: 9, fontWeight: 'bold' }}>{t('name_input.selected').toUpperCase()}</Text>
+                                                        <Crown color={Colors.accent} size={12} fill={`${Colors.accent}33`} style={{ marginRight: 4 }} />
+                                                        <Text style={{ color: Colors.accent, fontSize: 10, fontWeight: '900' }}>{t('common.host').toUpperCase()}</Text>
                                                     </View>
                                                 )}
                                             </TouchableOpacity>
                                         )}
                                     </View>
-                                    {role === 'owner' && (
-                                        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                                            {isPeopleTab && (
-                                                editingWeightIndex === index ? (
+
+                                    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                                        {isPeopleTab && (
+                                            <TouchableOpacity
+                                                disabled={role !== 'owner'}
+                                                onPress={() => role === 'owner' && startEditingWeight(index)}
+                                                style={{
+                                                    backgroundColor: 'rgba(0,0,0,0.3)',
+                                                    width: 40,
+                                                    height: 44,
+                                                    borderRadius: 6,
+                                                    marginRight: 10,
+                                                    borderWidth: 1,
+                                                    borderColor: 'rgba(255,255,255,0.1)',
+                                                    alignItems: 'center',
+                                                    justifyContent: 'center'
+                                                }}
+                                            >
+                                                {editingWeightIndex === index && role === 'owner' ? (
                                                     <TextInput
                                                         autoFocus
-                                                        keyboardType={Platform.OS === 'web' ? 'text' : 'decimal-pad'}
-                                                        style={{
-                                                            color: Colors.secondary,
-                                                            fontSize: 16,
-                                                            fontWeight: 'bold',
-                                                            width: 50,
-                                                            textAlign: 'right',
-                                                            marginRight: 2,
-                                                            padding: 0
-                                                        }}
+                                                        style={{ color: Colors.textSecondary, fontSize: 14, fontWeight: 'bold', padding: 0, textAlign: 'center', width: '100%', height: '100%' }}
                                                         value={editingWeightValue}
-                                                        onChangeText={setEditingWeightValue}
+                                                        onChangeText={(text) => setEditingWeightValue(text.replace(/[^0-9]/g, '').slice(0, 2))}
                                                         onBlur={saveWeightEdit}
                                                         onSubmitEditing={saveWeightEdit}
+                                                        keyboardType="number-pad"
+                                                        maxLength={2}
                                                     />
                                                 ) : (
-                                                    <TouchableOpacity onPress={() => startEditingWeight(index)}>
-                                                        <View style={{ alignItems: 'flex-end', minWidth: 65 }}>
-                                                            <Text style={{
-                                                                color: Colors.secondary,
-                                                                fontSize: 16,
-                                                                fontWeight: 'bold',
-                                                                textAlign: 'right'
-                                                            }}>{displayWeight}</Text>
-                                                            <Text style={{
-                                                                color: 'rgba(255,255,255,0.4)',
-                                                                fontSize: 10,
-                                                                textAlign: 'right'
-                                                            }}>
-                                                                ({percentage}%)
-                                                            </Text>
-                                                        </View>
-                                                    </TouchableOpacity>
-                                                )
-                                            )}
-
-                                            <TouchableOpacity onPress={() => removeParticipant(index)} style={{ marginLeft: 20 }}>
-                                                <Trash2 color={Colors.textSecondary} size={18} opacity={0.6} />
+                                                    <View style={{ alignItems: 'center' }}>
+                                                        <Text style={{ color: Colors.textSecondary, fontSize: 14, fontWeight: 'bold' }}>
+                                                            {displayWeight}
+                                                        </Text>
+                                                        <Text style={{ color: Colors.textSecondary, fontSize: 10, opacity: 0.7 }}>
+                                                            ({percentage}%)
+                                                        </Text>
+                                                    </View>
+                                                )}
                                             </TouchableOpacity>
-                                        </View>
-                                    )}
-                                    {role === 'participant' && isPeopleTab && (
-                                        <View style={{ minWidth: 65, alignItems: 'flex-end' }}>
-                                            <Text style={{ color: Colors.secondary, fontSize: 16, fontWeight: 'bold', marginRight: 10 }}>
-                                                {displayWeight}
-                                            </Text>
-                                            <Text style={{ color: 'rgba(255,255,255,0.4)', fontSize: 10, marginRight: 10 }}>
-                                                ({percentage}%)
-                                            </Text>
-                                        </View>
-                                    )}
+                                        )}
+
+                                        {role === 'owner' && (
+                                            <TouchableOpacity onPress={() => removeParticipant(index)} style={{ padding: 4 }}>
+                                                <Trash2 color="rgba(255,255,255,0.2)" size={20} />
+                                            </TouchableOpacity>
+                                        )}
+                                    </View>
                                 </View>
                             );
                         }}
-                        style={{ flex: 1 }}
-                        contentContainerStyle={{ paddingBottom: 20 }}
-                        ListFooterComponent={activeTab === 'people' && participants.length > 0 ? (
-                            <View style={{
-                                flexDirection: 'row',
-                                justifyContent: 'flex-end',
-                                alignItems: 'center',
-                                paddingHorizontal: 12,
-                                marginTop: 5,
-                                marginBottom: 15
-                            }}>
-                                <Text style={{ color: 'rgba(255,255,255,0.4)', fontSize: 12, marginRight: 10 }}>{t('name_input.total_ratio').toUpperCase()}:</Text>
-                                <Text style={{
-                                    color: Colors.secondary,
-                                    fontSize: 14,
-                                    fontWeight: 'bold'
-                                }}>
-                                    {(() => {
-                                        const currentList = activeTab === 'people' ? participants : menuItems;
-                                        const sum = currentList.reduce((sum, p) => sum + (p.weight || 0), 0);
-                                        return sum % 1 === 0 ? sum.toFixed(0) : sum.toFixed(1);
-                                    })()}
-                                </Text>
-                            </View>
-                        ) : null}
-                        ListEmptyComponent={
-                            <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', marginTop: 50 }}>
-                                <Text style={{ color: 'rgba(255,255,255,0.3)', fontSize: 16 }}>
-                                    {role === 'owner' ? t('name_input.please_add_participants') : t('name_input.host_setting_up')}
-                                </Text>
-                            </View>
+
+                        ListFooterComponent={
+                            activeTab === 'people' && participants.length > 0 ? (
+                                <View style={{ flexDirection: 'row', justifyContent: 'flex-end', paddingVertical: 10, paddingRight: 10 }}>
+                                    <Text style={{ color: Colors.textSecondary, fontSize: 14, fontWeight: '500' }}>
+                                        TOTAL WEIGHT: <Text style={{ color: Colors.textSecondary, fontSize: 16 }}>{totalParticipantsWeight}</Text>
+                                    </Text>
+                                </View>
+                            ) : null
                         }
                     />
 
-                    <View style={{ marginTop: 10 }}>
-                        <View style={{ flexDirection: 'row', gap: 12 }}>
-                            {isPeopleTab ? (
+
+
+                    {/* Bottom Action Button */}
+                    <View style={{ paddingTop: 0 }}>
+                        {activeTab === 'menu' ? (
+                            <View style={{ flexDirection: 'row', gap: 10 }}>
                                 <TouchableOpacity
-                                    onPress={() => {
-                                        if (role === 'owner') {
-                                            startRoulette('people');
-                                        } else {
-                                            if (!mySelectedName) {
-                                                setAlertConfig({
-                                                    visible: true,
-                                                    title: t('common.alert'),
-                                                    message: t('name_input.please_select_name')
-                                                });
-                                                return;
-                                            }
-                                            // Strict check: Only allow if host has moved to roulette phase
-                                            const isGameActive = roomPhase === 'roulette';
-                                            if (isGameActive) {
-                                                navigation.navigate('Roulette', {
-                                                    participants,
-                                                    menuItems,
-                                                    mySelectedName,
-                                                    roomId,
-                                                    role,
-                                                    category: activeCategory,
-                                                    spinTarget: 'people',
-                                                    autoStartSpin: true
-                                                });
-                                            } else {
-                                                setAlertConfig({
-                                                    visible: true,
-                                                    title: t('common.info'),
-                                                    message: t('name_input.waiting_for_host')
-                                                });
-                                            }
-                                        }
-                                    }}
-                                    activeOpacity={0.8}
+                                    onPress={handleDirectPick}
                                     style={{
                                         flex: 1,
+                                        backgroundColor: 'transparent',
+                                        paddingVertical: 14,
+                                        borderRadius: 16,
                                         flexDirection: 'row',
                                         alignItems: 'center',
                                         justifyContent: 'center',
-                                        backgroundColor: 'rgba(0, 255, 255, 0.05)',
-                                        paddingVertical: 12,
-                                        borderRadius: 12,
-                                        borderWidth: 2,
-                                        borderColor: Colors.primary,
-                                        shadowColor: Colors.primary,
-                                        shadowOpacity: 0.3,
-                                        shadowRadius: 15,
-                                        elevation: 8
+                                        borderWidth: 1.5,
+                                        borderColor: 'rgba(255,255,255,0.2)'
                                     }}
                                 >
-                                    <Users color={Colors.primary} size={20} style={{ marginRight: 8 }} />
-                                    <NeonText className="text-lg" style={{ color: Colors.primary }}>
-                                        {t('name_input.who')}
-                                    </NeonText>
+                                    <Target color={activeMenuColor} size={20} strokeWidth={2.5} />
+                                    <Text style={{
+                                        color: activeMenuColor,
+                                        fontSize: 16,
+                                        fontWeight: '900',
+                                        letterSpacing: 1,
+                                        marginLeft: 6
+                                    }}>{t('name_input.pick_now')}</Text>
                                 </TouchableOpacity>
-                            ) : (
-                                <>
-                                    <TouchableOpacity
-                                        onPress={handleDirectPick}
-                                        activeOpacity={0.8}
-                                        style={{
-                                            flex: 1.2,
-                                            flexDirection: 'row',
-                                            alignItems: 'center',
-                                            justifyContent: 'center',
-                                            backgroundColor: 'rgba(0, 255, 255, 0.05)',
-                                            paddingVertical: 12,
-                                            borderRadius: 12,
-                                            borderWidth: 2,
-                                            borderColor: Colors.secondary,
-                                            shadowColor: Colors.secondary,
-                                            shadowOpacity: 0.3,
-                                            shadowRadius: 15,
-                                            elevation: 8,
-                                            marginRight: 10
-                                        }}
-                                    >
-                                        <Target color={Colors.secondary} size={20} style={{ marginRight: 8 }} />
-                                        <NeonText className="text-lg" style={{ color: Colors.secondary }}>{t('name_input.pick_now')}</NeonText>
-                                    </TouchableOpacity>
 
-                                    <TouchableOpacity
-                                        onPress={async () => {
-                                            if (role === 'owner') {
-                                                startRoulette('menu');
-                                            } else {
-                                                if (!mySelectedName) {
-                                                    setAlertConfig({
-                                                        visible: true,
-                                                        title: t('common.alert'),
-                                                        message: t('name_input.please_select_name')
-                                                    });
-                                                    return;
-                                                }
-                                                // Participant: Just navigate to roulette screen without submitting vote
-                                                // They will vote by spinning the wheel in the roulette screen
-                                                // Strict check for menu mode as well
-                                                const isGameActive = roomPhase === 'roulette' || votes.length > 0;
-                                                if (!isGameActive) {
-                                                    setAlertConfig({
-                                                        visible: true,
-                                                        title: t('common.info'),
-                                                        message: t('name_input.waiting_for_host')
-                                                    });
-                                                    return;
-                                                }
+                                <TouchableOpacity
+                                    onPress={() => startRoulette('menu')}
+                                    style={{
+                                        flex: 1,
+                                        backgroundColor: 'transparent',
+                                        paddingVertical: 14,
+                                        borderRadius: 16,
+                                        flexDirection: 'row',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        borderWidth: 1.5,
+                                        borderColor: 'rgba(255,255,255,0.2)'
+                                    }}
+                                >
+                                    <Zap color={activeMenuColor} size={20} strokeWidth={2.5} />
+                                    <Text style={{
+                                        color: activeMenuColor,
+                                        fontSize: 16,
+                                        fontWeight: '900',
+                                        letterSpacing: 1,
+                                        marginLeft: 6
+                                    }}>{t('name_input.what')}</Text>
+                                </TouchableOpacity>
+                            </View>
+                        ) : (
+                            <TouchableOpacity
+                                onPress={() => activeTab === 'menu' ? handleDirectPick() : startRoulette(activeTab)}
+                                style={{
+                                    backgroundColor: 'transparent',
+                                    paddingVertical: 14,
+                                    borderRadius: 16,
+                                    flexDirection: 'row',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    borderWidth: 1.5,
+                                    borderColor: 'rgba(255,255,255,0.15)'
+                                }}
+                            >
+                                {activeTab === 'people' ? (
+                                    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                                        <Zap color={Colors.primary} size={24} strokeWidth={2.5} />
+                                        <Text style={{
+                                            color: Colors.primary,
+                                            fontSize: 20,
+                                            fontWeight: '900',
+                                            letterSpacing: 2,
+                                            marginLeft: 8
+                                        }}>{t('name_input.what')}</Text>
+                                    </View>
+                                ) : (
+                                    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                                        <Target color={activeMenuColor} size={24} strokeWidth={2.5} />
+                                        <Text style={{
+                                            color: activeMenuColor,
+                                            fontSize: 20,
+                                            fontWeight: '900',
+                                            letterSpacing: 2,
+                                            marginLeft: 8
+                                        }}>{t('name_input.vote')}</Text>
+                                    </View>
+                                )}
+                            </TouchableOpacity>
+                        )}
+                    </View>
 
-                                                // Navigate to roulette screen WITHOUT submitting vote
-                                                // Vote will be submitted when they spin the wheel
-                                                navigation.navigate('Roulette', {
-                                                    participants,
-                                                    menuItems,
-                                                    mySelectedName,
-                                                    roomId,
-                                                    role,
-                                                    category: activeCategory,
-                                                    spinTarget: 'menu',
-                                                    autoStartSpin: true
-                                                });
-                                            }
-                                        }}
-                                        activeOpacity={0.8}
-                                        style={{
-                                            flex: 1,
-                                            flexDirection: 'row',
-                                            alignItems: 'center',
-                                            justifyContent: 'center',
-                                            backgroundColor: 'rgba(0, 255, 255, 0.05)',
-                                            paddingVertical: 12,
-                                            borderRadius: 12,
-                                            borderWidth: 2,
-                                            borderColor: activeMenuColor, // Use activeMenuColor or Colors.secondary if strict
-                                            shadowColor: activeMenuColor,
-                                            shadowOpacity: 0.3,
-                                            shadowRadius: 15,
-                                            elevation: 8
-                                        }}
-                                    >
-                                        <View style={{ marginRight: 8 }}>
-                                            <Zap color={activeMenuColor} size={20} fill={activeMenuColor} />
-                                        </View>
-                                        <NeonText className="text-lg" style={{ color: activeMenuColor }}>
-                                            {t('name_input.what')}
-                                        </NeonText>
+                    <CyberAlert
+                        visible={alertConfig.visible}
+                        title={alertConfig.title}
+                        message={alertConfig.message}
+                        onConfirm={() => setAlertConfig({ ...alertConfig, visible: false })}
+                    />
+
+                    <CyberAlert
+                        visible={showExitConfirm}
+                        title={t('common.alert')}
+                        message={t('common.exit_confirm')}
+                        type="info"
+                        confirmText={t('common.confirm')}
+                        cancelText={t('common.cancel')}
+                        onConfirm={() => {
+                            setShowExitConfirm(false);
+                            navigation.reset({
+                                index: 0,
+                                routes: [{ name: 'Welcome' }],
+                            });
+                        }}
+                        onCancel={() => setShowExitConfirm(false)}
+                    />
+
+                    {/* Participant Status Modal */}
+                    <Modal
+                        visible={showUsersModal}
+                        transparent={true}
+                        animationType="fade"
+                        onRequestClose={() => setShowUsersModal(false)}
+                    >
+                        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.8)', justifyContent: 'center', alignItems: 'center', padding: 20 }}>
+                            <View style={{ width: '100%', maxWidth: 400, backgroundColor: '#111', borderRadius: 20, padding: 20, borderWidth: 1, borderColor: Colors.primary }}>
+                                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+                                    <NeonText style={{ fontSize: 20 }}>{t('name_input.participant_status')}</NeonText>
+                                    <TouchableOpacity onPress={() => setShowUsersModal(false)}>
+                                        <X color={Colors.text} size={24} />
                                     </TouchableOpacity>
-                                </>
-                            )}
+                                </View>
+                                <ScrollView style={{ maxHeight: 300 }}>
+                                    {onlineUsers.map((user, index) => {
+                                        const userVote = votes.find(v => v.userId === user.id);
+                                        return (
+                                            <View key={index} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.05)' }}>
+                                                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                                                    <View style={{
+                                                        width: 8,
+                                                        height: 8,
+                                                        borderRadius: 4,
+                                                        backgroundColor: userVote ? Colors.success : Colors.primary,
+                                                        marginRight: 10,
+                                                        shadowColor: userVote ? Colors.success : Colors.primary,
+                                                        shadowRadius: 4,
+                                                        shadowOpacity: 0.5
+                                                    }} />
+                                                    <Text style={{ color: 'white', fontSize: 16, fontWeight: '500' }}>{user.name || 'Anonymous'}</Text>
+                                                </View>
+                                                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                                                    {userVote ? (
+                                                        <View style={{
+                                                            backgroundColor: 'rgba(57, 255, 20, 0.1)',
+                                                            paddingHorizontal: 8,
+                                                            paddingVertical: 4,
+                                                            borderRadius: 4,
+                                                            borderWidth: 1,
+                                                            borderColor: 'rgba(57, 255, 20, 0.3)',
+                                                            flexDirection: 'row',
+                                                            alignItems: 'center'
+                                                        }}>
+                                                            <CheckCircle2 size={12} color={Colors.success} style={{ marginRight: 4 }} />
+                                                            <Text style={{ color: Colors.success, fontSize: 12, fontWeight: 'bold' }}>
+                                                                {userVote.votedFor ? userVote.votedFor.toUpperCase() : t('name_input.voter').toUpperCase()}
+                                                            </Text>
+                                                        </View>
+                                                    ) : (
+                                                        <Text style={{ color: Colors.textSecondary, fontSize: 12, opacity: 0.6 }}>{t('name_input.waiting').toUpperCase()}</Text>
+                                                    )}
+                                                </View>
+                                            </View>
+                                        );
+                                    })}
+                                    {onlineUsers.length === 0 && (
+                                        <Text style={{ color: Colors.textSecondary, textAlign: 'center', py: 20 }}>No users online</Text>
+                                    )}
+                                </ScrollView>
+                            </View>
                         </View>
-                    </View>
-                    <View style={{
-                        paddingVertical: 12,
-                        borderRadius: 12,
-                        alignItems: 'center',
-                        marginTop: 10,
-                        borderWidth: 1,
-                        borderColor: 'rgba(255, 255, 255, 0.1)',
-                        backgroundColor: 'rgba(255, 255, 255, 0.02)',
-                    }}>
-                        <Loader color={Colors.primary} size={20} style={{ marginBottom: 8 }} />
-                        <Text style={{ color: Colors.textSecondary, fontSize: 13, fontWeight: 'bold', letterSpacing: 2 }}>
-                            {finalResults
-                                ? t('name_input.game_finished')
-                                : (roomPhase === 'roulette' || votes.length > 0 || remoteSpinState?.isSpinning)
-                                    ? (mySelectedName ? t('name_input.game_in_progress') : t('name_input.select_name_to_join'))
-                                    : (mySelectedName ? t('name_input.waiting_for_host') : t('name_input.please_select_name'))
-                            }
-                        </Text>
-                    </View>
+                    </Modal>
                 </View>
-
-                <CyberAlert
-                    visible={alertConfig.visible}
-                    title={alertConfig.title}
-                    message={alertConfig.message}
-                    type="info"
-                    onConfirm={() => setAlertConfig({ ...alertConfig, visible: false })}
-                />
-
-                {/* Active Nodes Modal */}
-                <Modal
-                    visible={showUsersModal}
-                    transparent={true}
-                    animationType="fade"
-                    onRequestClose={() => setShowUsersModal(false)}
-                >
-                    <View style={{
-                        flex: 1,
-                        backgroundColor: 'rgba(0,0,0,0.85)',
-                        justifyContent: 'center',
-                        alignItems: 'center',
-                        padding: 20
-                    }}>
-                        <View style={{
-                            backgroundColor: Colors.surface,
-                            borderRadius: 20,
-                            padding: 20,
-                            width: '100%',
-                            maxWidth: 400,
-                            borderWidth: 2,
-                            borderColor: Colors.primary,
-                            shadowColor: Colors.primary,
-                            shadowOpacity: 0.5,
-                            shadowRadius: 20,
-                            elevation: 10
-                        }}>
-                            <View style={{
-                                flexDirection: 'row',
-                                justifyContent: 'space-between',
-                                alignItems: 'center',
-                                marginBottom: 15
-                            }}>
-                                <NeonText className="text-2xl">{t('name_input.participant_status')}</NeonText>
-                                <TouchableOpacity onPress={() => setShowUsersModal(false)}>
-                                    <X color={Colors.primary} size={24} />
-                                </TouchableOpacity>
-                            </View>
-                            <View style={{
-                                height: 2,
-                                backgroundColor: Colors.primary,
-                                opacity: 0.3,
-                                marginBottom: 15
-                            }} />
-
-                            {/* Column Headers */}
-                            <View style={{
-                                flexDirection: 'row',
-                                justifyContent: 'space-between',
-                                paddingHorizontal: 15,
-                                paddingVertical: 10,
-                                backgroundColor: 'rgba(0, 255, 255, 0.05)',
-                                borderBottomWidth: 1,
-                                borderBottomColor: 'rgba(0, 255, 255, 0.2)',
-                                marginBottom: 5
-                            }}>
-                                <Text style={{
-                                    color: Colors.primary,
-                                    fontSize: 13,
-                                    fontWeight: 'bold',
-                                    letterSpacing: 1.5,
-                                    textTransform: 'uppercase'
-                                }}>{t('name_input.voter')}</Text>
-                                <Text style={{
-                                    color: Colors.primary,
-                                    fontSize: 13,
-                                    fontWeight: 'bold',
-                                    letterSpacing: 1.5,
-                                    textTransform: 'uppercase'
-                                }}>{t('name_input.winner')}</Text>
-                            </View>
-
-                            <ScrollView style={{ maxHeight: 400 }}>
-                                {onlineUsers.map((user, idx) => {
-                                    const userVote = votes.find(v => v.userId === user.id);
-                                    return (
-                                        <View key={user.id} style={{
-                                            flexDirection: 'row',
-                                            justifyContent: 'space-between',
-                                            alignItems: 'center',
-                                            backgroundColor: 'rgba(255,255,255,0.03)',
-                                            padding: 15,
-                                            borderRadius: 12,
-                                            marginBottom: 10,
-                                            borderWidth: 1,
-                                            borderColor: 'rgba(255,255,255,0.08)'
-                                        }}>
-                                            <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center' }}>
-                                                <View style={{
-                                                    width: 8,
-                                                    height: 8,
-                                                    borderRadius: 4,
-                                                    marginRight: 15,
-                                                    backgroundColor: userVote ? Colors.success : Colors.primary,
-                                                    shadowColor: Colors.primary,
-                                                    shadowOpacity: 0.8,
-                                                    shadowRadius: 5,
-                                                    elevation: 5
-                                                }} />
-                                                <Text style={{
-                                                    color: 'white',
-                                                    fontSize: 16,
-                                                    fontWeight: '500',
-                                                    letterSpacing: 1
-                                                }}>
-                                                    {user.name} {user.id === syncService.myId ? <Text style={{ fontSize: 11 }}> {t('common.me')}</Text> : ''}
-                                                </Text>
-                                            </View>
-                                            <View style={{
-                                                backgroundColor: 'rgba(255,255,255,0.05)',
-                                                paddingHorizontal: 10,
-                                                paddingVertical: 4,
-                                                borderRadius: 6,
-                                                borderWidth: 1,
-                                                borderColor: userVote ? 'rgba(57, 255, 20, 0.2)' : 'rgba(255,255,255,0.1)'
-                                            }}>
-                                                <Text style={{
-                                                    color: userVote ? Colors.success : 'rgba(255,255,255,0.3)',
-                                                    fontSize: 12,
-                                                    fontWeight: 'bold'
-                                                }}>
-                                                    {userVote ? userVote.votedFor : t('name_input.waiting').toUpperCase()}
-                                                </Text>
-                                            </View>
-                                        </View>
-                                    );
-                                })}
-                            </ScrollView>
-                        </View>
-                    </View>
-                </Modal>
-
-                <CyberAlert
-                    visible={showExitConfirm}
-                    title={t('common.alert')}
-                    message={t('common.exit_confirm')}
-                    onConfirm={() => {
-                        setShowExitConfirm(false);
-                        navigation.navigate('Welcome');
-                    }}
-                    onCancel={() => setShowExitConfirm(false)}
-                    confirmText={t('common.confirm')}
-                    cancelText={t('common.cancel')}
-                    type="info"
-                />
             </SafeAreaView>
-        </CyberBackground>
+        </CyberBackground >
     );
 }
 
+const styles = StyleSheet.create({});

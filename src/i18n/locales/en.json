@@ -17,7 +17,8 @@
         "weight": "Weight",
         "exit_confirm": "Do you really want to exit?",
         "cancel": "Cancel",
-        "confirm": "Confirm"
+        "confirm": "Confirm",
+        "item": "Item"
     },
     "categories": {
         "coffee": "COFFEE",
@@ -37,7 +38,11 @@
         "resume_session": "Resume previous session?",
         "resume_message": "Found an active host session for Room #{{roomId}}. Would you like to resume?",
         "resume_confirm": "YES,\nRESUME",
-        "resume_cancel": "NO,\nSTART NEW"
+        "resume_cancel": "NO,\nSTART NEW",
+        "host_desc": "Set up game settings and start first",
+        "participant_desc": "Join a game and vote",
+        "create_by_people": "BY PEOPLE",
+        "create_by_menu": "BY MENU"
     },
     "name_input": {
         "add_participant": "Add participant...",
@@ -54,6 +59,7 @@
         "who": "WHO TO PICK",
         "what": "SPIN",
         "pick_now": "MY PICK",
+        "vote": "VOTE",
         "waiting_for_host": "Waiting for host...",
         "selected": "SELECTED",
         "please_select_name": "Please select your name",
@@ -77,7 +83,9 @@
         "spinning_roulette": "SPINNING ROULETTE",
         "gourmet_selection": "GOURMET SELECTION",
         "force_result": "FORCE RESULT",
-        "no_participants": "NO PARTICIPANTS"
+        "no_participants": "NO PARTICIPANTS",
+        "ready_shout": "READY !",
+        "go_shout": "GO !"
     },
     "result": {
         "share_title": "Roulette Result",
@@ -90,7 +98,20 @@
         "vote": "VOTE",
         "votes": "VOTES",
         "waiting_for_others": "WAITING FOR OTHERS...",
-        "retry": "RETRY"
+        "retry": "RETRY",
+        "winner_shout": "WINNER!"
+    },
+    "entry": {
+        "offline_title": "OFFLINE",
+        "offline_desc": "Gathered together.\nOne person spins to win!",
+        "online_title": "ONLINE",
+        "online_desc": "Remote gathering.\nEveryone spins to win!",
+        "select_mode": "SELECT MODE"
+    },
+    "offline": {
+        "title": "ROULETTE",
+        "item_placeholder": "Enter Item",
+        "default_item": "Item"
     },
     "history": {
         "title": "LOG HISTORY",

@@ -16,7 +16,9 @@
         "select_language": "CHOISIR LA LANGUE",
         "exit_confirm": "Voulez-vous vraiment quitter ?",
         "cancel": "Annuler",
-        "confirm": "Confirmer"
+        "confirm": "Confirmer",
+        "item": "Item",
+        "weight": "Weight"
     },
     "categories": {
         "coffee": "CAFÉ",
@@ -76,7 +78,9 @@
         "spinning_roulette": "ROULETTE EN ROTATION",
         "gourmet_selection": "SÉLECTION GOURMET",
         "force_result": "FORCER LE RÉSULTAT",
-        "no_participants": "PAS DE PARTICIPANTS"
+        "no_participants": "PAS DE PARTICIPANTS",
+        "ready_shout": "READY !",
+        "go_shout": "GO !"
     },
     "result": {
         "share_title": "Résultat de la Roulette",
@@ -89,10 +93,24 @@
         "vote": "VOTE",
         "votes": "VOTES",
         "waiting_for_others": "EN ATTENTE DES AUTRES...",
-        "retry": "RÉESSAYER"
+        "retry": "RÉESSAYER",
+        "winner_shout": "WINNER!"
+    },
+    "entry": {
+        "offline_title": "OFFLINE",
+        "offline_desc": "Gathered together.\nOne person spins to win!",
+        "online_title": "ONLINE",
+        "online_desc": "Remote gathering.\nEveryone spins to win!",
+        "select_mode": "SELECT GAME MODE"
+    },
+    "offline": {
+        "title": "ROULETTE",
+        "item_placeholder": "Enter Item",
+        "default_item": "Item"
     },
     "history": {
         "title": "HISTORIQUE DES JOURNAUX",
-        "no_data": "AUCUN JOURNAL TROUVÉ"
+        "no_data": "AUCUN JOURNAL TROUVÉ",
+        "restore": "RESTORE SETTINGS"
     }
 }

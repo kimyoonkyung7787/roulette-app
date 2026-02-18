@@ -50,9 +50,9 @@ class FeedbackService {
 
             // Try multiple fanfare sources for reliability
             const fanfareSources = [
+                'https://assets.mixkit.co/active_storage/sfx/2013/2013-preview.mp3', // Win/Success fanfare
                 'https://cdn.freesound.org/previews/536/536108_11861866-lq.mp3',
-                'https://actions.google.com/sounds/v1/alarms/bugle_tune.ogg',
-                'https://actions.google.com/sounds/v1/cartoon/trumpet_fanfare.ogg'
+                'https://actions.google.com/sounds/v1/alarms/bugle_tune.ogg'
             ];
 
             // Try loading fanfare from multiple sources

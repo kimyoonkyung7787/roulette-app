@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { View, TouchableOpacity, StyleSheet, Text, Modal, ScrollView, Share, Alert } from 'react-native';
+import { View, TouchableOpacity, StyleSheet, Text, Modal, ScrollView, Share, Alert, Image } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { NeonText } from '../components/NeonText';
 import { Colors } from '../theme/colors';
@@ -9,11 +9,25 @@ import { feedbackService } from '../services/FeedbackService';
 import { historyService } from '../services/HistoryService';
 import { syncService } from '../services/SyncService';
 import { useTranslation } from 'react-i18next';
-import { Share2, ListChecks, History, LogOut, Trophy, Loader, RefreshCw, X } from 'lucide-react-native';
+import { Share2, ListChecks, History, LogOut, Trophy, Loader, RefreshCw, X, Home } from 'lucide-react-native';
+import { Confetti } from '../components/Confetti';
 
 export default function ResultScreen({ route, navigation }) {
     const { t } = useTranslation();
-    const { winner = 'Unknown', isTie = false, tally = {}, totalParticipants = 0, roomId = 'default', role = 'participant', isForced = false, finalVotes = [], type = 'people', category = 'coffee' } = route.params || {};
+    const {
+        winner = 'Unknown',
+        isTie = false,
+        tally = {},
+        totalParticipants = 0,
+        roomId = 'default',
+        mode = 'online',
+        role = 'participant',
+        isForced = false,
+        finalVotes = [],
+        type = 'people',
+        category = 'coffee',
+        originalItems = []
+    } = route.params || {};
     const [allVoted, setAllVoted] = useState(false);
     const [onlineUsers, setOnlineUsers] = useState([]);
     const [showUsersModal, setShowUsersModal] = useState(false);
@@ -43,7 +57,6 @@ export default function ResultScreen({ route, navigation }) {
                         console.log('🎺 playFanfareWithLoading: Audio not loaded yet, loading now...');
                         await feedbackService.loadAssets();
                         console.log('🎺 playFanfareWithLoading: loadAssets completed');
-                        console.log('🎺 playFanfareWithLoading: isLoaded after loading =', feedbackService.isLoaded);
                     }
 
                     console.log('🎺 playFanfareWithLoading: About to call playFanfare...');
@@ -52,7 +65,11 @@ export default function ResultScreen({ route, navigation }) {
                 };
 
                 playFanfareWithLoading()
-                    .then(() => console.log('🎺 ResultScreen: Fanfare played successfully!'))
+                    .then(() => {
+                        console.log('🎺 ResultScreen: Fanfare played successfully!');
+                        // Small extra delay for visual impact if needed
+                        setTimeout(() => setAllVoted(true), 100);
+                    })
                     .catch(err => console.error('🎺 ResultScreen: Fanfare failed:', err));
 
                 // Construct details: prefer onlineUsers for complete list, fallback to finalVotes
@@ -76,7 +93,10 @@ export default function ResultScreen({ route, navigation }) {
                 }
 
                 console.log(`ResultScreen: Saving history with ${details.length} details`);
-                const originalList = type === 'people' ? route.params.participants : route.params.menuItems;
+                let originalList = type === 'people' ? route.params.participants : route.params.menuItems;
+                if (mode === 'offline' && route.params?.originalItems) {
+                    originalList = route.params.originalItems;
+                }
                 historyService.addWinner(winner, type, details, originalList, roomId, category);
                 hasSavedRef.current = true;
             }
@@ -105,13 +125,22 @@ export default function ResultScreen({ route, navigation }) {
     }, [role, roomId]);
 
     useEffect(() => {
+        if (mode === 'offline') return;
         const unsubUsers = syncService.subscribeToOnlineUsers(users => {
             setOnlineUsers(users);
         });
         return () => unsubUsers();
-    }, []);
+    }, [mode]);
 
     const handleReset = async () => {
+        if (mode === 'offline') {
+            console.log('ResultScreen: Retrying in offline mode, preserving items:', originalItems.length);
+            navigation.navigate('OfflineInput', {
+                mode: 'offline',
+                items: originalItems
+            });
+            return;
+        }
         console.log(`ResultScreen: Owner resetting game (preserving type: ${type})...`);
         await syncService.setRoomPhase('waiting');
         await syncService.clearSpinState();
@@ -122,6 +151,13 @@ export default function ResultScreen({ route, navigation }) {
     };
 
     const handleReturnToBase = async () => {
+        if (mode === 'offline') {
+            navigation.navigate('OfflineInput', {
+                mode: 'offline',
+                items: originalItems
+            });
+            return;
+        }
         console.log('ResultScreen: Returning to lobby...');
         await syncService.setRoomPhase('waiting');
         await syncService.clearSpinState();
@@ -156,36 +192,59 @@ export default function ResultScreen({ route, navigation }) {
                 <ScrollView contentContainerStyle={{ flexGrow: 1 }} showsVerticalScrollIndicator={false}>
                     <View style={styles.container}>
                         <View style={{ width: '100%', marginBottom: 30, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                            <View style={{
-                                backgroundColor: 'rgba(0, 255, 255, 0.1)',
-                                paddingHorizontal: 10,
-                                paddingVertical: 5,
-                                borderRadius: 8,
-                                borderWidth: 1,
-                                borderColor: Colors.primary,
-                                shadowColor: Colors.primary,
-                                shadowOpacity: 0.3,
-                                shadowRadius: 5
-                            }}>
-                                <Text style={{ color: Colors.primary, fontSize: 12, fontWeight: '900', letterSpacing: 1 }}>#{t('common.room_id')}: {(roomId || '').toUpperCase()}</Text>
-                            </View>
+                            {mode === 'online' ? (
+                                <View style={{
+                                    backgroundColor: 'rgba(0, 255, 255, 0.1)',
+                                    paddingHorizontal: 12,
+                                    paddingVertical: 6,
+                                    borderRadius: 12,
+                                    borderWidth: 1,
+                                    borderColor: Colors.primary,
+                                    shadowColor: Colors.primary,
+                                    shadowOffset: { width: 0, height: 0 },
+                                    shadowRadius: 5,
+                                    shadowOpacity: 0.3
+                                }}>
+                                    <Text style={{ color: Colors.primary, fontSize: 13, fontWeight: '900', letterSpacing: 1 }}>#{t('common.room_id')}: {(roomId || '').toUpperCase()}</Text>
+                                </View>
+                            ) : (
+                                <TouchableOpacity
+                                    onPress={() => navigation.reset({ index: 0, routes: [{ name: 'Entry' }] })}
+                                    style={{
+                                        width: 40,
+                                        height: 40,
+                                        borderRadius: 12,
+                                        backgroundColor: 'rgba(0, 255, 255, 0.1)',
+                                        justifyContent: 'center',
+                                        alignItems: 'center',
+                                        borderWidth: 1,
+                                        borderColor: 'rgba(0, 255, 255, 0.2)',
+                                    }}
+                                >
+                                    <Home color={Colors.primary} size={22} />
+                                </TouchableOpacity>
+                            )}
 
                             <View style={{ flexDirection: 'row', gap: 2, alignItems: 'center' }}>
                                 <TouchableOpacity onPress={handleShare} style={{ padding: 4 }} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
                                     <Share2 color={Colors.accent} size={24} />
                                 </TouchableOpacity>
-                                <TouchableOpacity onPress={() => setShowUsersModal(true)} style={{ padding: 4 }}>
-                                    <ListChecks color={Colors.success} size={24} />
-                                </TouchableOpacity>
-                                <TouchableOpacity onPress={() => navigation.navigate('History', { role, roomId, category })} style={{ padding: 4 }}>
+                                {mode !== 'offline' && (
+                                    <TouchableOpacity onPress={() => setShowUsersModal(true)} style={{ padding: 4 }}>
+                                        <ListChecks color={Colors.success} size={24} />
+                                    </TouchableOpacity>
+                                )}
+                                <TouchableOpacity onPress={() => navigation.navigate('History', { role, roomId, mode, category })} style={{ padding: 4 }}>
                                     <History color={Colors.primary} size={24} />
                                 </TouchableOpacity>
-                                <TouchableOpacity
-                                    onPress={handleExit}
-                                    style={{ padding: 4 }}
-                                >
-                                    <LogOut color={Colors.error} size={24} />
-                                </TouchableOpacity>
+                                {mode !== 'offline' && (
+                                    <TouchableOpacity
+                                        onPress={handleExit}
+                                        style={{ padding: 4 }}
+                                    >
+                                        <LogOut color={Colors.error} size={24} />
+                                    </TouchableOpacity>
+                                )}
                             </View>
                         </View>
                         {/* Trophy or In-Progress Icon */}
@@ -223,43 +282,59 @@ export default function ResultScreen({ route, navigation }) {
                             </View>
                             {allVoted && isTie && <Text style={styles.tieSubText}>{t('result.tie_subtext')}</Text>}
 
-                            {/* Tally Chart */}
-                            <View style={styles.tallyContainer}>
-                                {Object.entries(tally).map(([name, count]) => (
-                                    <View key={name} style={styles.tallyItem}>
-                                        <Text style={styles.tallyName}>{name}</Text>
-                                        <View style={styles.tallyBarContainer}>
-                                            {[...Array(Math.max(totalParticipants, 5))].map((_, i) => (
-                                                <View
-                                                    key={i}
-                                                    style={[
-                                                        styles.tallyCell,
-                                                        { backgroundColor: i < count ? Colors.secondary : 'rgba(255,255,255,0.05)' }
-                                                    ]}
-                                                />
-                                            ))}
+                            {/* Celebration Element for Offline Mode */}
+                            {mode === 'offline' && (
+                                <View style={styles.offlineCelebration}>
+                                    <View style={styles.badgeLine} />
+                                    <Image
+                                        source={{ uri: 'https://media.giphy.com/media/26tOZ42Mg6pbMubM4/giphy.gif' }}
+                                        style={styles.celebrationImage}
+                                        resizeMode="contain"
+                                    />
+                                    <Text style={styles.badgeText}>{t('result.winner_shout')}</Text>
+                                    <View style={styles.badgeLine} />
+                                </View>
+                            )}
+
+                            {/* Tally Chart - Hide in offline mode */}
+                            {mode !== 'offline' && (
+                                <View style={styles.tallyContainer}>
+                                    {Object.entries(tally).map(([name, count]) => (
+                                        <View key={name} style={styles.tallyItem}>
+                                            <Text style={styles.tallyName}>{name}</Text>
+                                            <View style={styles.tallyBarContainer}>
+                                                {[...Array(Math.max(totalParticipants, 5))].map((_, i) => (
+                                                    <View
+                                                        key={i}
+                                                        style={[
+                                                            styles.tallyCell,
+                                                            { backgroundColor: i < count ? Colors.secondary : 'rgba(255,255,255,0.05)' }
+                                                        ]}
+                                                    />
+                                                ))}
+                                            </View>
+                                            <View style={styles.tallyCountContainer}>
+                                                <Text style={styles.tallyCountValue}>{count}</Text>
+                                                <Text style={styles.tallyCountLabel}>{count === 1 ? t('result.vote') : t('result.votes')}</Text>
+                                            </View>
                                         </View>
-                                        <View style={styles.tallyCountContainer}>
-                                            <Text style={styles.tallyCountValue}>{count}</Text>
-                                            <Text style={styles.tallyCountLabel}>{count === 1 ? t('result.vote') : t('result.votes')}</Text>
-                                        </View>
-                                    </View>
-                                ))}
-                            </View>
+                                    ))}
+                                </View>
+                            )}
 
                             <Text style={styles.subText}>
                                 {!allVoted && t('result.waiting_for_others')}
                             </Text>
                         </View>
 
-                        {role === 'owner' ? (
+                        {role === 'owner' || mode === 'offline' ? (
                             <View style={styles.footer}>
                                 <TouchableOpacity
                                     onPress={handleReset}
                                     activeOpacity={0.7}
                                     style={styles.retryButton}
                                 >
-                                    <RefreshCw color={Colors.primary} size={18} style={{ marginRight: 8 }} />
+                                    <RefreshCw color={Colors.primary} size={24} style={{ marginRight: 10 }} />
                                     <Text style={styles.retryText}>{t('result.retry').toUpperCase()}</Text>
                                 </TouchableOpacity>
                             </View>
@@ -321,13 +396,16 @@ export default function ResultScreen({ route, navigation }) {
                     message={t('common.exit_confirm')}
                     onConfirm={() => {
                         setShowExitConfirm(false);
-                        navigation.navigate('Welcome');
+                        navigation.reset({ index: 0, routes: [{ name: 'Entry' }] });
                     }}
                     onCancel={() => setShowExitConfirm(false)}
                     confirmText={t('common.confirm')}
                     cancelText={t('common.cancel')}
                     type="info"
                 />
+
+                {/* Festive Confetti Overlay */}
+                <Confetti active={allVoted} />
             </SafeAreaView>
         </CyberBackground >
     );
@@ -338,14 +416,14 @@ const styles = StyleSheet.create({
         flex: 1,
         paddingHorizontal: 24,
         alignItems: 'center',
-        paddingVertical: 50,
+        paddingVertical: 10, // Compact vertical padding
         width: '100%',
         maxWidth: 500,
         alignSelf: 'center',
     },
     trophyContainer: {
-        marginTop: 40,
-        marginBottom: 50,
+        marginTop: 10,
+        marginBottom: 40, // Increased spacing as requested, but balanced for single screen
         position: 'relative',
         alignItems: 'center',
         justifyContent: 'center',
@@ -371,7 +449,7 @@ const styles = StyleSheet.create({
     resultBox: {
         width: '100%',
         backgroundColor: 'rgba(255, 255, 255, 0.05)',
-        padding: 40,
+        padding: 25, // Compact padding
         borderRadius: 24,
         borderWidth: 1,
         borderColor: 'rgba(255, 255, 255, 0.1)',
@@ -386,7 +464,7 @@ const styles = StyleSheet.create({
         fontSize: 13,
         letterSpacing: 4,
         fontWeight: 'bold',
-        marginBottom: 20,
+        marginBottom: 10,
         opacity: 0.8,
     },
     winnerNameContainer: {
@@ -456,23 +534,24 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         gap: 12,
         justifyContent: 'center',
+        marginBottom: 30, // Adjusted as requested
     },
     retryButton: {
         flex: 1,
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',
-        borderWidth: 1,
+        borderWidth: 1.5,
         borderColor: Colors.primary,
-        paddingVertical: 12,
-        borderRadius: 12,
-        backgroundColor: 'rgba(255, 255, 255, 0.02)',
+        paddingVertical: 14,
+        borderRadius: 16,
+        backgroundColor: 'transparent',
     },
     retryText: {
         color: Colors.primary,
-        fontSize: 14,
-        fontWeight: 'bold',
-        letterSpacing: 1,
+        fontSize: 20,
+        fontWeight: '900',
+        letterSpacing: 2,
     },
     homeButton: {
         flex: 1,
@@ -523,11 +602,7 @@ const styles = StyleSheet.create({
         borderRadius: 20,
         padding: 24,
         borderWidth: 1,
-        borderColor: Colors.primary,
-        shadowColor: Colors.primary,
-        shadowOpacity: 0.5,
-        shadowRadius: 20,
-        elevation: 20,
+        borderColor: 'rgba(255,255,255,0.1)',
     },
     modalHeader: {
         flexDirection: 'row',
@@ -583,5 +658,36 @@ const styles = StyleSheet.create({
         fontWeight: 'bold',
         letterSpacing: 1.5,
         textTransform: 'uppercase',
+    },
+    offlineCelebration: {
+        width: '100%',
+        alignItems: 'center',
+        justifyContent: 'center',
+        paddingVertical: 10,
+        marginVertical: 5,
+    },
+    celebrationImage: {
+        width: 130, // Balanced size
+        height: 130,
+        marginBottom: 10,
+    },
+    badgeLine: {
+        width: '60%',
+        height: 2,
+        backgroundColor: Colors.secondary,
+        marginVertical: 12,
+        shadowColor: Colors.secondary,
+        shadowOpacity: 1,
+        shadowRadius: 10,
+        elevation: 10,
+    },
+    badgeText: {
+        color: Colors.secondary,
+        fontSize: 18,
+        fontWeight: '900',
+        letterSpacing: 3,
+        textShadowColor: Colors.secondary,
+        textShadowOffset: { width: 0, height: 0 },
+        textShadowRadius: 15,
     },
 });

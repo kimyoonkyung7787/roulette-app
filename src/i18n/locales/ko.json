@@ -17,7 +17,8 @@
         "weight": "가중치",
         "exit_confirm": "정말 종료하시겠습니까?",
         "cancel": "취소",
-        "confirm": "확인"
+        "confirm": "확인",
+        "item": "항목"
     },
     "categories": {
         "coffee": "커피",
@@ -37,7 +38,11 @@
         "resume_session": "이전 세션을 복구할까요?",
         "resume_message": "호스트로 활동하던 방(#{{roomId}})이 있습니다. 다시 입장하시겠습니까?",
         "resume_confirm": "네,\n복구하기",
-        "resume_cancel": "아니오,\n새로 만들기"
+        "resume_cancel": "아니오,\n새로 만들기",
+        "host_desc": "참가자 인원 등을 설정하고\n게임을 제일 먼저 시작합니다",
+        "participant_desc": "게임에 참여하여\n투표를 합니다",
+        "create_by_people": "인원 입력",
+        "create_by_menu": "메뉴 입력"
     },
     "name_input": {
         "add_participant": "참가자 추가...",
@@ -54,6 +59,7 @@
         "who": "누가 걸릴까",
         "what": "돌리기",
         "pick_now": "나의 픽",
+        "vote": "투표하기",
         "waiting_for_host": "호스트를 기다리는 중...",
         "selected": "선택됨",
         "please_select_name": "당신의 이름을 선택해 주세요",
@@ -77,7 +83,9 @@
         "spinning_roulette": "룰렛 회전",
         "gourmet_selection": "미식 선택",
         "force_result": "결과 강제 확인",
-        "no_participants": "참가자 없음"
+        "no_participants": "참가자 없음",
+        "ready_shout": "READY !",
+        "go_shout": "GO !"
     },
     "result": {
         "share_title": "룰렛 결과",
@@ -90,7 +98,20 @@
         "vote": "표",
         "votes": "표",
         "waiting_for_others": "다른 플레이어를 기다리는 중...",
-        "retry": "다시 하기"
+        "retry": "다시 하기",
+        "winner_shout": "WINNER!"
+    },
+    "entry": {
+        "offline_title": "오프라인",
+        "offline_desc": "다 같이 모여 있어요.\n한 사람이 돌려서 당첨!",
+        "online_title": "온라인",
+        "online_desc": "원격으로 모여요.\n각자 돌린 결과로 당첨!",
+        "select_mode": "SELECT MODE"
+    },
+    "offline": {
+        "title": "돌림판",
+        "item_placeholder": "항목 입력",
+        "default_item": "항목"
     },
     "history": {
         "title": "기록 로그",

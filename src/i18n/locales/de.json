@@ -16,7 +16,9 @@
         "select_language": "SPRACHE WÄHLEN",
         "exit_confirm": "Möchten Sie wirklich beenden?",
         "cancel": "Abbrechen",
-        "confirm": "Bestätigen"
+        "confirm": "Bestätigen",
+        "item": "Item",
+        "weight": "Weight"
     },
     "categories": {
         "coffee": "KAFFEE",
@@ -76,7 +78,9 @@
         "spinning_roulette": "ROULETTE DREHT SICH",
         "gourmet_selection": "GOURMET-AUSWAHL",
         "force_result": "ERGEBNIS ERZWINGEN",
-        "no_participants": "KEINE TEILNEHMER"
+        "no_participants": "KEINE TEILNEHMER",
+        "ready_shout": "READY !",
+        "go_shout": "GO !"
     },
     "result": {
         "share_title": "Roulette-Ergebnis",
@@ -89,10 +93,24 @@
         "vote": "STIMME",
         "votes": "STIMMEN",
         "waiting_for_others": "WARTEN AUF ANDERE...",
-        "retry": "WIEDERHOLEN"
+        "retry": "WIEDERHOLEN",
+        "winner_shout": "WINNER!"
+    },
+    "entry": {
+        "offline_title": "OFFLINE",
+        "offline_desc": "Gathered together.\nOne person spins to win!",
+        "online_title": "ONLINE",
+        "online_desc": "Remote gathering.\nEveryone spins to win!",
+        "select_mode": "SELECT GAME MODE"
+    },
+    "offline": {
+        "title": "ROULETTE",
+        "item_placeholder": "Enter Item",
+        "default_item": "Item"
     },
     "history": {
         "title": "PROTOKOLLVERLAUF",
-        "no_data": "KEINE PROTOKOLLE GEFUNDEN"
+        "no_data": "KEINE PROTOKOLLE GEFUNDEN",
+        "restore": "RESTORE SETTINGS"
     }
 }

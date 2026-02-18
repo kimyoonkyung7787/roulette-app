@@ -16,7 +16,9 @@
         "select_language": "言語選択",
         "exit_confirm": "本当に終了しますか？",
         "cancel": "キャンセル",
-        "confirm": "確認"
+        "confirm": "確認",
+        "item": "Item",
+        "weight": "Weight"
     },
     "categories": {
         "coffee": "コーヒー",
@@ -76,7 +78,9 @@
         "spinning_roulette": "ルーレット回転中",
         "gourmet_selection": "グルメ選択",
         "force_result": "強制的に結果を確認",
-        "no_participants": "参加者なし"
+        "no_participants": "参加者なし",
+        "ready_shout": "READY !",
+        "go_shout": "GO !"
     },
     "result": {
         "share_title": "ルーレット結果",
@@ -89,10 +93,24 @@
         "vote": "票",
         "votes": "票",
         "waiting_for_others": "他のプレイヤーを待っています...",
-        "retry": "もう一度"
+        "retry": "もう一度",
+        "winner_shout": "WINNER!"
+    },
+    "entry": {
+        "offline_title": "OFFLINE",
+        "offline_desc": "Gathered together.\nOne person spins to win!",
+        "online_title": "ONLINE",
+        "online_desc": "Remote gathering.\nEveryone spins to win!",
+        "select_mode": "SELECT GAME MODE"
+    },
+    "offline": {
+        "title": "ROULETTE",
+        "item_placeholder": "Enter Item",
+        "default_item": "Item"
     },
     "history": {
         "title": "履歴ログ",
-        "no_data": "履歴が見つかりません"
+        "no_data": "履歴が見つかりません",
+        "restore": "RESTORE SETTINGS"
     }
 }

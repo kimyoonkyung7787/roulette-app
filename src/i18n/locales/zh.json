@@ -16,7 +16,9 @@
         "select_language": "选择语言",
         "exit_confirm": "您确定要退出吗？",
         "cancel": "取消",
-        "confirm": "确认"
+        "confirm": "确认",
+        "item": "Item",
+        "weight": "Weight"
     },
     "categories": {
         "coffee": "咖啡",
@@ -76,7 +78,9 @@
         "spinning_roulette": "轮盘旋转中",
         "gourmet_selection": "美食选择",
         "force_result": "强制查看结果",
-        "no_participants": "无参与者"
+        "no_participants": "无参与者",
+        "ready_shout": "READY !",
+        "go_shout": "GO !"
     },
     "result": {
         "share_title": "轮盘结果",
@@ -89,10 +93,24 @@
         "vote": "票",
         "votes": "票",
         "waiting_for_others": "等待其他玩家...",
-        "retry": "重试"
+        "retry": "重试",
+        "winner_shout": "WINNER!"
+    },
+    "entry": {
+        "offline_title": "OFFLINE",
+        "offline_desc": "Gathered together.\nOne person spins to win!",
+        "online_title": "ONLINE",
+        "online_desc": "Remote gathering.\nEveryone spins to win!",
+        "select_mode": "SELECT GAME MODE"
+    },
+    "offline": {
+        "title": "ROULETTE",
+        "item_placeholder": "Enter Item",
+        "default_item": "Item"
     },
     "history": {
         "title": "记录历史",
-        "no_data": "未找到记录日志"
+        "no_data": "未找到记录日志",
+        "restore": "RESTORE SETTINGS"
     }
 }

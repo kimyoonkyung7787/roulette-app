@@ -6,28 +6,16 @@ import { useTranslation } from 'react-i18next';
 import { NeonText } from '../components/NeonText';
 import { Colors } from '../theme/colors';
 import { CyberBackground } from '../components/CyberBackground';
-import { Coffee, Utensils, Pizza, Crown, User, ArrowRight } from 'lucide-react-native';
+import { Crown, ArrowRight, Home, Users, Utensils } from 'lucide-react-native';
 import { CyberAlert } from '../components/CyberAlert';
 import { syncService } from '../services/SyncService';
-import { LanguageSelector } from '../components/LanguageSelector';
 
 const { width } = Dimensions.get('window');
 
-const CATEGORIES = [
-    { id: 'coffee', label: 'coffee', icon: Coffee, color: Colors.neonPink },
-    { id: 'meal', label: 'meal', icon: Utensils, color: Colors.success },
-    { id: 'snack', label: 'snack', icon: Pizza, color: Colors.accent },
-];
-
-const ROLES = [
-    { id: 'owner', label: 'host', icon: Crown, description: 'Manage participants' },
-    { id: 'participant', label: 'participant', icon: User, description: 'Join existing list' },
-];
-
-export default function WelcomeScreen({ navigation }) {
+export default function WelcomeScreen({ route, navigation }) {
     const { t } = useTranslation();
-    const [selectedCategory, setSelectedCategory] = useState('coffee');
-    const [selectedRole, setSelectedRole] = useState('participant');
+    const { mode = 'online' } = route.params || {};
+    const [selectedRole, setSelectedRole] = useState(null);
     const [inputRoomId, setInputRoomId] = useState('');
     const [alertConfig, setAlertConfig] = useState({ visible: false, message: '', title: '' });
     const [resumeConfig, setResumeConfig] = useState({ visible: false, roomId: '', category: '' });
@@ -47,7 +35,7 @@ export default function WelcomeScreen({ navigation }) {
                         setResumeConfig({
                             visible: true,
                             roomId: savedRoomId,
-                            category: savedCategory || 'coffee'
+                            category: savedCategory || 'meal'
                         });
                     } else {
                         // Room gone, clear storage
@@ -79,54 +67,90 @@ export default function WelcomeScreen({ navigation }) {
         return Math.floor(100000 + Math.random() * 900000).toString();
     };
 
-    const handleStart = async () => {
-        let roomId = '';
-
-        if (selectedRole === 'owner') {
-            roomId = generateRoomId();
-            // Store session info
-            try {
-                await AsyncStorage.setItem('last_role', 'owner');
-                await AsyncStorage.setItem('last_room_id', roomId);
-                await AsyncStorage.setItem('last_category', selectedCategory);
-            } catch (e) {
-                console.error('WelcomeScreen: Failed to save session', e);
-            }
-        } else {
-            if (!inputRoomId || inputRoomId.trim().length === 0) {
-                setAlertConfig({
-                    visible: true,
-                    title: t('common.alert'),
-                    message: t('welcome.enter_room_id_to_proceed')
-                });
-                return;
-            }
-            if (inputRoomId.length !== 6) {
-                setAlertConfig({
-                    visible: true,
-                    title: t('common.alert'),
-                    message: t('welcome.room_id_length_error')
-                });
-                return;
-            }
-            roomId = inputRoomId.trim();
-
-            const exists = await syncService.checkRoomExists(roomId);
-            if (!exists) {
-                setAlertConfig({
-                    visible: true,
-                    title: t('common.alert'),
-                    message: t('welcome.room_not_found')
-                });
-                return;
-            }
+    const handleHostStart = async (setupType) => {
+        const roomId = generateRoomId();
+        const defaultCategory = 'meal'; // Default category for simplified flow
+        try {
+            await AsyncStorage.setItem('last_role', 'owner');
+            await AsyncStorage.setItem('last_room_id', roomId);
+            await AsyncStorage.setItem('last_category', defaultCategory);
+        } catch (e) {
+            console.error('WelcomeScreen: Failed to save session', e);
         }
 
         navigation.navigate('NameInput', {
-            category: selectedCategory,
-            role: selectedRole,
-            roomId: roomId
+            category: defaultCategory,
+            initialTab: setupType, // 'people' or 'menu'
+            role: 'owner',
+            roomId: roomId,
+            mode: mode
         });
+    };
+
+    const handleParticipantStart = async (setupType) => {
+        if (!inputRoomId || inputRoomId.trim().length === 0) {
+            setAlertConfig({
+                visible: true,
+                title: t('common.alert'),
+                message: t('welcome.enter_room_id_to_proceed')
+            });
+            return;
+        }
+        if (inputRoomId.length !== 6) {
+            setAlertConfig({
+                visible: true,
+                title: t('common.alert'),
+                message: t('welcome.room_id_length_error')
+            });
+            return;
+        }
+
+        const roomId = inputRoomId.trim();
+        const exists = await syncService.checkRoomExists(roomId);
+        if (!exists) {
+            setAlertConfig({
+                visible: true,
+                title: t('common.alert'),
+                message: t('welcome.room_not_found')
+            });
+            return;
+        }
+
+        navigation.navigate('NameInput', {
+            category: 'meal', // Default
+            initialTab: setupType, // 'people' or 'menu'
+            role: 'participant',
+            roomId: roomId,
+            mode: mode
+        });
+    };
+
+    const renderRoleCard = (role, IconComponent, label, desc, color) => {
+        const isSelected = selectedRole === role;
+
+        return (
+            <TouchableOpacity
+                onPress={() => setSelectedRole(role)}
+                style={[
+                    styles.roleCard,
+                    { borderColor: isSelected ? color : 'rgba(255,255,255,0.1)' }
+                ]}
+                activeOpacity={0.8}
+            >
+                <View style={[styles.roleIconBox, { backgroundColor: isSelected ? `${color}20` : 'rgba(255,255,255,0.05)' }]}>
+                    <IconComponent size={32} color={color} />
+                </View>
+                <View style={styles.roleContent}>
+                    <Text style={[styles.roleTitle, { color: isSelected ? color : Colors.text }]}>
+                        {label}
+                    </Text>
+                    <Text style={styles.roleDesc}>
+                        {desc}
+                    </Text>
+                </View>
+                {isSelected && <View style={[styles.activeIndicator, { backgroundColor: color }]} />}
+            </TouchableOpacity>
+        );
     };
 
     return (
@@ -141,98 +165,116 @@ export default function WelcomeScreen({ navigation }) {
                         showsVerticalScrollIndicator={false}
                     >
                         <View style={[styles.container, { width: '100%', maxWidth: 500, alignSelf: 'center' }]}>
-                            {/* Top Header with Language Selector */}
+                            {/* Top Header */}
                             <View style={styles.topHeader}>
-                                <LanguageSelector />
+                                <TouchableOpacity
+                                    onPress={() => navigation.reset({ index: 0, routes: [{ name: 'Entry' }] })}
+                                    style={styles.homeButton}
+                                >
+                                    <View style={styles.homeIconBox}>
+                                        <Home color={Colors.primary} size={20} />
+                                    </View>
+                                </TouchableOpacity>
                             </View>
 
-                            {/* Header Image Placeholder / Roulette Aesthetic */}
-                            <View style={styles.heroContainer}>
-                                <View style={styles.rouletteCircle}>
-                                    <View style={[styles.innerCircle, { borderColor: CATEGORIES.find(c => c.id === selectedCategory).color }]}>
-                                        {React.createElement(CATEGORIES.find(c => c.id === selectedCategory).icon, {
-                                            size: 60,
-                                            color: CATEGORIES.find(c => c.id === selectedCategory).color
-                                        })}
-                                    </View>
-                                    <NeonText className="mt-4 text-2xl tracking-[0.2em]" style={{ color: CATEGORIES.find(c => c.id === selectedCategory).color }}>
-                                        {t('common.roulette_game')}
-                                    </NeonText>
-                                </View>
+                            <View style={styles.headerContainer}>
+                                <NeonText className="text-3xl mb-2" style={{ textAlign: 'center' }}>
+                                    {t('welcome.choose_role')}
+                                </NeonText>
                             </View>
 
                             <View style={styles.content}>
-                                <View style={styles.section}>
-                                    <NeonText className="text-sm mb-4 opacity-70">{t('welcome.select_category')}</NeonText>
-                                    <View style={styles.categoryGrid}>
-                                        {CATEGORIES.map((cat) => (
-                                            <TouchableOpacity
-                                                key={cat.id}
-                                                onPress={() => setSelectedCategory(cat.id)}
-                                                style={[
-                                                    styles.categoryCard,
-                                                    selectedCategory === cat.id && { borderColor: cat.color, backgroundColor: `${cat.color}15` }
-                                                ]}
-                                            >
-                                                <cat.icon size={24} color={selectedCategory === cat.id ? cat.color : Colors.textSecondary} />
-                                                <Text style={[
-                                                    styles.cardLabel,
-                                                    { color: selectedCategory === cat.id ? cat.color : Colors.textSecondary }
-                                                ]}>{t(`categories.${cat.label}`)}</Text>
-                                            </TouchableOpacity>
-                                        ))}
-                                    </View>
-                                </View>
+                                <View style={styles.roleList}>
+                                    {renderRoleCard(
+                                        'owner',
+                                        Crown,
+                                        t('common.host'),
+                                        t('welcome.host_desc'),
+                                        Colors.primary
+                                    )}
 
-                                <View style={[styles.section, { marginBottom: 0 }]}>
-                                    <NeonText className="text-sm mb-4 opacity-70">{t('welcome.choose_role')}</NeonText>
-                                    <View style={styles.roleContainer}>
-                                        {ROLES.map((role) => (
-                                            <TouchableOpacity
-                                                key={role.id}
-                                                onPress={() => setSelectedRole(role.id)}
-                                                style={[
-                                                    styles.roleCard,
-                                                    selectedRole === role.id && { borderColor: Colors.primary, backgroundColor: 'rgba(0, 255, 255, 0.1)' }
-                                                ]}
-                                            >
-                                                <View style={styles.roleIconBox}>
-                                                    <role.icon size={18} color={selectedRole === role.id ? Colors.primary : Colors.textSecondary} />
-                                                </View>
-                                                <Text style={[styles.roleLabel, selectedRole === role.id && { color: Colors.primary }]}>{t(`common.${role.label}`)}</Text>
-                                                {selectedRole === role.id && <View style={styles.checkMark} />}
-                                            </TouchableOpacity>
-                                        ))}
-                                    </View>
+                                    {/* Inline Host Options */}
+                                    {selectedRole === 'owner' && (
+                                        <View style={styles.hostOptionsContainer}>
+                                            <NeonText className="text-sm mb-3 pl-2" style={{ color: 'white', fontWeight: 'bold' }}>
+                                                {t('entry.select_mode')}
+                                            </NeonText>
+                                            <View style={styles.hostButtonsRow}>
+                                                <TouchableOpacity
+                                                    style={[styles.hostOptionBtn, { backgroundColor: Colors.primary, borderColor: Colors.primary }]}
+                                                    onPress={() => handleHostStart('people')}
+                                                >
+                                                    <Users size={24} color="black" />
+                                                    <Text style={[styles.hostOptionText, { color: 'black' }]}>
+                                                        PEOPLE
+                                                    </Text>
+                                                </TouchableOpacity>
 
-                                    <View style={styles.inputAreaWrapper}>
-                                        {selectedRole === 'participant' ? (
+                                                <TouchableOpacity
+                                                    style={[styles.hostOptionBtn, { backgroundColor: Colors.primary, borderColor: Colors.primary }]}
+                                                    onPress={() => handleHostStart('menu')}
+                                                >
+                                                    <Utensils size={24} color="black" />
+                                                    <Text style={[styles.hostOptionText, { color: 'black' }]}>
+                                                        MENU
+                                                    </Text>
+                                                </TouchableOpacity>
+                                            </View>
+                                        </View>
+                                    )}
+
+                                    {renderRoleCard(
+                                        'participant',
+                                        Users,
+                                        t('common.participant'),
+                                        t('welcome.participant_desc'),
+                                        Colors.primary
+                                    )}
+
+                                    {/* Inline Participant Options */}
+                                    {selectedRole === 'participant' && (
+                                        <View style={styles.participantOptionsContainer}>
                                             <View style={styles.roomIdInputContainer}>
                                                 <TextInput
                                                     style={styles.roomIdInput}
                                                     placeholder={t('welcome.room_id_placeholder')}
-                                                    placeholderTextColor="rgba(255,255,255,0.3)"
+                                                    placeholderTextColor="rgba(255,255,255,0.5)"
                                                     keyboardType="number-pad"
                                                     maxLength={6}
                                                     value={inputRoomId}
                                                     onChangeText={setInputRoomId}
                                                 />
                                             </View>
-                                        ) : (
-                                            <View style={styles.inputPlaceholder}>
-                                                <Text style={styles.placeholderText}>{t('welcome.host_mode_active')}</Text>
-                                            </View>
-                                        )}
-                                    </View>
-                                </View>
 
-                                <TouchableOpacity
-                                    style={[styles.startButton, { shadowColor: Colors.primary }]}
-                                    onPress={handleStart}
-                                >
-                                    <Text style={styles.startButtonText}>{t('welcome.start_game')}</Text>
-                                    <ArrowRight color="black" size={20} style={{ marginLeft: 10 }} />
-                                </TouchableOpacity>
+                                            <View style={{ marginTop: 10 }}>
+                                                <NeonText className="text-sm mb-3 pl-2" style={{ color: 'white', fontWeight: 'bold' }}>
+                                                    {t('entry.select_mode')}
+                                                </NeonText>
+                                                <View style={styles.hostButtonsRow}>
+                                                    <TouchableOpacity
+                                                        style={[styles.hostOptionBtn, { backgroundColor: Colors.primary, borderColor: Colors.primary }]}
+                                                        onPress={() => handleParticipantStart('people')}
+                                                    >
+                                                        <Users size={24} color="black" />
+                                                        <Text style={[styles.hostOptionText, { color: 'black' }]}>
+                                                            PEOPLE
+                                                        </Text>
+                                                    </TouchableOpacity>
+
+                                                    <TouchableOpacity
+                                                        style={[styles.hostOptionBtn, { backgroundColor: Colors.primary, borderColor: Colors.primary }]}
+                                                        onPress={() => handleParticipantStart('menu')}
+                                                    >
+                                                        <Utensils size={24} color="black" />
+                                                        <Text style={[styles.hostOptionText, { color: 'black' }]}>
+                                                            MENU
+                                                        </Text>
+                                                    </TouchableOpacity>
+                                                </View>
+                                            </View>
+                                        </View>
+                                    )}
+                                </View>
                             </View>
                         </View>
                     </ScrollView>
@@ -266,155 +308,142 @@ const styles = StyleSheet.create({
         flexGrow: 1,
     },
     container: {
-        paddingHorizontal: 25,
+        paddingHorizontal: 20,
         paddingBottom: 20,
     },
     topHeader: {
         flexDirection: 'row',
-        justifyContent: 'flex-end',
+        alignItems: 'center',
         paddingVertical: 10,
-    },
-    heroContainer: {
-        alignItems: 'center',
-        paddingVertical: 20,
-    },
-    rouletteCircle: {
-        alignItems: 'center',
-        justifyContent: 'center',
-    },
-    innerCircle: {
-        width: 140,
-        height: 140,
-        borderRadius: 70,
-        borderWidth: 2,
-        borderStyle: 'dashed',
-        alignItems: 'center',
-        justifyContent: 'center',
-        backgroundColor: 'rgba(255,255,255,0.03)',
-    },
-    content: {
-        justifyContent: 'center',
-        paddingBottom: 30,
-    },
-    section: {
         marginBottom: 20,
     },
-    categoryGrid: {
-        flexDirection: 'row',
-        gap: 12,
+    homeButton: {
+        padding: 5,
     },
-    categoryCard: {
-        flex: 1,
-        height: 80,
+    homeIconBox: {
+        width: 40,
+        height: 40,
         borderRadius: 12,
+        backgroundColor: 'rgba(0, 255, 255, 0.1)',
         borderWidth: 1,
-        borderColor: 'rgba(255,255,255,0.1)',
-        backgroundColor: 'rgba(255,255,255,0.03)',
+        borderColor: 'rgba(0, 255, 255, 0.2)',
         alignItems: 'center',
         justifyContent: 'center',
-        gap: 8,
     },
-    cardLabel: {
-        fontSize: 10,
-        fontWeight: 'bold',
-        letterSpacing: 1,
+    headerContainer: {
+        alignItems: 'center',
+        marginBottom: 30,
     },
-    roleContainer: {
-        flexDirection: 'row',
-        gap: 12,
+    content: {
+        width: '100%',
+    },
+    roleList: {
+        gap: 15,
     },
     roleCard: {
-        flex: 1,
+        flexDirection: 'row',
         alignItems: 'center',
-        paddingVertical: 12,
-        paddingHorizontal: 10,
-        borderRadius: 12,
+        padding: 20,
+        borderRadius: 20,
         borderWidth: 1,
-        borderColor: 'rgba(255,255,255,0.1)',
-        backgroundColor: 'rgba(255,255,255,0.03)',
-        gap: 6,
+        backgroundColor: 'rgba(20, 20, 20, 0.8)',
+        gap: 15,
+        minHeight: 100,
     },
     roleIconBox: {
-        width: 32,
-        height: 32,
-        borderRadius: 8,
-        backgroundColor: 'rgba(255,255,255,0.05)',
+        width: 60,
+        height: 60,
+        borderRadius: 15,
         alignItems: 'center',
         justifyContent: 'center',
+        borderWidth: 1,
+        borderColor: 'rgba(255,255,255,0.1)',
     },
-    roleLabel: {
-        color: Colors.text,
-        fontSize: 14,
-        fontWeight: 'bold',
+    roleContent: {
+        flex: 1,
+        gap: 4,
+    },
+    roleTitle: {
+        fontSize: 18,
+        fontWeight: '900',
         letterSpacing: 1,
     },
     roleDesc: {
         color: Colors.textSecondary,
-        fontSize: 11,
-        marginTop: 2,
+        fontSize: 13,
+        lineHeight: 18,
     },
-    checkMark: {
-        position: 'absolute',
-        top: 10,
-        right: 10,
+    activeIndicator: {
         width: 8,
         height: 8,
         borderRadius: 4,
-        backgroundColor: Colors.primary,
-        shadowColor: Colors.primary,
-        shadowRadius: 5,
-        shadowOpacity: 1,
-        elevation: 5,
+        position: 'absolute',
+        top: 20,
+        right: 20,
+        backgroundColor: 'rgba(255,255,255,0.2)', // Subdued indicator
     },
-    inputAreaWrapper: {
-        height: 70,
-        marginTop: 15,
-        justifyContent: 'center',
+    hostOptionsContainer: {
+        marginTop: 5,
+        marginBottom: 10,
+        marginLeft: 20,
+        paddingLeft: 20,
+        borderLeftWidth: 1,
+        borderLeftColor: 'rgba(255,255,255,0.1)',
     },
-    inputPlaceholder: {
-        height: 50,
-        backgroundColor: 'rgba(255,255,255,0.02)',
-        borderRadius: 8,
-        borderWidth: 1,
-        borderStyle: 'dashed',
-        borderColor: 'rgba(255,255,255,0.05)',
-        alignItems: 'center',
-        justifyContent: 'center',
+    hostButtonsRow: {
+        flexDirection: 'row',
+        gap: 10,
     },
-    placeholderText: {
-        color: 'rgba(255,255,255,0.1)',
-        fontSize: 10,
-        fontWeight: 'bold',
-        letterSpacing: 2,
-    },
-    roomIdInputContainer: {
-        paddingHorizontal: 0,
-    },
-    roomIdInput: {
-        height: 50,
+    hostOptionBtn: {
+        flex: 1,
+        padding: 15,
+        borderRadius: 12,
         backgroundColor: 'rgba(0,0,0,0.3)',
         borderWidth: 1,
-        borderColor: Colors.primary,
-        borderRadius: 8,
-        paddingHorizontal: 15,
-        color: Colors.primary,
-        fontSize: 16,
+        alignItems: 'center',
+        justifyContent: 'center',
+        flexDirection: 'row',
+        gap: 8,
+    },
+    hostOptionText: {
+        fontWeight: '900',
+        fontSize: 14,
+        letterSpacing: 1,
+    },
+    participantOptionsContainer: {
+        marginTop: 5,
+        marginBottom: 10,
+        marginLeft: 20,
+        paddingLeft: 20,
+        borderLeftWidth: 1,
+        borderLeftColor: 'rgba(255,255,255,0.1)',
+        gap: 10,
+    },
+    roomIdInputContainer: {
+        width: '60%',
+        alignSelf: 'flex-end',
+    },
+    roomIdInput: {
+        height: 44,
+        backgroundColor: 'rgba(0,0,0,0.3)',
+        borderWidth: 1,
+        borderColor: 'white',
+        borderRadius: 12,
+        paddingHorizontal: 10,
+        color: 'white',
+        fontSize: 14,
         fontWeight: 'bold',
-        letterSpacing: 2,
+        letterSpacing: 1,
         textAlign: 'center',
     },
     startButton: {
         backgroundColor: Colors.primary,
-        paddingVertical: 12,
+        paddingVertical: 14,
         borderRadius: 12,
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',
-        marginTop: 15,
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.5,
-        shadowRadius: 10,
-        elevation: 8,
+        marginTop: 10,
     },
     startButtonText: {
         color: 'black',
