@@ -91,9 +91,9 @@ export default function NameInputScreen({ route, navigation }) {
                     if (existingMenus && existingMenus.length > 0) {
                         menuList = existingMenus;
                     } else {
-                        if (category === 'coffee') menuList = [{ name: 'AMERICANO', weight: 1 }, { name: 'CAFE LATTE', weight: 1 }];
-                        else if (category === 'meal') menuList = [{ name: 'KIMCHI STEW', weight: 1 }, { name: 'SOYBEAN STEW', weight: 1 }];
-                        else menuList = [{ name: 'CHICKEN', weight: 1 }, { name: 'PIZZA', weight: 1 }];
+                        if (category === 'coffee') menuList = [{ name: 'AMERICANO' }, { name: 'CAFE LATTE' }];
+                        else if (category === 'meal') menuList = [{ name: 'KIMCHI STEW' }, { name: 'SOYBEAN STEW' }];
+                        else menuList = [{ name: 'CHICKEN' }, { name: 'PIZZA' }];
                     }
                     setMenuItems(menuList);
                     await syncService.setMenuItems(menuList);
@@ -253,6 +253,18 @@ export default function NameInputScreen({ route, navigation }) {
         }
     }, [participants, isLoaded]);
 
+    // Validate identity against participant list
+    useEffect(() => {
+        if (isLoaded && mySelectedName && participants.length > 0) {
+            const isNameValid = participants.some(p => (typeof p === 'object' ? p.name : p) === mySelectedName);
+            if (!isNameValid) {
+                console.log('NameInputScreen: Current identity not in participants list, clearing...');
+                setMySelectedName(null);
+                syncService.setIdentity('');
+            }
+        }
+    }, [participants, isLoaded, mySelectedName]);
+
     // Handle data restoration from history
     useEffect(() => {
         if (route.params?.restoredData && role === 'owner') {
@@ -285,7 +297,7 @@ export default function NameInputScreen({ route, navigation }) {
             setParticipants(updated);
             if (role === 'owner') await syncService.setParticipants(updated);
         } else {
-            const updated = [...menuItems, { name: name.trim(), weight: 1 }];
+            const updated = [...menuItems, { name: name.trim() }];
             setMenuItems(updated);
             if (role === 'owner') await syncService.setMenuItems(updated);
         }
@@ -348,11 +360,6 @@ export default function NameInputScreen({ route, navigation }) {
                 newParticipants[editingWeightIndex] = { ...newParticipants[editingWeightIndex], weight: roundedVal };
                 setParticipants(newParticipants);
                 if (role === 'owner') await syncService.setParticipants(newParticipants);
-            } else {
-                const newMenu = [...menuItems];
-                newMenu[editingWeightIndex] = { ...newMenu[editingWeightIndex], weight: roundedVal };
-                setMenuItems(newMenu);
-                if (role === 'owner') await syncService.setMenuItems(newMenu);
             }
         }
         setEditingWeightIndex(null);
@@ -369,6 +376,14 @@ export default function NameInputScreen({ route, navigation }) {
     };
 
     const handleDirectPick = async () => {
+        if (!mySelectedName) {
+            setAlertConfig({
+                visible: true,
+                title: t('common.alert'),
+                message: t('name_input.please_select_name')
+            });
+            return;
+        }
         if (selectedMenuIndex === null) {
             setAlertConfig({
                 visible: true,
@@ -471,6 +486,14 @@ export default function NameInputScreen({ route, navigation }) {
     };
 
     const startRoulette = async (target = 'people') => {
+        if (!mySelectedName) {
+            setAlertConfig({
+                visible: true,
+                title: t('common.alert'),
+                message: t('name_input.please_select_name')
+            });
+            return;
+        }
         if (target === 'people') {
             if (participants.length < 2) {
                 setAlertConfig({
@@ -534,7 +557,8 @@ export default function NameInputScreen({ route, navigation }) {
                 roomId,
                 role,
                 category: activeCategory,
-                spinTarget: target // Explicitly pass the target mode
+                spinTarget: target, // Explicitly pass the target mode
+                autoStartSpin: true
             });
         }
     };
@@ -704,13 +728,18 @@ export default function NameInputScreen({ route, navigation }) {
                             const isMe = isPeopleTab && mySelectedName === nameToCheck;
                             const activeThemeColor = isPeopleTab ? Colors.primary : activeMenuColor;
                             const currentList = activeTab === 'people' ? participants : menuItems;
-                            const totalWeightSum = currentList.reduce((sum, p) => sum + (p.weight || 0), 0);
-                            const totalWeight = Math.max(1, totalWeightSum);
-                            // Format percentage: remove .0 if it's an integer
-                            const percentageValue = (item.weight / totalWeight) * 100;
-                            const percentage = percentageValue % 1 === 0 ? percentageValue.toFixed(0) : percentageValue.toFixed(1);
-                            // Format weight: remove .0 if it's an integer
-                            const displayWeight = item.weight % 1 === 0 ? item.weight.toFixed(0) : item.weight.toFixed(1);
+                            let totalWeight = 1;
+                            let percentage = '0';
+                            let displayWeight = '1';
+
+                            if (isPeopleTab) {
+                                const totalWeightSum = participants.reduce((sum, p) => sum + (p.weight || 0), 0);
+                                totalWeight = Math.max(1, totalWeightSum);
+                                const weightValue = item.weight || 0;
+                                const percentageValue = (weightValue / totalWeight) * 100;
+                                percentage = percentageValue % 1 === 0 ? percentageValue.toFixed(0) : percentageValue.toFixed(1);
+                                displayWeight = weightValue % 1 === 0 ? weightValue.toFixed(0) : weightValue.toFixed(1);
+                            }
 
                             return (
                                 <View style={{
@@ -881,7 +910,7 @@ export default function NameInputScreen({ route, navigation }) {
                         }}
                         style={{ flex: 1 }}
                         contentContainerStyle={{ paddingBottom: 20 }}
-                        ListFooterComponent={(activeTab === 'people' ? participants : menuItems).length > 0 ? (
+                        ListFooterComponent={activeTab === 'people' && participants.length > 0 ? (
                             <View style={{
                                 flexDirection: 'row',
                                 justifyContent: 'flex-end',
@@ -921,7 +950,16 @@ export default function NameInputScreen({ route, navigation }) {
                                         if (role === 'owner') {
                                             startRoulette('people');
                                         } else {
-                                            const isGameActive = roomPhase === 'roulette' || votes.length > 0 || remoteSpinState?.isSpinning;
+                                            if (!mySelectedName) {
+                                                setAlertConfig({
+                                                    visible: true,
+                                                    title: t('common.alert'),
+                                                    message: t('name_input.please_select_name')
+                                                });
+                                                return;
+                                            }
+                                            // Strict check: Only allow if host has moved to roulette phase
+                                            const isGameActive = roomPhase === 'roulette';
                                             if (isGameActive) {
                                                 navigation.navigate('Roulette', {
                                                     participants,
@@ -930,7 +968,8 @@ export default function NameInputScreen({ route, navigation }) {
                                                     roomId,
                                                     role,
                                                     category: activeCategory,
-                                                    spinTarget: 'people'
+                                                    spinTarget: 'people',
+                                                    autoStartSpin: true
                                                 });
                                             } else {
                                                 setAlertConfig({
@@ -994,9 +1033,18 @@ export default function NameInputScreen({ route, navigation }) {
                                             if (role === 'owner') {
                                                 startRoulette('menu');
                                             } else {
+                                                if (!mySelectedName) {
+                                                    setAlertConfig({
+                                                        visible: true,
+                                                        title: t('common.alert'),
+                                                        message: t('name_input.please_select_name')
+                                                    });
+                                                    return;
+                                                }
                                                 // Participant: Just navigate to roulette screen without submitting vote
                                                 // They will vote by spinning the wheel in the roulette screen
-                                                const isGameActive = roomPhase === 'roulette' || votes.length > 0 || remoteSpinState?.isSpinning;
+                                                // Strict check for menu mode as well
+                                                const isGameActive = roomPhase === 'roulette' || votes.length > 0;
                                                 if (!isGameActive) {
                                                     setAlertConfig({
                                                         visible: true,
@@ -1015,7 +1063,8 @@ export default function NameInputScreen({ route, navigation }) {
                                                     roomId,
                                                     role,
                                                     category: activeCategory,
-                                                    spinTarget: 'menu'
+                                                    spinTarget: 'menu',
+                                                    autoStartSpin: true
                                                 });
                                             }
                                         }}

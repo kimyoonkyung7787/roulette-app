@@ -96,9 +96,19 @@ class FeedbackService {
     }
 
     async playTick() {
-        if (!this.tickSound) return;
+        if (!this.tickSound || !this.isLoaded) return;
+
+        const now = Date.now();
+        // Prevent playing ticks too close together (min 35ms gap for distinct sounds)
+        if (this._lastTickTime && now - this._lastTickTime < 35) return;
+        this._lastTickTime = now;
+
         try {
+            // Light haptic feedback for each tick
             Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+
+            // Fast reset and play
+            await this.tickSound.stopAsync();
             await this.tickSound.setPositionAsync(0);
             await this.tickSound.playAsync();
         } catch (e) { }

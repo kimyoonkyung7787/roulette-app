@@ -37,7 +37,19 @@ export default function RouletteScreen({ route, navigation }) {
     const isNavigating = useRef(false);
     const isFocused = useIsFocused();
     const lastTickIndex = useSharedValue(-1);
+    const lastTickAngle = useSharedValue(0);
+    const spinStartTime = useSharedValue(0);
     const isInitiator = useRef(false);
+    const lastTriggerTime = useRef(0);
+    const hasAutoSpun = useRef(false);
+    const spinTargetRef = useRef(spinTarget);
+    const participantsRef = useRef(participantsState);
+    const menuItemsRef = useRef(menuItemsState);
+
+    // Keep refs in sync with state
+    useEffect(() => { spinTargetRef.current = spinTarget; }, [spinTarget]);
+    useEffect(() => { participantsRef.current = participantsState; }, [participantsState]);
+    useEffect(() => { menuItemsRef.current = menuItemsState; }, [menuItemsState]);
 
     // Initial Rotation Effect for Voted Item
     useEffect(() => {
@@ -47,17 +59,17 @@ export default function RouletteScreen({ route, navigation }) {
             const index = currentList.findIndex(item => (typeof item === 'object' ? item.name : item) === votedItem);
 
             if (index !== -1) {
-                const totalWeight = currentList.reduce((sum, p) => sum + (typeof p === 'object' ? (p.weight || 0) : (100 / currentList.length)), 0);
+                const totalWeight = currentList.reduce((sum, p) => sum + (spinTarget === 'people' ? (p.weight || 0) : 1), 0);
                 // Calculate target angle using PATTERN_ANGLE
                 let winnerStartAngleInPattern = 0;
                 for (let i = 0; i < index; i++) {
                     const p = currentList[i];
-                    const weight = typeof p === 'object' ? p.weight : (100 / currentList.length);
+                    const weight = spinTarget === 'people' ? (p.weight || 0) : 1;
                     winnerStartAngleInPattern += (weight / totalWeight) * PATTERN_ANGLE;
                 }
 
                 const winnerItem = currentList[index];
-                const winnerWeight = typeof winnerItem === 'object' ? winnerItem.weight : (100 / currentList.length);
+                const winnerWeight = spinTarget === 'people' ? (winnerItem.weight || 0) : 1;
                 const winnerSegmentAngleInPattern = (winnerWeight / totalWeight) * PATTERN_ANGLE;
 
                 // Center of the segment in the pattern
@@ -151,13 +163,21 @@ export default function RouletteScreen({ route, navigation }) {
         };
     }, []);
 
-    // Listen for remote spin to start own animation
+    // Handle auto-spin if requested from NameInputScreen (e.g., "Who to pick" clicked)
     useEffect(() => {
-        if (remoteSpinState?.isSpinning && !spinning && role === 'participant') {
-            console.log('RouletteScreen: Remote spin detected, starting animation for index:', remoteSpinState.winnerIndex);
-            startSpinAnimation(false, remoteSpinState.winnerIndex);
+        const shouldAutoSpin = route.params?.autoStartSpin;
+        if (isFocused && shouldAutoSpin && !spinning && !hasAutoSpun.current) {
+            console.log('RouletteScreen: Auto-executing spin in 200ms...');
+            hasAutoSpun.current = true; // Lock execution
+
+            const timer = setTimeout(() => {
+                navigation.setParams({ autoStartSpin: undefined });
+                spinRoulette();
+            }, 200); // Stable delay
+
+            return () => clearTimeout(timer);
         }
-    }, [remoteSpinState, spinning, role]);
+    }, [isFocused, route.params?.autoStartSpin, spinning]);
 
     // Check if everyone has voted
     useEffect(() => {
@@ -259,13 +279,17 @@ export default function RouletteScreen({ route, navigation }) {
         const winningAngle = (360 - normalizedRotation) % 360;
         const winningAngleInPattern = winningAngle % PATTERN_ANGLE;
 
-        const totalWeight = currentList.reduce((sum, p) => sum + (typeof p === 'object' ? (p.weight || 0) : (100 / currentList.length)), 0);
+        // Use refs for the final calculation to avoid closure staleness
+        const currentTarget = spinTargetRef.current;
+        const currentDataList = currentTarget === 'people' ? participantsRef.current : menuItemsRef.current;
+
+        const totalWeight = currentDataList.reduce((sum, p) => sum + (currentTarget === 'people' ? (typeof p === 'object' ? (p.weight || 0) : 1) : 1), 0);
         let cumulativeAngle = 0;
         let winningIndex = 0;
 
-        for (let i = 0; i < currentList.length; i++) {
-            const p = currentList[i];
-            const weight = typeof p === 'object' ? p.weight : (100 / currentList.length);
+        for (let i = 0; i < currentDataList.length; i++) {
+            const p = currentDataList[i];
+            const weight = currentTarget === 'people' ? (typeof p === 'object' ? (p.weight || 0) : 1) : 1;
             const sectorAngle = (weight / totalWeight) * PATTERN_ANGLE;
 
             if (winningAngleInPattern >= cumulativeAngle && winningAngleInPattern < cumulativeAngle + sectorAngle) {
@@ -275,7 +299,7 @@ export default function RouletteScreen({ route, navigation }) {
             cumulativeAngle += sectorAngle;
         }
 
-        const winner = typeof currentList[winningIndex] === 'object' ? currentList[winningIndex].name : currentList[winningIndex];
+        const winner = typeof currentDataList[winningIndex] === 'object' ? currentDataList[winningIndex].name : currentDataList[winningIndex];
 
         console.log(`Spin Finished - Winner: ${winner}`);
 
@@ -300,12 +324,16 @@ export default function RouletteScreen({ route, navigation }) {
             const pointerAngle = (360 - normalizedRotation) % 360;
             const pointerAngleInPattern = pointerAngle % PATTERN_ANGLE;
 
-            const totalWeight = currentList.reduce((sum, p) => sum + (typeof p === 'object' ? (p.weight || 0) : (100 / currentList.length)), 0);
+            const totalWeight = currentList.reduce((sum, p) => sum + (spinTarget === 'people' ? (typeof p === 'object' ? (p.weight || 0) : 1) : 1), 0);
+
+            // Avoid division by zero
+            if (totalWeight === 0) return;
+
             let cumulativeAngle = 0;
             let currentIndex = 0;
             for (let i = 0; i < currentList.length; i++) {
                 const p = currentList[i];
-                const weight = typeof p === 'object' ? p.weight : (100 / currentList.length);
+                const weight = spinTarget === 'people' ? (typeof p === 'object' ? (p.weight || 0) : 1) : 1;
                 const sectorAngle = (weight / totalWeight) * PATTERN_ANGLE;
                 if (pointerAngleInPattern >= cumulativeAngle && pointerAngleInPattern < cumulativeAngle + sectorAngle) {
                     currentIndex = i;
@@ -314,11 +342,22 @@ export default function RouletteScreen({ route, navigation }) {
                 cumulativeAngle += sectorAngle;
             }
 
+            // Skip sound on initial state (-1 -> current)
+            if (lastTickIndex.value === -1) {
+                lastTickIndex.value = currentIndex;
+                return;
+            }
+
             if (currentIndex !== lastTickIndex.value) {
                 lastTickIndex.value = currentIndex;
-                runOnJS(triggerTick)();
+                // Ignore ticks during the very first phase of spin (150ms silence period)
+                // to avoid double/triple sound artifacts at start
+                if (Date.now() - spinStartTime.value > 150) {
+                    runOnJS(triggerTick)();
+                }
             }
-        }
+        },
+        [currentList, spinTarget, PATTERN_ANGLE]
     );
 
     const startSpinAnimation = (shouldSyncStart = true, fixedWinnerIndex = null) => {
@@ -326,7 +365,29 @@ export default function RouletteScreen({ route, navigation }) {
 
         setSpinning(true);
         isInitiator.current = shouldSyncStart;
-        lastTickIndex.value = -1;
+        spinStartTime.value = Date.now();
+
+        // Calculate the ACTUAL initial index to prevent double tick sound at start
+        const normalizedRotation = (rotation.value % 360 + 360) % 360;
+        const pointerAngle = (360 - normalizedRotation) % 360;
+        const pointerAngleInPattern = pointerAngle % PATTERN_ANGLE;
+        const totalWeight = currentList.reduce((sum, p) => sum + (spinTarget === 'people' ? (typeof p === 'object' ? (p.weight || 0) : 1) : 1), 0);
+
+        let initialIdx = 0;
+        if (totalWeight > 0) {
+            let cumulativeAngle = 0;
+            for (let i = 0; i < currentList.length; i++) {
+                const p = currentList[i];
+                const weight = spinTarget === 'people' ? (typeof p === 'object' ? (p.weight || 0) : 1) : 1;
+                const sectorAngle = (weight / totalWeight) * PATTERN_ANGLE;
+                if (pointerAngleInPattern >= cumulativeAngle && pointerAngleInPattern < cumulativeAngle + sectorAngle) {
+                    initialIdx = i;
+                    break;
+                }
+                cumulativeAngle += sectorAngle;
+            }
+        }
+        lastTickIndex.value = initialIdx;
 
         feedbackService.playStart();
 
@@ -334,13 +395,12 @@ export default function RouletteScreen({ route, navigation }) {
         let winnerIndex = fixedWinnerIndex;
 
         if (winnerIndex === null) {
-            const totalWeight = currentList.reduce((sum, p) => sum + (typeof p === 'object' ? (p.weight || 0) : (100 / currentList.length)), 0);
             let random = Math.random() * totalWeight;
             let accumulatedWeight = 0;
 
             for (let i = 0; i < currentList.length; i++) {
                 const p = currentList[i];
-                const weight = typeof p === 'object' ? p.weight : (100 / currentList.length);
+                const weight = spinTarget === 'people' ? (typeof p === 'object' ? (p.weight || 0) : 1) : 1;
                 accumulatedWeight += weight;
                 if (random <= accumulatedWeight) {
                     winnerIndex = i;
@@ -357,16 +417,15 @@ export default function RouletteScreen({ route, navigation }) {
 
         // 2. Calculate the center angle of the winner's segment
         // Calculate start angle of the winner within a pattern
-        const totalWeight = currentList.reduce((sum, p) => sum + (typeof p === 'object' ? (p.weight || 0) : (100 / currentList.length)), 0);
         let winnerStartAngleInPattern = 0;
         for (let i = 0; i < winnerIndex; i++) {
             const p = currentList[i];
-            const weight = typeof p === 'object' ? p.weight : (100 / currentList.length);
+            const weight = spinTarget === 'people' ? (typeof p === 'object' ? (p.weight || 0) : 1) : 1;
             winnerStartAngleInPattern += (weight / totalWeight) * PATTERN_ANGLE;
         }
 
         const winnerItem = currentList[winnerIndex];
-        const winnerWeight = typeof winnerItem === 'object' ? winnerItem.weight : (100 / currentList.length);
+        const winnerWeight = spinTarget === 'people' ? (typeof winnerItem === 'object' ? (winnerItem.weight || 0) : 1) : 1;
         const winnerSegmentAngleInPattern = (winnerWeight / totalWeight) * PATTERN_ANGLE;
 
         // Target angle is the center of the segment
@@ -430,10 +489,10 @@ export default function RouletteScreen({ route, navigation }) {
         for (let repeat = 0; repeat < REPEAT_COUNT; repeat++) {
             let cumulativeAngle = (360 / REPEAT_COUNT) * repeat; // Start angle for this repetition
 
-            const totalWeight = currentList.reduce((sum, p) => sum + (typeof p === 'object' ? (p.weight || 0) : (100 / currentList.length)), 0);
+            const totalWeight = currentList.reduce((sum, p) => sum + (spinTarget === 'people' ? (typeof p === 'object' ? (p.weight || 0) : 1) : 1), 0);
             currentList.forEach((p, i) => {
                 const name = typeof p === 'object' ? p.name : p;
-                const weight = typeof p === 'object' ? p.weight : (100 / currentList.length);
+                const weight = spinTarget === 'people' ? (typeof p === 'object' ? (p.weight || 0) : 1) : 1;
                 // Divide angle by REPEAT_COUNT since we're repeating the pattern
                 const angle = (weight / totalWeight) * (360 / REPEAT_COUNT);
 
@@ -564,12 +623,12 @@ export default function RouletteScreen({ route, navigation }) {
             />
             <SvgText
                 x={ROULETTE_SIZE / 2}
-                y={ROULETTE_SIZE / 2 + 13}
+                y={ROULETTE_SIZE / 2 + (ROULETTE_SIZE * 0.032)}
                 fill={Colors.accent}
-                fontSize="8"
+                fontSize={Math.max(10, ROULETTE_SIZE * 0.028)}
                 fontWeight="900"
                 textAnchor="middle"
-                letterSpacing={2}
+                letterSpacing={1.5}
             >
                 {t('roulette.spin_center').toUpperCase()}
             </SvgText>
