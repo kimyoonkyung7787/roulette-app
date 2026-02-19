@@ -9,7 +9,7 @@ import { CyberAlert } from '../components/CyberAlert';
 import { feedbackService } from '../services/FeedbackService';
 import Svg, { Path, G, Text as SvgText, Circle, Defs, RadialGradient, Stop } from 'react-native-svg';
 import Animated, { useSharedValue, useAnimatedStyle, withTiming, Easing, runOnJS, useAnimatedReaction } from 'react-native-reanimated';
-import { RotateCw, Users, X, Power, LogOut, UserPlus, ListChecks } from 'lucide-react-native';
+import { RotateCw, Users, X, Power, LogOut, UserPlus, ListChecks, HandMetal, Gavel, Zap } from 'lucide-react-native';
 import { Modal, ScrollView } from 'react-native';
 import { syncService } from '../services/SyncService';
 import { useTranslation } from 'react-i18next';
@@ -34,14 +34,14 @@ const hexToRgba = (hex, opacity) => {
 
 export default function RouletteScreen({ route, navigation }) {
     const { t } = useTranslation();
-    const { participants = [], menuItems = [], mySelectedName, roomId = 'default', mode = 'online', role = 'participant', category = 'coffee', votedItem = null } = route.params || {};
+    const { participants = [], menuItems = [], mySelectedName, roomId = 'default', mode = 'online', role = 'participant', category = 'coffee', votedItem = null, originalItems = [] } = route.params || {};
     const [participantsState, setParticipantsState] = useState(participants);
     const [menuItemsState, setMenuItemsState] = useState(menuItems);
     const [spinTarget, setSpinTarget] = useState(route.params?.spinTarget || 'people'); // Initialize from params
     const currentList = spinTarget === 'people' ? participantsState : menuItemsState;
 
-    // Offline mode uses 1:1, online uses 3x repeat
-    const REPEAT_COUNT = mode === 'offline' ? 1 : 3;
+    // Simplified wheel display: 1x repeat for both online and offline
+    const REPEAT_COUNT = 1;
     const PATTERN_ANGLE = 360 / REPEAT_COUNT;
 
     const rotation = useSharedValue(0);
@@ -744,11 +744,64 @@ export default function RouletteScreen({ route, navigation }) {
         setShowExitConfirm(true);
     };
 
+    const renderPickCard = () => {
+        const myVote = votes.find(v => v.userId === syncService.myId) || (votedItem ? { votedFor: votedItem } : null);
+        if (!myVote) return null;
+
+        // Dynamic color based on category to match NameInputScreen tags
+        const categoryColor = category === 'coffee' ? Colors.neonPink :
+            category === 'meal' ? Colors.success :
+                category === 'snack' ? Colors.accent :
+                    Colors.textSecondary;
+
+        return (
+            <View style={styles.pickCardContainer}>
+                <View style={[styles.pickCard, { shadowColor: categoryColor }]}>
+                    <NeonText text="YOUR PICK" color={categoryColor} fontSize={16} />
+                    <View style={[styles.pickItemBadge, { borderColor: categoryColor, backgroundColor: `${categoryColor}15` }]}>
+                        <Text style={[styles.pickItemText, { color: categoryColor }]}>{myVote.votedFor.toUpperCase()}</Text>
+                    </View>
+                    <View style={styles.waitingContainer}>
+                        <View style={[styles.pulseDot, { backgroundColor: categoryColor }]} />
+                        <Text style={styles.waitingText}>
+                            {t('result.waiting_for_others')}
+                        </Text>
+                    </View>
+                </View>
+
+                <TouchableOpacity
+                    onPress={async () => {
+                        // Check if voting is already finished by the owner or all votes
+                        const expectedVoterCount = Math.max(participantsState.length, onlineUsers.length);
+                        const roomData = await syncService.getRoomData(roomId);
+
+                        if (roomData?.final_results || (votes.length >= expectedVoterCount && expectedVoterCount > 0)) {
+                            Alert.alert(t('common.alert'), t('roulette.voting_already_finished'));
+                            return;
+                        }
+
+                        try { feedbackService.playClick(); } catch (e) { }
+                        await syncService.removeMyVote();
+                        navigation.navigate('NameInput', {
+                            roomId, role, category,
+                            resetSelection: true,
+                            initialTab: spinTarget
+                        });
+                    }}
+                    style={styles.reselectButton}
+                >
+                    <HandMetal color={Colors.primary} size={20} strokeWidth={2.5} style={{ marginRight: 8 }} />
+                    <Text style={styles.reselectText}>RE-PICK</Text>
+                </TouchableOpacity>
+            </View>
+        );
+    };
+
     return (
         <CyberBackground>
             <SafeAreaView style={{ flex: 1 }}>
-                <View style={styles.container}>
-                    <View style={{ width: '100%', marginBottom: 15, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                <View style={[styles.container, { paddingVertical: 0, paddingBottom: 30 }]}>
+                    <View style={{ width: '100%', paddingTop: 15, marginBottom: 15, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
                         {mode === 'online' && (
                             <View style={{
                                 backgroundColor: 'rgba(0, 255, 255, 0.1)',
@@ -767,7 +820,7 @@ export default function RouletteScreen({ route, navigation }) {
                         )}
                         {mode === 'offline' && <View />}
 
-                        <View style={{ flexDirection: 'row', gap: 2, alignItems: 'center' }}>
+                        <View style={{ flexDirection: 'row', gap: 10, alignItems: 'center' }}>
                             {mode !== 'offline' && (
                                 <TouchableOpacity onPress={() => setShowUsersModal(true)} style={{ padding: 4 }}>
                                     <ListChecks color={Colors.success} size={24} />
@@ -799,94 +852,95 @@ export default function RouletteScreen({ route, navigation }) {
                             </TouchableOpacity>
                         </View>
                     </View>
-                    <View style={styles.header}>
-                        <NeonText className="text-3xl tracking-widest">{spinTarget === 'people' ? t('roulette.spinning_roulette') : t('roulette.gourmet_selection')}</NeonText>
-                        <View style={[styles.headerLine, { backgroundColor: spinTarget === 'people' ? Colors.primary : Colors.secondary, shadowColor: spinTarget === 'people' ? Colors.primary : Colors.secondary }]} />
-                    </View>
 
+                    <View style={styles.mainContent}>
+                        {votedItem && !spinning ? (
+                            renderPickCard()
+                        ) : (
+                            <>
+                                <View style={styles.header}>
+                                    <NeonText className="text-3xl tracking-widest">{spinTarget === 'people' ? t('roulette.spinning_roulette') : t('roulette.gourmet_selection')}</NeonText>
+                                    <View style={[styles.headerLine, { backgroundColor: spinTarget === 'people' ? Colors.primary : Colors.secondary, shadowColor: spinTarget === 'people' ? Colors.primary : Colors.secondary }]} />
+                                </View>
+                                <View style={styles.wheelWrapper}>
+                                    <View style={[styles.wheelGlow, { backgroundColor: '#666666' }]} />
+                                    <Animated.View style={[animatedStyle, styles.wheelContainer]}>
+                                        <Svg width={ROULETTE_SIZE} height={ROULETTE_SIZE}>
+                                            <Defs>
+                                                <RadialGradient id="innerGlow" cx="50%" cy="50%" r="50%">
+                                                    <Stop offset="0%" stopColor="#666666" stopOpacity="0.2" />
+                                                    <Stop offset="100%" stopColor="transparent" stopOpacity="0" />
+                                                </RadialGradient>
+                                            </Defs>
+                                            {/* Base Shadow */}
+                                            <Circle cx={ROULETTE_SIZE / 2} cy={ROULETTE_SIZE / 2} r={ROULETTE_SIZE / 2} fill="#000" />
 
-                    <View style={styles.wheelContainer}>
-                        <View style={[styles.wheelGlow, { backgroundColor: '#666666' }]} />
-                        <Animated.View style={[animatedStyle, { width: ROULETTE_SIZE, height: ROULETTE_SIZE }]}>
-                            <Svg width={ROULETTE_SIZE} height={ROULETTE_SIZE}>
-                                <Defs>
-                                    <RadialGradient id="innerGlow" cx="50%" cy="50%" r="50%">
-                                        <Stop offset="0%" stopColor="#666666" stopOpacity="0.2" />
-                                        <Stop offset="100%" stopColor="transparent" stopOpacity="0" />
-                                    </RadialGradient>
-                                </Defs>
-                                {/* Base Shadow */}
-                                <Circle cx={ROULETTE_SIZE / 2} cy={ROULETTE_SIZE / 2} r={ROULETTE_SIZE / 2} fill="#000" />
+                                            {/* Sections */}
+                                            {renderSections()}
 
-                                {/* Sections */}
-                                {renderSections()}
+                                            {/* Glass Shine Overlay */}
+                                            <Circle
+                                                cx={ROULETTE_SIZE / 2}
+                                                cy={ROULETTE_SIZE / 2}
+                                                r={ROULETTE_SIZE / 2}
+                                                fill="url(#innerGlow)"
+                                                pointerEvents="none"
+                                            />
 
-                                {/* Glass Shine Overlay */}
-                                <Circle
-                                    cx={ROULETTE_SIZE / 2}
-                                    cy={ROULETTE_SIZE / 2}
-                                    r={ROULETTE_SIZE / 2}
-                                    fill="url(#innerGlow)"
-                                    pointerEvents="none"
-                                />
+                                            {/* Outer Border Ring */}
+                                            <Circle
+                                                cx={ROULETTE_SIZE / 2}
+                                                cy={ROULETTE_SIZE / 2}
+                                                r={ROULETTE_SIZE / 2 - 1}
+                                                fill="transparent"
+                                                stroke="#666666"
+                                                strokeWidth="1"
+                                                pointerEvents="none"
+                                            />
 
-                                {/* Outer Border Ring */}
-                                <Circle
-                                    cx={ROULETTE_SIZE / 2}
-                                    cy={ROULETTE_SIZE / 2}
-                                    r={ROULETTE_SIZE / 2 - 1}
-                                    fill="transparent"
-                                    stroke="#666666"
-                                    strokeWidth="1"
-                                    pointerEvents="none"
-                                />
+                                            {/* Center Core Piece */}
+                                            {renderCenterPiece()}
+                                        </Svg>
+                                    </Animated.View>
+                                    <View style={styles.pointerContainer}>
+                                        <View style={[styles.pointer, { borderTopColor: Colors.accent }]} />
+                                        <View style={[styles.pointerOuterGlow, { backgroundColor: Colors.accent, opacity: 0.3 }]} />
+                                    </View>
+                                </View>
 
-                                {/* Center Core Piece */}
-                                {renderCenterPiece()}
-                            </Svg>
-                        </Animated.View>
-                        <View style={styles.pointerContainer}>
-                            <View style={[styles.pointer, { borderTopColor: Colors.accent }]} />
-                            <View style={[styles.pointerOuterGlow, { backgroundColor: Colors.accent, opacity: 0.3 }]} />
-                        </View>
-                    </View>
+                                <View style={styles.footer}>
+                                    <TouchableOpacity
+                                        onPress={spinRoulette}
+                                        disabled={!!(spinning || votes.find(v => v.userId === syncService.myId))}
+                                        activeOpacity={0.8}
+                                        style={[
+                                            styles.spinButton,
+                                            (spinning || votes.find(v => v.userId === syncService.myId)) && styles.disabledButton
+                                        ]}
+                                    >
+                                        <RotateCw color={spinning || votes.find(v => v.userId === syncService.myId) ? Colors.textSecondary : Colors.primary} size={24} style={{ marginRight: 12 }} />
+                                        <NeonText className="text-xl">
+                                            {getButtonText()}
+                                        </NeonText>
+                                    </TouchableOpacity>
 
-                    <View style={styles.footer}>
-                        <TouchableOpacity
-                            onPress={spinRoulette}
-                            disabled={!!(spinning || votes.find(v => v.userId === syncService.myId))}
-                            activeOpacity={0.8}
-                            style={[
-                                styles.spinButton,
-                                (spinning || votes.find(v => v.userId === syncService.myId)) && styles.disabledButton
-                            ]}
-                        >
-                            <RotateCw color={spinning || votes.find(v => v.userId === syncService.myId) ? Colors.textSecondary : Colors.primary} size={24} style={{ marginRight: 12 }} />
-                            <NeonText className="text-xl">
-                                {getButtonText()}
-                            </NeonText>
-                        </TouchableOpacity>
+                                    {/* Force Result Button for Owner - Redesigned for "Forced Action" feel */}
+                                    {role === 'owner' && votes.length > 0 && votes.length < Math.max(participantsState.length, onlineUsers.length) && (
+                                        <TouchableOpacity
+                                            onPress={() => processFinalResult(true)}
+                                            activeOpacity={0.7}
+                                            style={styles.forceResultButton}
+                                        >
+                                            <Gavel color="#fff" size={18} style={{ marginRight: 8 }} />
+                                            <Text style={styles.forceResultText}>
+                                                {t('roulette.force_result').toUpperCase()}
+                                            </Text>
+                                        </TouchableOpacity>
+                                    )}
 
-                        {/* Force Result Button for Owner if some but not all have voted */}
-                        {role === 'owner' && votes.length > 0 && votes.length < Math.max(participantsState.length, onlineUsers.length) && (
-                            <TouchableOpacity
-                                onPress={() => processFinalResult(true)}
-                                style={{
-                                    marginTop: 15,
-                                    paddingVertical: 12,
-                                    paddingHorizontal: 20,
-                                    borderWidth: 1,
-                                    borderColor: Colors.error,
-                                    borderRadius: 12,
-                                    backgroundColor: 'rgba(255, 49, 49, 0.05)',
-                                    alignItems: 'center',
-                                    width: '100%'
-                                }}
-                            >
-                                <Text style={{ color: Colors.error, fontSize: 13, fontWeight: 'bold', letterSpacing: 1 }}>⚡ {t('roulette.force_result').toUpperCase()} ({t('common.host').toUpperCase()})</Text>
-                            </TouchableOpacity>
+                                </View>
+                            </>
                         )}
-
                     </View>
                 </View>
 
@@ -947,7 +1001,14 @@ export default function RouletteScreen({ route, navigation }) {
                     message={t('common.exit_confirm')}
                     onConfirm={() => {
                         setShowExitConfirm(false);
-                        navigation.reset({ index: 0, routes: [{ name: 'Entry' }] });
+                        if (mode === 'offline') {
+                            navigation.reset({
+                                index: 0,
+                                routes: [{ name: 'OfflineInput', params: { items: originalItems } }]
+                            });
+                        } else {
+                            navigation.reset({ index: 0, routes: [{ name: 'Welcome' }] });
+                        }
                     }}
                     onCancel={() => setShowExitConfirm(false)}
                     confirmText={t('common.confirm')}
@@ -980,9 +1041,8 @@ const styles = StyleSheet.create({
         opacity: 0.8,
     },
     wheelContainer: {
-        alignItems: 'center',
-        justifyContent: 'center',
-        position: 'relative',
+        width: ROULETTE_SIZE,
+        height: ROULETTE_SIZE,
     },
     wheelGlow: {
         position: 'absolute',
@@ -1058,8 +1118,13 @@ const styles = StyleSheet.create({
         backgroundColor: Colors.background,
         borderRadius: 20,
         padding: 24,
-        borderWidth: 1,
-        borderColor: 'rgba(255,255,255,0.1)',
+        borderWidth: 2,
+        borderColor: Colors.primary,
+        shadowColor: Colors.primary,
+        shadowOffset: { width: 0, height: 0 },
+        shadowOpacity: 0.5,
+        shadowRadius: 15,
+        elevation: 8,
     },
     modalHeader: {
         flexDirection: 'row',
@@ -1135,5 +1200,107 @@ const styles = StyleSheet.create({
         fontSize: 12,
         fontWeight: '900',
         letterSpacing: 2,
+    },
+    mainContent: {
+        flex: 1,
+        width: '100%',
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    wheelWrapper: {
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginVertical: 45, // Add more breathing room
+    },
+    pickCardContainer: {
+        width: '100%',
+        alignItems: 'center',
+    },
+    pickCard: {
+        width: '100%',
+        backgroundColor: 'rgba(255, 255, 255, 0.05)',
+        borderRadius: 24,
+        padding: 40,
+        alignItems: 'center',
+        borderWidth: 1,
+        borderColor: 'rgba(255, 255, 255, 0.1)',
+        shadowColor: Colors.accent,
+        shadowOpacity: 0.2,
+        shadowRadius: 20,
+    },
+    pickItemBadge: {
+        marginTop: 20,
+        marginBottom: 30,
+        paddingHorizontal: 24,
+        paddingVertical: 12,
+        borderRadius: 16,
+        backgroundColor: 'rgba(255, 255, 0, 0.1)',
+        borderWidth: 2,
+        borderColor: Colors.accent,
+    },
+    pickItemText: {
+        color: Colors.accent,
+        fontSize: 28,
+        fontWeight: '900',
+        letterSpacing: 2,
+        textAlign: 'center',
+    },
+    waitingContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 10,
+    },
+    pulseDot: {
+        width: 8,
+        height: 8,
+        borderRadius: 4,
+        backgroundColor: Colors.accent,
+        opacity: 0.6,
+    },
+    waitingText: {
+        color: Colors.textSecondary,
+        fontSize: 14,
+        fontWeight: '600',
+        letterSpacing: 1,
+    },
+    reselectButton: {
+        marginTop: 40,
+        width: '100%',
+        backgroundColor: 'transparent',
+        paddingVertical: 14,
+        borderRadius: 16,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        borderWidth: 1.5,
+        borderColor: Colors.primary,
+    },
+    reselectText: {
+        color: Colors.primary,
+        fontSize: 16,
+        fontWeight: '900',
+        letterSpacing: 2,
+    },
+    forceResultButton: {
+        marginTop: 20,
+        backgroundColor: '#8B1A1A', // Muted deep red for better comfort
+        paddingVertical: 14,
+        paddingHorizontal: 24,
+        borderRadius: 12,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        width: '100%',
+        elevation: 4,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.3,
+        shadowRadius: 4,
+    },
+    forceResultText: {
+        color: '#fff',
+        fontSize: 15,
+        fontWeight: '900',
+        letterSpacing: 1.5,
     },
 });

@@ -101,7 +101,7 @@ const styles = StyleSheet.create({
         borderRadius: 20,
         borderWidth: 1,
         borderColor: Colors.primary,
-        gap: 6,
+        gap: 10,
     },
     selectorText: {
         color: Colors.primary,

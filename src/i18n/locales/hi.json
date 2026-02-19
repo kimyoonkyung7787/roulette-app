@@ -56,7 +56,7 @@
         "what": "घुमाएं",
         "pick_now": "मेरी पसंद",
         "waiting_for_host": "होस्ट की प्रतीक्षा है...",
-        "selected": "चयनित",
+        "selected": "SELECTED",
         "please_select_name": "कृपया अपना नाम चुनें",
         "game_in_progress": "गेम चल रहा है...",
         "select_name_to_join": "शामिल होने के लिए नाम चुनें",
@@ -80,7 +80,8 @@
         "force_result": "परिणाम बाध्य करें",
         "no_participants": "कोई प्रतिभागी नहीं",
         "ready_shout": "READY !",
-        "go_shout": "GO !"
+        "go_shout": "GO !",
+        "voting_already_finished": "मतदान पहले ही समाप्त हो चुका है।"
     },
     "result": {
         "share_title": "रूले परिणाम",

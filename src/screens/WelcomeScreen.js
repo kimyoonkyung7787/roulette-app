@@ -6,9 +6,10 @@ import { useTranslation } from 'react-i18next';
 import { NeonText } from '../components/NeonText';
 import { Colors } from '../theme/colors';
 import { CyberBackground } from '../components/CyberBackground';
-import { Crown, ArrowRight, Home, Users, Utensils } from 'lucide-react-native';
+import { Crown, ArrowRight, Home, Users, Utensils, LogIn } from 'lucide-react-native';
 import { CyberAlert } from '../components/CyberAlert';
 import { syncService } from '../services/SyncService';
+import { feedbackService } from '../services/FeedbackService';
 
 const { width } = Dimensions.get('window');
 
@@ -18,62 +19,57 @@ export default function WelcomeScreen({ route, navigation }) {
     const [selectedRole, setSelectedRole] = useState(null);
     const [inputRoomId, setInputRoomId] = useState('');
     const [alertConfig, setAlertConfig] = useState({ visible: false, message: '', title: '' });
-    const [resumeConfig, setResumeConfig] = useState({ visible: false, roomId: '', category: '' });
+    const [resumeConfig, setResumeConfig] = useState({ visible: false, roomId: '', category: '', spinTarget: '' });
+    const [pendingHostType, setPendingHostType] = useState(null);
 
-    // Check for previous host session on mount
+    // Initial check is removed as per user request to show this only on button click
+    /*
     React.useEffect(() => {
-        const checkSession = async () => {
-            try {
-                const savedRole = await AsyncStorage.getItem('last_role');
-                const savedRoomId = await AsyncStorage.getItem('last_room_id');
-                const savedCategory = await AsyncStorage.getItem('last_category');
-
-                if (savedRole === 'owner' && savedRoomId) {
-                    // Quick check if room still exists
-                    const exists = await syncService.checkRoomExists(savedRoomId);
-                    if (exists) {
-                        setResumeConfig({
-                            visible: true,
-                            roomId: savedRoomId,
-                            category: savedCategory || 'meal'
-                        });
-                    } else {
-                        // Room gone, clear storage
-                        await AsyncStorage.multiRemove(['last_role', 'last_room_id', 'last_category']);
-                    }
-                }
-            } catch (e) {
-                console.log('WelcomeScreen: Failed to check session', e);
-            }
-        };
-        checkSession();
+        ...
     }, []);
+    */
 
     const handleResume = async () => {
+        feedbackService.loadAssets();
+
         setResumeConfig({ ...resumeConfig, visible: false });
         navigation.navigate('NameInput', {
             category: resumeConfig.category,
             role: 'owner',
-            roomId: resumeConfig.roomId
+            roomId: resumeConfig.roomId,
+            initialTab: resumeConfig.spinTarget
         });
     };
 
     const handleDiscard = async () => {
         setResumeConfig({ ...resumeConfig, visible: false });
         await AsyncStorage.multiRemove(['last_role', 'last_room_id', 'last_category']);
+
+        // After discarding, proceed with the new room creation if we have a pending type
+        if (pendingHostType) {
+            startNewSession(pendingHostType);
+        }
     };
 
     const generateRoomId = () => {
         return Math.floor(100000 + Math.random() * 900000).toString();
     };
 
-    const handleHostStart = async (setupType) => {
+    const startNewSession = async (setupType) => {
         const roomId = generateRoomId();
-        const defaultCategory = 'meal'; // Default category for simplified flow
+        const defaultCategory = 'coffee'; // Default category for simplified flow
         try {
+            // Pre-initialize room metadata so participants can identify mode
+            await syncService.preInitRoom(roomId, {
+                category: defaultCategory,
+                spin_target: setupType,
+                phase: 'waiting'
+            });
+
             await AsyncStorage.setItem('last_role', 'owner');
             await AsyncStorage.setItem('last_room_id', roomId);
             await AsyncStorage.setItem('last_category', defaultCategory);
+            await AsyncStorage.setItem('last_spin_target', setupType);
         } catch (e) {
             console.error('WelcomeScreen: Failed to save session', e);
         }
@@ -87,7 +83,43 @@ export default function WelcomeScreen({ route, navigation }) {
         });
     };
 
-    const handleParticipantStart = async (setupType) => {
+    const handleHostStart = async (setupType) => {
+        // Unlock audio on interaction
+        feedbackService.loadAssets();
+
+        // Check for existing session before starting new one
+        try {
+            const savedRole = await AsyncStorage.getItem('last_role');
+            const savedRoomId = await AsyncStorage.getItem('last_room_id');
+
+            if (savedRole === 'owner' && savedRoomId) {
+                // Fetch actual room data to check its mode (people or menu)
+                const roomData = await syncService.getRoomData(savedRoomId);
+
+                // Only show resume popup if the session mode matches the clicked button
+                if (roomData && roomData.spin_target === setupType) {
+                    setPendingHostType(setupType);
+                    setResumeConfig({
+                        visible: true,
+                        roomId: savedRoomId,
+                        category: roomData.category || 'coffee',
+                        spinTarget: roomData.spin_target || setupType
+                    });
+                    return; // Wait for user decision
+                }
+            }
+        } catch (e) {
+            console.log('WelcomeScreen: Session check failed during host start', e);
+        }
+
+        // No session or check failed, proceed to start new
+        startNewSession(setupType);
+    };
+
+    const handleParticipantStart = async () => {
+        // Unlock audio on interaction
+        feedbackService.loadAssets();
+
         if (!inputRoomId || inputRoomId.trim().length === 0) {
             setAlertConfig({
                 visible: true,
@@ -106,8 +138,9 @@ export default function WelcomeScreen({ route, navigation }) {
         }
 
         const roomId = inputRoomId.trim();
-        const exists = await syncService.checkRoomExists(roomId);
-        if (!exists) {
+        const roomData = await syncService.getRoomData(roomId);
+
+        if (!roomData) {
             setAlertConfig({
                 visible: true,
                 title: t('common.alert'),
@@ -117,8 +150,8 @@ export default function WelcomeScreen({ route, navigation }) {
         }
 
         navigation.navigate('NameInput', {
-            category: 'meal', // Default
-            initialTab: setupType, // 'people' or 'menu'
+            category: roomData.category || 'coffee',
+            initialTab: roomData.spin_target || 'people', // Automatically use the host's selected mode
             role: 'participant',
             roomId: roomId,
             mode: mode
@@ -246,31 +279,14 @@ export default function WelcomeScreen({ route, navigation }) {
                                                 />
                                             </View>
 
-                                            <View style={{ marginTop: 10 }}>
-                                                <NeonText className="text-sm mb-3 pl-2" style={{ color: 'white', fontWeight: 'bold' }}>
-                                                    {t('entry.select_mode')}
-                                                </NeonText>
-                                                <View style={styles.hostButtonsRow}>
-                                                    <TouchableOpacity
-                                                        style={[styles.hostOptionBtn, { backgroundColor: Colors.primary, borderColor: Colors.primary }]}
-                                                        onPress={() => handleParticipantStart('people')}
-                                                    >
-                                                        <Users size={24} color="black" />
-                                                        <Text style={[styles.hostOptionText, { color: 'black' }]}>
-                                                            PEOPLE
-                                                        </Text>
-                                                    </TouchableOpacity>
-
-                                                    <TouchableOpacity
-                                                        style={[styles.hostOptionBtn, { backgroundColor: Colors.primary, borderColor: Colors.primary }]}
-                                                        onPress={() => handleParticipantStart('menu')}
-                                                    >
-                                                        <Utensils size={24} color="black" />
-                                                        <Text style={[styles.hostOptionText, { color: 'black' }]}>
-                                                            MENU
-                                                        </Text>
-                                                    </TouchableOpacity>
-                                                </View>
+                                            <View style={styles.roomIdInputContainer}>
+                                                <TouchableOpacity
+                                                    style={[styles.startButton, { gap: 8 }]}
+                                                    onPress={handleParticipantStart}
+                                                >
+                                                    <LogIn size={20} color="black" />
+                                                    <Text style={styles.startButtonText}>{t('common.join')}</Text>
+                                                </TouchableOpacity>
                                             </View>
                                         </View>
                                     )}
@@ -438,7 +454,7 @@ const styles = StyleSheet.create({
     },
     startButton: {
         backgroundColor: Colors.primary,
-        paddingVertical: 14,
+        paddingVertical: 15,
         borderRadius: 12,
         flexDirection: 'row',
         alignItems: 'center',
@@ -447,8 +463,8 @@ const styles = StyleSheet.create({
     },
     startButtonText: {
         color: 'black',
-        fontSize: 16,
+        fontSize: 14,
         fontWeight: '900',
-        letterSpacing: 2,
+        letterSpacing: 1,
     }
 });

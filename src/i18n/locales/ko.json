@@ -12,13 +12,15 @@
         "alert": "알림",
         "info": "정보",
         "error": "오류",
+        "success": "성공",
         "room": "방",
         "select_language": "언어 선택",
         "weight": "가중치",
         "exit_confirm": "정말 종료하시겠습니까?",
         "cancel": "취소",
         "confirm": "확인",
-        "item": "항목"
+        "item": "항목",
+        "join": "입장하기"
     },
     "categories": {
         "coffee": "커피",
@@ -39,7 +41,7 @@
         "resume_message": "호스트로 활동하던 방(#{{roomId}})이 있습니다. 다시 입장하시겠습니까?",
         "resume_confirm": "네,\n복구하기",
         "resume_cancel": "아니오,\n새로 만들기",
-        "host_desc": "참가자 인원 등을 설정하고\n게임을 제일 먼저 시작합니다",
+        "host_desc": "참가자 인원 및 항목을 설정하고\n게임을 제일 먼저 시작합니다",
         "participant_desc": "게임에 참여하여\n투표를 합니다",
         "create_by_people": "인원 입력",
         "create_by_menu": "메뉴 입력"
@@ -61,7 +63,7 @@
         "pick_now": "나의 픽",
         "vote": "투표하기",
         "waiting_for_host": "호스트를 기다리는 중...",
-        "selected": "선택됨",
+        "selected": "SELECTED",
         "please_select_name": "당신의 이름을 선택해 주세요",
         "game_in_progress": "게임 진행 중...",
         "select_name_to_join": "이름을 선택하여 참여하세요",
@@ -85,7 +87,8 @@
         "force_result": "결과 강제 확인",
         "no_participants": "참가자 없음",
         "ready_shout": "READY !",
-        "go_shout": "GO !"
+        "go_shout": "GO !",
+        "voting_already_finished": "이미 투표가 종료되었습니다."
     },
     "result": {
         "share_title": "룰렛 결과",
@@ -99,7 +102,8 @@
         "votes": "표",
         "waiting_for_others": "다른 플레이어를 기다리는 중...",
         "retry": "다시 하기",
-        "winner_shout": "WINNER!"
+        "winner_shout": "WINNER!",
+        "copied_to_clipboard": "결과가 클립보드에 복사되었습니다."
     },
     "entry": {
         "offline_title": "오프라인",

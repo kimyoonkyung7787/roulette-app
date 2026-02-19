@@ -1,17 +1,29 @@
 
 import React, { useState, useEffect, useRef } from 'react';
-import { View, TextInput, TouchableOpacity, FlatList, Text, Modal, ScrollView, Platform, Alert, StyleSheet } from 'react-native';
+import { View, TextInput, TouchableOpacity, FlatList, Text, Modal, ScrollView, Platform, Alert, StyleSheet, LayoutAnimation, UIManager } from 'react-native';
 import { useIsFocused } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Colors } from '../theme/colors';
 import { CyberBackground } from '../components/CyberBackground';
 import { NeonText } from '../components/NeonText';
-import { UserPlus, Trash2, Play, History, CheckCircle2, ListChecks, Users, X, Loader, LogOut, Crown, Utensils, Coffee, Cookie, User, HelpCircle, Circle, Zap, Target, Home } from 'lucide-react-native';
+import { UserPlus, Trash2, Play, History, CheckCircle2, ListChecks, Users, X, Loader, LogOut, Crown, Utensils, Coffee, Cookie, User, HelpCircle, Circle, Zap, Target, Home, RotateCw } from 'lucide-react-native';
 import { syncService } from '../services/SyncService';
 import { participantService } from '../services/ParticipantService';
 import { CyberAlert } from '../components/CyberAlert';
 import { useTranslation } from 'react-i18next';
 import { feedbackService } from '../services/FeedbackService';
+
+// Enable LayoutAnimation for Android
+if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
+    UIManager.setLayoutAnimationEnabledExperimental(true);
+}
+
+const POPULAR_ITEMS = {
+    coffee: ['AMERICANO', 'CAFE LATTE', 'VANILLA LATTE', 'CAPPUCCINO', 'ADE', 'GREEN TEA LATTE', 'SMOOTHIE', 'ESPRESSO'],
+    meal: ['KIMCHI STEW', 'BULGOGI', 'BIBIMBAP', 'TONKATSU', 'RAMEN', 'PASTA', 'SUSHI', 'FRIED RICE'],
+    snack: ['TTEOKBOKKI', 'FRIED CHICKEN', 'PIZZA', 'SANDWICH', 'SALAD', 'HAMBURGER', 'GIMBAP', 'TACOS'],
+    etc: []
+};
 
 export default function NameInputScreen({ route, navigation }) {
     const { category = 'coffee', role = 'owner', roomId = 'default', mode = 'online', initialTab } = route.params || {};
@@ -79,21 +91,28 @@ export default function NameInputScreen({ route, navigation }) {
                         savedParticipants = existingParticipants;
                     } else {
                         savedParticipants = await participantService.getParticipants();
-                        if (!savedParticipants || savedParticipants.length < 2) {
-                            savedParticipants = [{ name: 'PARTICIPANT 1', weight: 1 }, { name: 'PARTICIPANT 2', weight: 1 }];
-                        }
                     }
+
+                    // Normalize participants (handle legacy string format and ensure weights)
+                    savedParticipants = savedParticipants.map(p =>
+                        typeof p === 'string' ? { name: p, weight: 1 } : { ...p, weight: p.weight ?? 1 }
+                    );
+
                     setParticipants(savedParticipants);
                     await syncService.setParticipants(savedParticipants);
 
                     let existingMenus = await syncService.getMenuItems();
                     let menuList = [];
+
+                    // Default to coffee if no existing menus and it's a fresh start
+                    const initialCat = category || 'coffee';
+                    setActiveCategory(initialCat);
+                    await syncService.setRoomCategory(initialCat);
+
                     if (existingMenus && existingMenus.length > 0) {
                         menuList = existingMenus;
                     } else {
-                        if (category === 'coffee') menuList = [{ name: 'AMERICANO' }, { name: 'CAFE LATTE' }];
-                        else if (category === 'meal') menuList = [{ name: 'KIMCHI STEW' }, { name: 'SOYBEAN STEW' }];
-                        else menuList = [{ name: 'CHICKEN' }, { name: 'PIZZA' }];
+                        menuList = (POPULAR_ITEMS[initialCat] || []).map(name => ({ name }));
                     }
                     setMenuItems(menuList);
                     await syncService.setMenuItems(menuList);
@@ -235,6 +254,39 @@ export default function NameInputScreen({ route, navigation }) {
         }
     }, [votes, menuItems, isFocused]);
 
+    // Auto-select identity for participants upon entry or retry
+    useEffect(() => {
+        // Only run for participants and when data is fully loaded
+        if (!isLoaded || role !== 'participant') return;
+
+        // 1. RECOVERY: Check if I already have a selected name in the room (e.g. from Retry)
+        const meInRoom = onlineUsers.find(u => u.id === syncService.myId);
+        if (meInRoom && meInRoom.name) {
+            if (mySelectedName !== meInRoom.name) {
+                console.log(`NameInputScreen: Recovering previous selection: ${meInRoom.name}`);
+                setMySelectedName(meInRoom.name);
+            }
+            return; // Already has a selection, so done
+        }
+
+        // 2. AUTO-SELECT: If no selection, pick the first available slot
+        if (!mySelectedName && participants.length > 0) {
+            const firstAvailable = participants.find(p => {
+                const pName = typeof p === 'object' ? p.name : p;
+                // Check if taken by anyone else (host or other participants)
+                const isTaken = onlineUsers.some(u => u.name === pName);
+                return !isTaken;
+            });
+
+            if (firstAvailable) {
+                const nameToSelect = typeof firstAvailable === 'object' ? firstAvailable.name : firstAvailable;
+                console.log(`NameInputScreen: Auto-selecting first available slot: ${nameToSelect}`);
+                // Use toggleMe to set state and sync to DB
+                toggleMe(nameToSelect);
+            }
+        }
+    }, [isLoaded, role, participants, onlineUsers, mySelectedName]);
+
     // Restore tab from initialTab parameter (for retry functionality)
     useEffect(() => {
         if (initialTab && (initialTab === 'people' || initialTab === 'menu')) {
@@ -286,6 +338,27 @@ export default function NameInputScreen({ route, navigation }) {
             navigation.setParams({ restoredData: null });
         }
     }, [route.params?.restoredData]);
+
+    const handleCategoryChange = (newCat) => {
+        if (role !== 'owner') return;
+
+        console.log(`NameInputScreen: Switching category to ${newCat}`);
+        try { feedbackService.playClick(); } catch (e) { }
+
+        // Immediate local UI update for "snappy" feel
+        if (Platform.OS !== 'web') {
+            LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+        }
+
+        setActiveCategory(newCat);
+        const newItems = (POPULAR_ITEMS[newCat] || []).map(name => ({ name }));
+        setMenuItems(newItems);
+        setSelectedMenuIndex(null);
+
+        // Sync with DB in background
+        syncService.setRoomCategory(newCat).catch(err => console.error("Sync Category Error:", err));
+        syncService.setMenuItems(newItems).catch(err => console.error("Sync Menu Error:", err));
+    };
 
     const redistributeWeights = (list) => {
         return list; // Numerical weights don't need auto-redistribution to 100%
@@ -624,7 +697,7 @@ export default function NameInputScreen({ route, navigation }) {
                         )}
                         {mode === 'offline' && <View />}
 
-                        <View style={{ flexDirection: 'row', gap: 2, alignItems: 'center' }}>
+                        <View style={{ flexDirection: 'row', gap: 10, alignItems: 'center' }}>
                             <TouchableOpacity onPress={() => setShowUsersModal(true)} style={{ padding: 4 }}>
                                 <ListChecks color={Colors.success} size={24} />
                             </TouchableOpacity>
@@ -648,7 +721,8 @@ export default function NameInputScreen({ route, navigation }) {
                             {activeTab !== 'people' && (() => {
                                 const catColor = activeCategory === 'coffee' ? Colors.neonPink :
                                     activeCategory === 'meal' ? Colors.success :
-                                        Colors.accent;
+                                        activeCategory === 'snack' ? Colors.accent :
+                                            Colors.textSecondary;
                                 return (
                                     <View style={{
                                         backgroundColor: `${catColor}20`,
@@ -659,7 +733,7 @@ export default function NameInputScreen({ route, navigation }) {
                                         borderColor: catColor
                                     }}>
                                         <Text style={{ color: catColor, fontSize: 10, fontWeight: 'bold' }}>
-                                            {t(`categories.${activeCategory}`).toUpperCase()}
+                                            {(activeCategory || 'coffee').toUpperCase()}
                                         </Text>
                                     </View>
                                 );
@@ -668,6 +742,45 @@ export default function NameInputScreen({ route, navigation }) {
                         <NeonText className="text-4xl">{activeTab === 'people' ? t('name_input.participants') : t('name_input.menu_items')}</NeonText>
                         <View style={{ height: 2, width: 100, backgroundColor: activeTab === 'people' ? Colors.primary : activeMenuColor, marginTop: 10, shadowColor: activeTab === 'people' ? Colors.primary : activeMenuColor, shadowOpacity: 0.8, shadowRadius: 10, elevation: 5 }} />
                     </View>
+
+                    {activeTab === 'menu' && role === 'owner' && (
+                        <View style={{ flexDirection: 'row', gap: 8, marginBottom: 20, flexWrap: 'wrap' }}>
+                            {['coffee', 'meal', 'snack', 'etc'].map((cat) => {
+                                const isSelected = activeCategory === cat;
+                                const catColor = cat === 'coffee' ? Colors.neonPink :
+                                    cat === 'meal' ? Colors.success :
+                                        cat === 'snack' ? Colors.accent :
+                                            Colors.textSecondary;
+
+                                return (
+                                    <TouchableOpacity
+                                        key={cat}
+                                        onPress={() => handleCategoryChange(cat)}
+                                        hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                                        style={{
+                                            paddingHorizontal: 16,
+                                            paddingVertical: 8,
+                                            borderRadius: 8,
+                                            borderWidth: 1.5,
+                                            borderColor: isSelected ? catColor : 'rgba(255,255,255,0.1)',
+                                            backgroundColor: isSelected ? `${catColor}15` : 'rgba(255,255,255,0.03)',
+                                            minWidth: 70,
+                                            alignItems: 'center'
+                                        }}
+                                    >
+                                        <Text style={{
+                                            color: isSelected ? catColor : 'rgba(255,255,255,0.4)',
+                                            fontSize: 12,
+                                            fontWeight: '900',
+                                            letterSpacing: 1
+                                        }}>
+                                            {cat.toUpperCase()}
+                                        </Text>
+                                    </TouchableOpacity>
+                                );
+                            })}
+                        </View>
+                    )}
 
 
 
@@ -761,7 +874,7 @@ export default function NameInputScreen({ route, navigation }) {
                                         {isPeopleTab ? (
                                             <TouchableOpacity
                                                 onPress={() => !isTakenByOther ? toggleMe(nameToCheck) : null}
-                                                style={{ marginRight: 12 }}
+                                                style={{ marginRight: 12, padding: 4 }}
                                                 disabled={isTakenByOther && !isMe}
                                             >
                                                 <CheckCircle2
@@ -787,7 +900,7 @@ export default function NameInputScreen({ route, navigation }) {
                                         {editingIndex === index && role === 'owner' ? (
                                             <TextInput
                                                 autoFocus
-                                                style={{ color: activeThemeColor, fontSize: 18, fontWeight: '500', flex: 1, padding: 0 }}
+                                                style={{ color: 'white', fontSize: 18, fontWeight: '500', flex: 1, padding: 0 }}
                                                 value={editingValue}
                                                 onChangeText={setEditingValue}
                                                 onBlur={saveEdit}
@@ -795,17 +908,23 @@ export default function NameInputScreen({ route, navigation }) {
                                             />
                                         ) : (
                                             <TouchableOpacity
-                                                disabled={role !== 'owner'}
-                                                onPress={() => startEditing(index)}
-                                                style={{ flex: 1, flexDirection: 'row', alignItems: 'center' }}
+                                                disabled={role !== 'owner' && isTakenByOther}
+                                                onPress={() => {
+                                                    if (role === 'owner') {
+                                                        startEditing(index);
+                                                    } else if (!isTakenByOther) {
+                                                        toggleMe(nameToCheck);
+                                                    }
+                                                }}
+                                                style={{ flex: 1, flexDirection: 'row', alignItems: 'center', paddingVertical: 8 }}
                                             >
                                                 <Text style={{
-                                                    color: isTakenByOther ? Colors.textSecondary : 'white',
+                                                    color: (isTakenByOther && !isMe) ? Colors.textSecondary : 'white',
                                                     fontSize: 18,
                                                     fontWeight: '500'
                                                 }}>
                                                     {nameToCheck} {isMe && <Text style={{ color: Colors.primary, fontSize: 14 }}>{t('common.me')}</Text>}
-                                                    {isTakenByOther && <Text style={{ color: Colors.textSecondary, fontSize: 12 }}> (ONLINE)</Text>}
+                                                    {isTakenByOther && !isMe && <Text style={{ color: Colors.textSecondary, fontSize: 12 }}> ({t('name_input.selected').toUpperCase()})</Text>}
                                                 </Text>
                                                 {isHost && (
                                                     <View style={{
@@ -852,7 +971,7 @@ export default function NameInputScreen({ route, navigation }) {
                                                 {editingWeightIndex === index && role === 'owner' ? (
                                                     <TextInput
                                                         autoFocus
-                                                        style={{ color: Colors.textSecondary, fontSize: 14, fontWeight: 'bold', padding: 0, textAlign: 'center', width: '100%', height: '100%' }}
+                                                        style={{ color: 'white', fontSize: 14, fontWeight: 'bold', padding: 0, textAlign: 'center', width: '100%', height: '100%' }}
                                                         value={editingWeightValue}
                                                         onChangeText={(text) => setEditingWeightValue(text.replace(/[^0-9]/g, '').slice(0, 2))}
                                                         onBlur={saveWeightEdit}
@@ -911,7 +1030,7 @@ export default function NameInputScreen({ route, navigation }) {
                                         alignItems: 'center',
                                         justifyContent: 'center',
                                         borderWidth: 1.5,
-                                        borderColor: 'rgba(255,255,255,0.2)'
+                                        borderColor: activeMenuColor
                                     }}
                                 >
                                     <Target color={activeMenuColor} size={20} strokeWidth={2.5} />
@@ -935,10 +1054,10 @@ export default function NameInputScreen({ route, navigation }) {
                                         alignItems: 'center',
                                         justifyContent: 'center',
                                         borderWidth: 1.5,
-                                        borderColor: 'rgba(255,255,255,0.2)'
+                                        borderColor: activeMenuColor
                                     }}
                                 >
-                                    <Zap color={activeMenuColor} size={20} strokeWidth={2.5} />
+                                    <RotateCw color={activeMenuColor} size={20} />
                                     <Text style={{
                                         color: activeMenuColor,
                                         fontSize: 16,
@@ -959,12 +1078,12 @@ export default function NameInputScreen({ route, navigation }) {
                                     alignItems: 'center',
                                     justifyContent: 'center',
                                     borderWidth: 1.5,
-                                    borderColor: 'rgba(255,255,255,0.15)'
+                                    borderColor: activeTab === 'people' ? Colors.primary : activeMenuColor
                                 }}
                             >
                                 {activeTab === 'people' ? (
                                     <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                                        <Zap color={Colors.primary} size={24} strokeWidth={2.5} />
+                                        <RotateCw color={Colors.primary} size={24} />
                                         <Text style={{
                                             color: Colors.primary,
                                             fontSize: 20,
@@ -1021,7 +1140,20 @@ export default function NameInputScreen({ route, navigation }) {
                         onRequestClose={() => setShowUsersModal(false)}
                     >
                         <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.8)', justifyContent: 'center', alignItems: 'center', padding: 20 }}>
-                            <View style={{ width: '100%', maxWidth: 400, backgroundColor: '#111', borderRadius: 20, padding: 20, borderWidth: 1, borderColor: Colors.primary }}>
+                            <View style={{
+                                width: '100%',
+                                maxWidth: 400,
+                                backgroundColor: '#111',
+                                borderRadius: 20,
+                                padding: 20,
+                                borderWidth: 2,
+                                borderColor: Colors.primary,
+                                shadowColor: Colors.primary,
+                                shadowOffset: { width: 0, height: 0 },
+                                shadowOpacity: 0.5,
+                                shadowRadius: 15,
+                                elevation: 8
+                            }}>
                                 <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
                                     <NeonText style={{ fontSize: 20 }}>{t('name_input.participant_status')}</NeonText>
                                     <TouchableOpacity onPress={() => setShowUsersModal(false)}>

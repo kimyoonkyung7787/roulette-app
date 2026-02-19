@@ -396,6 +396,25 @@ class SyncService {
             return false;
         }
     }
+
+    async getRoomData(roomId) {
+        try {
+            const snapshot = await get(ref(db, `rooms/${roomId}`));
+            return snapshot.exists() ? snapshot.val() : null;
+        } catch (e) {
+            console.error('SyncService: Failed to get room data:', e);
+            return null;
+        }
+    }
+
+    async preInitRoom(roomId, data) {
+        try {
+            await update(ref(db, `rooms/${roomId}`), data);
+            console.log(`SyncService: Pre-initialized room ${roomId} with data`, data);
+        } catch (e) {
+            console.error('SyncService: Failed to pre-init room:', e);
+        }
+    }
 }
 
 export const syncService = new SyncService();

@@ -6,6 +6,7 @@ import { Colors } from '../theme/colors';
 import { CyberBackground } from '../components/CyberBackground';
 import { NeonText } from '../components/NeonText';
 import { Plus, Minus, ArrowRight, Home, Trash2, RotateCw } from 'lucide-react-native';
+import { feedbackService } from '../services/FeedbackService';
 
 const { width } = Dimensions.get('window');
 
@@ -48,6 +49,9 @@ export default function OfflineInputScreen({ route, navigation }) {
     };
 
     const handleStart = () => {
+        // Unlock audio on interaction
+        feedbackService.loadAssets();
+
         // Prepare items for RouletteScreen
         const finalItems = items.map((item, index) => ({
             name: item.text.trim() || `${t('common.item')} ${index + 1}`,
@@ -154,8 +158,11 @@ const styles = StyleSheet.create({
     header: {
         flexDirection: 'row',
         alignItems: 'center',
-        paddingHorizontal: 20,
+        paddingHorizontal: 25,
         paddingVertical: 15,
+        maxWidth: 500,
+        alignSelf: 'center',
+        width: '100%',
     },
     headerButton: {
         width: 40,
@@ -269,7 +276,7 @@ const styles = StyleSheet.create({
     },
     startButtonText: {
         color: Colors.primary,
-        fontSize: 18,
+        fontSize: 20,
         fontWeight: '900',
         letterSpacing: 2,
     }

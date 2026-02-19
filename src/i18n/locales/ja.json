@@ -56,7 +56,7 @@
         "what": "スピン",
         "pick_now": "マイピック",
         "waiting_for_host": "ホストを待っています...",
-        "selected": "選択済み",
+        "selected": "SELECTED",
         "please_select_name": "名前を選択してください",
         "game_in_progress": "ゲーム進行中...",
         "select_name_to_join": "名前を選択して参加",
@@ -80,7 +80,8 @@
         "force_result": "強制的に結果を確認",
         "no_participants": "参加者なし",
         "ready_shout": "READY !",
-        "go_shout": "GO !"
+        "go_shout": "GO !",
+        "voting_already_finished": "投票はすでに終了しています。"
     },
     "result": {
         "share_title": "ルーレット結果",

@@ -73,7 +73,7 @@ export default function HistoryScreen({ route, navigation }) {
             <View style={[styles.historyItem, { borderLeftColor: item.type === 'menu' ? Colors.secondary : Colors.primary, flexDirection: 'column', alignItems: 'stretch' }]}>
                 {/* Top Row: Tag, Name and Winner Badge */}
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
                         <View style={{
                             backgroundColor: `${item.roomId === 'offline' ? '#666666' : (item.type === 'menu' ? Colors.secondary : Colors.primary)}20`,
                             paddingHorizontal: 6,
@@ -118,8 +118,7 @@ export default function HistoryScreen({ route, navigation }) {
                             style={{
                                 marginTop: 15,
                                 backgroundColor: 'rgba(57, 255, 20, 0.1)',
-                                paddingVertical: 6,
-                                paddingHorizontal: 12,
+                                padding: 10,
                                 borderRadius: 6,
                                 borderWidth: 1,
                                 borderColor: Colors.success,
@@ -132,8 +131,8 @@ export default function HistoryScreen({ route, navigation }) {
                         </TouchableOpacity>
                     )}
 
-                    {/* Check if details exist and render them */}
-                    {item.details && item.details.length > 0 && (
+                    {/* Check if details exist and render them - SKIP for offline items */}
+                    {item.roomId !== 'offline' && item.details && item.details.length > 0 && (
                         <View style={{ marginTop: 15, paddingTop: 10, borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.05)' }}>
                             <Text style={{ color: 'rgba(255,255,255,0.4)', fontSize: 10, marginBottom: 5 }}>{t('result.votes').toUpperCase()}:</Text>
                             {item.details.map((detail, idx) => (

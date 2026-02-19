@@ -56,7 +56,7 @@
         "what": "تدوير",
         "pick_now": "اختياري",
         "waiting_for_host": "في انتظار المضيف...",
-        "selected": "محدد",
+        "selected": "SELECTED",
         "please_select_name": "يرجى اختيار اسمك",
         "game_in_progress": "اللعبة قيد التنفيذ...",
         "select_name_to_join": "اختر اسماً للانضمام",
@@ -80,7 +80,8 @@
         "force_result": "فرض النتيجة",
         "no_participants": "لا يوجد مشاركون",
         "ready_shout": "READY !",
-        "go_shout": "GO !"
+        "go_shout": "GO !",
+        "voting_already_finished": "انتهى التصويت بالفعل."
     },
     "result": {
         "share_title": "نتيجة الروليت",

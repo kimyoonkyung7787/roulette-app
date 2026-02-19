@@ -7,6 +7,7 @@ import { CyberBackground } from '../components/CyberBackground';
 import { NeonText } from '../components/NeonText';
 import { Users, Globe, ArrowRight, Target, Zap } from 'lucide-react-native';
 import { LanguageSelector } from '../components/LanguageSelector';
+import { feedbackService } from '../services/FeedbackService';
 
 const { width } = Dimensions.get('window');
 
@@ -14,10 +15,12 @@ export default function EntryScreen({ navigation }) {
     const { t } = useTranslation();
 
     const handleOffline = () => {
+        feedbackService.loadAssets();
         navigation.navigate('OfflineInput', { mode: 'offline' });
     };
 
     const handleOnline = () => {
+        feedbackService.loadAssets();
         navigation.navigate('Welcome', { mode: 'online' });
     };
 
@@ -98,8 +101,12 @@ const styles = StyleSheet.create({
     },
     header: {
         paddingHorizontal: 20,
-        paddingVertical: 10,
+        paddingTop: 20,
+        paddingBottom: 10,
         alignItems: 'flex-end',
+        maxWidth: 450,
+        alignSelf: 'center',
+        width: '100%',
     },
     content: {
         flex: 1,

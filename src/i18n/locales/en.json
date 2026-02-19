@@ -12,13 +12,15 @@
         "alert": "ALERT",
         "info": "INFO",
         "error": "ERROR",
+        "success": "SUCCESS",
         "room": "ROOM",
         "select_language": "SELECT LANGUAGE",
         "weight": "Weight",
         "exit_confirm": "Do you really want to exit?",
         "cancel": "Cancel",
         "confirm": "Confirm",
-        "item": "Item"
+        "item": "Item",
+        "join": "JOIN"
     },
     "categories": {
         "coffee": "COFFEE",
@@ -85,7 +87,8 @@
         "force_result": "FORCE RESULT",
         "no_participants": "NO PARTICIPANTS",
         "ready_shout": "READY !",
-        "go_shout": "GO !"
+        "go_shout": "GO !",
+        "voting_already_finished": "Voting has already finished."
     },
     "result": {
         "share_title": "Roulette Result",
@@ -99,7 +102,8 @@
         "votes": "VOTES",
         "waiting_for_others": "WAITING FOR OTHERS...",
         "retry": "RETRY",
-        "winner_shout": "WINNER!"
+        "winner_shout": "WINNER!",
+        "copied_to_clipboard": "Result copied to clipboard."
     },
     "entry": {
         "offline_title": "OFFLINE",

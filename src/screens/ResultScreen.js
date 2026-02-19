@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { View, TouchableOpacity, StyleSheet, Text, Modal, ScrollView, Share, Alert, Image } from 'react-native';
+import { View, TouchableOpacity, StyleSheet, Text, Modal, ScrollView, Share, Alert, Image, Animated, Easing, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { NeonText } from '../components/NeonText';
 import { Colors } from '../theme/colors';
@@ -9,7 +9,7 @@ import { feedbackService } from '../services/FeedbackService';
 import { historyService } from '../services/HistoryService';
 import { syncService } from '../services/SyncService';
 import { useTranslation } from 'react-i18next';
-import { Share2, ListChecks, History, LogOut, Trophy, Loader, RefreshCw, X, Home } from 'lucide-react-native';
+import { Share2, ListChecks, History, LogOut, Trophy, Loader, RefreshCw, X, Home, Zap, Cpu, Radio, Activity, Drum, Sparkle } from 'lucide-react-native';
 import { Confetti } from '../components/Confetti';
 
 export default function ResultScreen({ route, navigation }) {
@@ -28,6 +28,171 @@ export default function ResultScreen({ route, navigation }) {
         category = 'coffee',
         originalItems = []
     } = route.params || {};
+
+    const MovingConfetti = ({ color, size, top, left, right, bottom, rangeX = 15, rangeY = -25, delay = 0 }) => {
+        const rotateAnim = useRef(new Animated.Value(0)).current;
+        const floatAnim = useRef(new Animated.Value(0)).current;
+        const driftAnim = useRef(new Animated.Value(0)).current;
+
+        useEffect(() => {
+            Animated.loop(
+                Animated.parallel([
+                    Animated.timing(rotateAnim, {
+                        toValue: 1,
+                        duration: 1500 + Math.random() * 1500,
+                        easing: Easing.linear,
+                        useNativeDriver: true,
+                        delay: delay
+                    }),
+                    Animated.sequence([
+                        Animated.timing(floatAnim, {
+                            toValue: 1,
+                            duration: 1200 + Math.random() * 800,
+                            easing: Easing.out(Easing.sin),
+                            useNativeDriver: true
+                        }),
+                        Animated.timing(floatAnim, {
+                            toValue: 0,
+                            duration: 1200 + Math.random() * 800,
+                            easing: Easing.in(Easing.sin),
+                            useNativeDriver: true
+                        })
+                    ]),
+                    Animated.sequence([
+                        Animated.timing(driftAnim, {
+                            toValue: 1,
+                            duration: 1500 + Math.random() * 1000,
+                            easing: Easing.inOut(Easing.sin),
+                            useNativeDriver: true
+                        }),
+                        Animated.timing(driftAnim, {
+                            toValue: 0,
+                            duration: 1500 + Math.random() * 1000,
+                            easing: Easing.inOut(Easing.sin),
+                            useNativeDriver: true
+                        })
+                    ])
+                ])
+            ).start();
+        }, []);
+
+        const rotation = rotateAnim.interpolate({
+            inputRange: [0, 1],
+            outputRange: ['0deg', '360deg']
+        });
+
+        const translateY = floatAnim.interpolate({
+            inputRange: [0, 1],
+            outputRange: [0, rangeY]
+        });
+
+        const translateX = driftAnim.interpolate({
+            inputRange: [0, 1],
+            outputRange: [-rangeX, rangeX]
+        });
+
+        return (
+            <Animated.View
+                style={{
+                    position: 'absolute',
+                    top, left, right, bottom,
+                    width: size,
+                    height: size,
+                    backgroundColor: color,
+                    borderRadius: size / 2,
+                    transform: [{ rotate: rotation }, { translateY }, { translateX }]
+                }}
+            />
+        );
+    };
+
+    const ConfettiExplosion = () => {
+        const particles = [...Array(40)].map((_, i) => ({
+            id: i,
+            color: [Colors.primary, Colors.accent, Colors.success, '#FF00FF', '#FFA500', '#00FF00', '#FFFF00'][i % 7],
+            size: Math.random() * 8 + 4,
+            delay: Math.random() * 2000,
+            rangeX: Math.random() * 150 + 50, // wider spread
+            rangeY: -(Math.random() * 150 + 100)  // higher burst
+        }));
+
+        return (
+            <View style={{ position: 'absolute', width: '100%', alignItems: 'center', top: 20 }}>
+                {particles.map(p => (
+                    <MovingConfetti
+                        key={p.id}
+                        color={p.color}
+                        size={p.size}
+                        rangeX={p.rangeX * (Math.random() > 0.5 ? 1 : -1)}
+                        rangeY={p.rangeY}
+                        delay={p.delay}
+                    />
+                ))}
+            </View>
+        );
+    };
+
+    const CyberDecoration = () => {
+        const beatAnim = useRef(new Animated.Value(0)).current;
+
+        useEffect(() => {
+            // Re-check audio on screen load to handle web autoplay restrictions
+            if (!feedbackService.isLoaded) {
+                feedbackService.loadAssets();
+            }
+
+            // No sound in result decoration as per user request
+            // const listenerId = beatAnim.addListener(({ value }) => {
+            //     // Play drum hit at the peak of the beat animation
+            //     if (value > 0.8) {
+            //         feedbackService.playDrum();
+            //     }
+            // });
+
+            const animation = Animated.loop(
+                Animated.sequence([
+                    Animated.timing(beatAnim, { toValue: 1, duration: 150, easing: Easing.out(Easing.back(2)), useNativeDriver: true }),
+                    Animated.timing(beatAnim, { toValue: 0, duration: 400, easing: Easing.inOut(Easing.sin), useNativeDriver: true }),
+                    Animated.delay(300)
+                ])
+            );
+            animation.start();
+
+            return () => {
+                animation.stop();
+            };
+        }, []);
+
+        const scale = beatAnim.interpolate({ inputRange: [0, 1], outputRange: [1, 1.25] });
+        const opacity = beatAnim.interpolate({ inputRange: [0, 1], outputRange: [0.6, 1] });
+
+        return (
+            <View style={{ alignItems: 'center', justifyContent: 'center', marginVertical: 60, width: '100%' }}>
+                <ConfettiExplosion />
+                <Animated.View style={{ transform: [{ scale }], opacity }}>
+                    <View style={{
+                        padding: 15,
+                        borderRadius: 40,
+                        backgroundColor: 'rgba(0, 255, 255, 0.1)',
+                        borderWidth: 2,
+                        borderColor: Colors.primary,
+                        shadowColor: Colors.primary,
+                        shadowOffset: { width: 0, height: 0 },
+                        shadowOpacity: 0.5,
+                        shadowRadius: 15,
+                    }}>
+                        <Drum color={Colors.primary} size={40} />
+                    </View>
+                </Animated.View>
+                <View style={{ flexDirection: 'row', gap: 5, marginTop: 15 }}>
+                    <Sparkle color={Colors.accent} size={12} />
+                    <NeonText style={{ fontSize: 11, letterSpacing: 3, opacity: 0.8 }}>FESTIVAL MODE ACTIVE</NeonText>
+                    <Sparkle color={Colors.accent} size={12} />
+                </View>
+            </View>
+        );
+    };
+
     const [allVoted, setAllVoted] = useState(false);
     const [onlineUsers, setOnlineUsers] = useState([]);
     const [showUsersModal, setShowUsersModal] = useState(false);
@@ -173,10 +338,24 @@ export default function ResultScreen({ route, navigation }) {
             const shareTitle = `🎰 ${t('result.share_title')}: ${safeWinner}`;
             const message = `🏆 ${t('result.winner_label')}: ${safeWinner}\n📍 ${t('common.room')}: ${safeRoomId}\n\n${t('result.share_message')} ✨`;
 
-            await Share.share({
-                title: shareTitle,
-                message: message,
-            });
+            if (Platform.OS === 'web') {
+                if (navigator.share) {
+                    await navigator.share({
+                        title: shareTitle,
+                        text: message,
+                    });
+                } else if (navigator.clipboard) {
+                    await navigator.clipboard.writeText(message);
+                    Alert.alert(t('common.success'), t('result.copied_to_clipboard'));
+                } else {
+                    Alert.alert(t('common.info'), message);
+                }
+            } else {
+                await Share.share({
+                    title: shareTitle,
+                    message: message,
+                });
+            }
         } catch (error) {
             console.error('ResultScreen: Sharing failed', error);
         }
@@ -191,7 +370,7 @@ export default function ResultScreen({ route, navigation }) {
             <SafeAreaView style={{ flex: 1 }}>
                 <ScrollView contentContainerStyle={{ flexGrow: 1 }} showsVerticalScrollIndicator={false}>
                     <View style={styles.container}>
-                        <View style={{ width: '100%', marginBottom: 30, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <View style={styles.header}>
                             {mode === 'online' ? (
                                 <View style={{
                                     backgroundColor: 'rgba(0, 255, 255, 0.1)',
@@ -210,22 +389,13 @@ export default function ResultScreen({ route, navigation }) {
                             ) : (
                                 <TouchableOpacity
                                     onPress={() => navigation.reset({ index: 0, routes: [{ name: 'Entry' }] })}
-                                    style={{
-                                        width: 40,
-                                        height: 40,
-                                        borderRadius: 12,
-                                        backgroundColor: 'rgba(0, 255, 255, 0.1)',
-                                        justifyContent: 'center',
-                                        alignItems: 'center',
-                                        borderWidth: 1,
-                                        borderColor: 'rgba(0, 255, 255, 0.2)',
-                                    }}
+                                    style={styles.headerHomeButton}
                                 >
                                     <Home color={Colors.primary} size={22} />
                                 </TouchableOpacity>
                             )}
 
-                            <View style={{ flexDirection: 'row', gap: 2, alignItems: 'center' }}>
+                            <View style={{ flexDirection: 'row', gap: 10, alignItems: 'center' }}>
                                 <TouchableOpacity onPress={handleShare} style={{ padding: 4 }} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
                                     <Share2 color={Colors.accent} size={24} />
                                 </TouchableOpacity>
@@ -286,11 +456,30 @@ export default function ResultScreen({ route, navigation }) {
                             {mode === 'offline' && (
                                 <View style={styles.offlineCelebration}>
                                     <View style={styles.badgeLine} />
-                                    <Image
-                                        source={{ uri: 'https://media.giphy.com/media/26tOZ42Mg6pbMubM4/giphy.gif' }}
-                                        style={styles.celebrationImage}
-                                        resizeMode="contain"
-                                    />
+                                    <View style={{ position: 'relative' }}>
+                                        <Image
+                                            source={{ uri: 'https://raw.githubusercontent.com/googlefonts/noto-emoji/main/png/128/emoji_u1f3ba.png' }}
+                                            style={[styles.celebrationImage, { width: 60, height: 60 }]}
+                                            resizeMode="contain"
+                                        />
+                                        {/* Animated Confetti Bits - Richer rotating/floating effect */}
+                                        <MovingConfetti color="#FFFF00" size={7} top={-15} left={-25} delay={0} />
+                                        <MovingConfetti color="#FF00FF" size={5} top={15} left={-35} delay={200} />
+                                        <MovingConfetti color="#00FF00" size={6} top={45} left={-15} delay={400} />
+                                        <MovingConfetti color="#FFD700" size={5} top={-10} right={-20} delay={100} />
+                                        <MovingConfetti color="#00FFFF" size={7} top={25} right={-30} delay={300} />
+                                        <MovingConfetti color="#FF4500" size={4} bottom={-10} right={-10} delay={500} />
+                                        {/* More particles */}
+                                        <MovingConfetti color="#39FF14" size={5} top={-20} left={10} delay={150} />
+                                        <MovingConfetti color="#FF007F" size={6} top={0} left={-10} delay={350} />
+                                        <MovingConfetti color="#7B68EE" size={4} top={60} right={0} delay={250} />
+                                        <MovingConfetti color="#FFA500" size={6} top={-5} left={30} delay={450} />
+                                        <MovingConfetti color="#FFFFFF" size={4} top={35} left={15} delay={50} />
+                                        <MovingConfetti color="#00FA9A" size={5} bottom={0} left={-25} delay={120} />
+                                        <MovingConfetti color="#FF1493" size={6} top={10} right={10} delay={380} />
+                                        <MovingConfetti color="#ADFF2F" size={4} top={-25} right={25} delay={220} />
+                                        <MovingConfetti color="#00CED1" size={5} top={55} left={-35} delay={480} />
+                                    </View>
                                     <Text style={styles.badgeText}>{t('result.winner_shout')}</Text>
                                     <View style={styles.badgeLine} />
                                 </View>
@@ -326,6 +515,9 @@ export default function ResultScreen({ route, navigation }) {
                                 {!allVoted && t('result.waiting_for_others')}
                             </Text>
                         </View>
+
+                        <CyberDecoration />
+
 
                         {role === 'owner' || mode === 'offline' ? (
                             <View style={styles.footer}>
@@ -396,7 +588,14 @@ export default function ResultScreen({ route, navigation }) {
                     message={t('common.exit_confirm')}
                     onConfirm={() => {
                         setShowExitConfirm(false);
-                        navigation.reset({ index: 0, routes: [{ name: 'Entry' }] });
+                        if (mode === 'offline') {
+                            navigation.reset({
+                                index: 0,
+                                routes: [{ name: 'OfflineInput', params: { items: originalItems } }]
+                            });
+                        } else {
+                            navigation.reset({ index: 0, routes: [{ name: 'Welcome' }] });
+                        }
                     }}
                     onCancel={() => setShowExitConfirm(false)}
                     confirmText={t('common.confirm')}
@@ -416,10 +615,30 @@ const styles = StyleSheet.create({
         flex: 1,
         paddingHorizontal: 24,
         alignItems: 'center',
-        paddingVertical: 10, // Compact vertical padding
+        paddingBottom: 20,
         width: '100%',
         maxWidth: 500,
         alignSelf: 'center',
+    },
+    header: {
+        width: '100%',
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        paddingHorizontal: 0,
+        paddingTop: 15,
+        paddingBottom: 15,
+        marginBottom: 15,
+    },
+    headerHomeButton: {
+        width: 40,
+        height: 40,
+        borderRadius: 12,
+        backgroundColor: 'rgba(0, 255, 255, 0.1)',
+        justifyContent: 'center',
+        alignItems: 'center',
+        borderWidth: 1,
+        borderColor: 'rgba(0, 255, 255, 0.2)',
     },
     trophyContainer: {
         marginTop: 10,
@@ -530,11 +749,11 @@ const styles = StyleSheet.create({
     },
     footer: {
         width: '100%',
-        marginTop: 'auto',
+        marginTop: 20,
         flexDirection: 'row',
         gap: 12,
         justifyContent: 'center',
-        marginBottom: 30, // Adjusted as requested
+        marginBottom: 30,
     },
     retryButton: {
         flex: 1,
@@ -601,8 +820,13 @@ const styles = StyleSheet.create({
         backgroundColor: Colors.background,
         borderRadius: 20,
         padding: 24,
-        borderWidth: 1,
-        borderColor: 'rgba(255,255,255,0.1)',
+        borderWidth: 2,
+        borderColor: Colors.primary,
+        shadowColor: Colors.primary,
+        shadowOffset: { width: 0, height: 0 },
+        shadowOpacity: 0.4,
+        shadowRadius: 15,
+        elevation: 8,
     },
     modalHeader: {
         flexDirection: 'row',
@@ -682,7 +906,7 @@ const styles = StyleSheet.create({
         elevation: 10,
     },
     badgeText: {
-        color: Colors.secondary,
+        color: '#FFFFFF',
         fontSize: 18,
         fontWeight: '900',
         letterSpacing: 3,

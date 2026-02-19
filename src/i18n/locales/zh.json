@@ -56,7 +56,7 @@
         "what": "旋转",
         "pick_now": "我的选择",
         "waiting_for_host": "等待房主...",
-        "selected": "已选择",
+        "selected": "SELECTED",
         "please_select_name": "请选择您的姓名",
         "game_in_progress": "游戏进行中...",
         "select_name_to_join": "选择名字加入",
@@ -80,7 +80,8 @@
         "force_result": "强制查看结果",
         "no_participants": "无参与者",
         "ready_shout": "READY !",
-        "go_shout": "GO !"
+        "go_shout": "GO !",
+        "voting_already_finished": "投票已经结束。"
     },
     "result": {
         "share_title": "轮盘结果",

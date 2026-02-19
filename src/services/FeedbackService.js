@@ -1,5 +1,6 @@
 import * as Haptics from 'expo-haptics';
 import { Audio } from 'expo-av';
+import { Platform } from 'react-native';
 
 class FeedbackService {
     constructor() {
@@ -8,79 +9,52 @@ class FeedbackService {
         this.startSound = null;
         this.fanfareSound = null;
         this.isLoaded = false;
+        this._lastTickTime = 0;
+        this._lastDrumTime = 0;
     }
 
     async loadAssets() {
+        if (this.isLoaded) return;
+
         try {
             console.log('🎵 FeedbackService: Starting loadAssets...');
 
             await Audio.setAudioModeAsync({
                 playsInSilentModeIOS: true,
-                allowsRecordingIOS: false,
                 staysActiveInBackground: false,
                 shouldDuckAndroid: true,
-                playThroughEarpieceAndroid: false,
             });
 
-            // Clean up existing sounds if re-loading
-            const unloadSound = async (sound) => {
-                if (sound) {
-                    try { await sound.unloadAsync(); } catch (e) { }
-                }
-            };
-            await unloadSound(this.tickSound);
-            await unloadSound(this.winSound);
-            await unloadSound(this.startSound);
-            await unloadSound(this.fanfareSound);
-
-            const loadSound = async (uri) => {
+            const loadSound = async (uri, name) => {
                 try {
-                    console.log(`🎵 Loading audio: ${uri}`);
                     const { sound } = await Audio.Sound.createAsync(
                         { uri },
                         { shouldPlay: false, volume: 1.0 }
                     );
-                    console.log(`✅ Successfully loaded: ${uri}`);
+                    console.log(`✅ ${name} loaded successfully`);
                     return sound;
                 } catch (err) {
-                    console.error(`❌ CRITICAL: Failed to load sound from ${uri}:`, err);
+                    console.warn(`⚠️ Failed to load ${name}: ${uri}`);
                     return null;
                 }
             };
 
-            // Try multiple fanfare sources for reliability
-            const fanfareSources = [
-                'https://assets.mixkit.co/active_storage/sfx/2013/2013-preview.mp3', // Win/Success fanfare
-                'https://cdn.freesound.org/previews/536/536108_11861866-lq.mp3',
-                'https://actions.google.com/sounds/v1/alarms/bugle_tune.ogg'
-            ];
+            // Using original reliable GitHub sources (extratone repository)
+            const [tick, win, start, fanfare] = await Promise.all([
+                loadSound('https://raw.githubusercontent.com/extratone/macOSsystemsounds/main/mp3/Note.mp3', 'tick'),
+                loadSound('https://raw.githubusercontent.com/extratone/macOSsystemsounds/main/mp3/Complete.mp3', 'win'),
+                loadSound('https://raw.githubusercontent.com/extratone/macOSsystemsounds/main/mp3/Bloom.mp3', 'start'),
+                loadSound('https://assets.mixkit.co/active_storage/sfx/2013/2013-preview.mp3', 'fanfare')
+            ]);
 
-            // Try loading fanfare from multiple sources
-            for (const source of fanfareSources) {
-                console.log(`🎺 Attempting to load fanfare from: ${source}`);
-                this.fanfareSound = await loadSound(source);
-                if (this.fanfareSound) {
-                    console.log(`✅ Fanfare loaded successfully from: ${source}`);
-                    break;
-                }
-            }
+            this.tickSound = tick;
+            this.winSound = win;
+            this.startSound = start;
+            this.fanfareSound = fanfare;
 
-            // Load other sounds with original macOS system sounds
-            this.tickSound = await loadSound('https://raw.githubusercontent.com/extratone/macOSsystemsounds/main/mp3/Note.mp3');
-            this.winSound = await loadSound('https://raw.githubusercontent.com/extratone/macOSsystemsounds/main/mp3/Complete.mp3');
-            this.startSound = await loadSound('https://raw.githubusercontent.com/extratone/macOSsystemsounds/main/mp3/Bloom.mp3');
-
-            // Only set isLoaded to true if fanfareSound loaded successfully
-            if (this.fanfareSound) {
-                this.isLoaded = true;
-                console.log('✅ FeedbackService: Audio systems loaded successfully');
-                console.log('✅ fanfareSound loaded:', !!this.fanfareSound);
-            } else {
-                this.isLoaded = false;
-                console.error('❌ FeedbackService: Failed to load fanfareSound from all sources!');
-            }
+            this.isLoaded = true;
+            console.log('✅ FeedbackService: All original sounds restored');
         } catch (e) {
-            this.isLoaded = false;
             console.error('❌ FeedbackService: Major initialization error:', e);
         }
     }
@@ -90,24 +64,32 @@ class FeedbackService {
         try {
             await this.startSound.setPositionAsync(0);
             await this.startSound.playAsync();
-        } catch (e) {
-            console.log('Error playing start sound:', e);
-        }
+        } catch (e) { }
     }
 
     async playTick() {
-        if (!this.tickSound || !this.isLoaded) return;
-
+        if (!this.tickSound) return;
         const now = Date.now();
-        // Prevent playing ticks too close together (min 35ms gap for distinct sounds)
-        if (this._lastTickTime && now - this._lastTickTime < 35) return;
+        if (now - this._lastTickTime < 50) return;
         this._lastTickTime = now;
 
         try {
-            // Light haptic feedback for each tick
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            if (Platform.OS !== 'web') Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            await this.tickSound.stopAsync();
+            await this.tickSound.setPositionAsync(0);
+            await this.tickSound.playAsync();
+        } catch (e) { }
+    }
 
-            // Fast reset and play
+    async playDrum() {
+        // Fallback to tick sound for drum beats to ensure it works
+        if (!this.tickSound) return;
+        const now = Date.now();
+        if (now - this._lastDrumTime < 300) return;
+        this._lastDrumTime = now;
+
+        try {
+            if (Platform.OS !== 'web') Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
             await this.tickSound.stopAsync();
             await this.tickSound.setPositionAsync(0);
             await this.tickSound.playAsync();
@@ -117,53 +99,24 @@ class FeedbackService {
     async playSuccess() {
         if (!this.winSound) return;
         try {
-            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+            if (Platform.OS !== 'web') Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+            await this.winSound.stopAsync();
             await this.winSound.setPositionAsync(0);
             await this.winSound.playAsync();
-        } catch (e) {
-            console.log('Error playing success sound:', e);
-        }
+        } catch (e) { }
     }
 
     async playFanfare() {
-        console.log('🎺 FeedbackService.playFanfare called');
-        console.log('🎺 fanfareSound exists:', !!this.fanfareSound);
-        console.log('🎺 isLoaded:', this.isLoaded);
-
-        if (!this.fanfareSound) {
-            console.warn('🎺 WARNING: fanfareSound is null! Using vibration fallback.');
-            // Fallback to strong vibration if sound not loaded
+        if (this.fanfareSound) {
             try {
-                await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-                await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
-                await new Promise(resolve => setTimeout(resolve, 100));
-                await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
-                await new Promise(resolve => setTimeout(resolve, 100));
-                await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
-                console.log('🎺 Vibration fallback completed');
-            } catch (e) {
-                console.error('🎺 Even vibration failed:', e);
-            }
-            return; // Don't throw error, just return
+                if (Platform.OS !== 'web') Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+                await this.fanfareSound.stopAsync();
+                await this.fanfareSound.setPositionAsync(0);
+                await this.fanfareSound.playAsync();
+                return;
+            } catch (e) { }
         }
-
-        try {
-            console.log('🎺 Playing haptic feedback...');
-            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-
-            console.log('🎺 Resetting audio position...');
-            await this.fanfareSound.setPositionAsync(0);
-
-            console.log('🎺 Starting playback...');
-            await this.fanfareSound.playAsync();
-
-            console.log('🎺 Fanfare playback started successfully!');
-        } catch (e) {
-            console.error('🎺 Error playing fanfare sound:', e);
-            // Fallback to vibration on playback error
-            console.log('🎺 Using vibration fallback due to playback error');
-            await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
-        }
+        this.playSuccess();
     }
 }
 

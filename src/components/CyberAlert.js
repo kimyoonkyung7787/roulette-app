@@ -33,7 +33,7 @@ export const CyberAlert = ({
             <View style={styles.overlay}>
                 <View style={[styles.container, {
                     borderColor: themeColor,
-                    ...(Platform.OS === 'web' ? { boxShadow: `0 0 20px ${themeColor}` } : { shadowColor: themeColor })
+                    ...(Platform.OS === 'web' ? { boxShadow: `0 0 15px ${themeColor}66` } : { shadowColor: themeColor })
                 }]}>
                     <View style={styles.header}>
                         <Icon color={themeColor} size={20} style={{ marginRight: 10, marginTop: 2 }} />
@@ -86,8 +86,8 @@ const styles = StyleSheet.create({
         padding: 24,
         borderWidth: 2,
         ...(Platform.OS === 'web' ? { boxShadow: '0 0 10px rgba(0,0,0,0.5)' } : {
-            shadowOpacity: 0.5,
-            shadowRadius: 20,
+            shadowOpacity: 0.3,
+            shadowRadius: 10,
         }),
         elevation: 10,
     },

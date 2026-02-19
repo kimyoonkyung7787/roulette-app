@@ -56,7 +56,7 @@
         "what": "GIRAR",
         "pick_now": "MI ELECCIÓN",
         "waiting_for_host": "Esperando al anfitrión...",
-        "selected": "SELECCIONADO",
+        "selected": "SELECTED",
         "please_select_name": "Por favor seleccione su nombre",
         "game_in_progress": "Juego en progreso...",
         "select_name_to_join": "Seleccione nombre para unirse",
@@ -80,7 +80,8 @@
         "force_result": "FORZAR RESULTADO",
         "no_participants": "SIN PARTICIPANTES",
         "ready_shout": "READY !",
-        "go_shout": "GO !"
+        "go_shout": "GO !",
+        "voting_already_finished": "La votación ya ha terminado."
     },
     "result": {
         "share_title": "Resultado de la Ruleta",

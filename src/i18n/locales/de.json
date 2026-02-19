@@ -56,7 +56,7 @@
         "what": "DREHEN",
         "pick_now": "MEINE WAHL",
         "waiting_for_host": "Warten auf Host...",
-        "selected": "AUSGEWÄHLT",
+        "selected": "SELECTED",
         "please_select_name": "Bitte wählen Sie Ihren Namen",
         "game_in_progress": "Spiel läuft...",
         "select_name_to_join": "Namen wählen zum Beitreten",
@@ -80,7 +80,8 @@
         "force_result": "ERGEBNIS ERZWINGEN",
         "no_participants": "KEINE TEILNEHMER",
         "ready_shout": "READY !",
-        "go_shout": "GO !"
+        "go_shout": "GO !",
+        "voting_already_finished": "Die Abstimmung ist bereits beendet."
     },
     "result": {
         "share_title": "Roulette-Ergebnis",
