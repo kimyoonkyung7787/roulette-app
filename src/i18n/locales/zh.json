@@ -66,7 +66,8 @@
         "host_setting_up": "主人正在设置中...",
         "select_menu_error": "请点击菜单项进行选择",
         "connection_error": "连接房间失败",
-        "min_participants_error": "至少需要2名参与者"
+        "min_participants_error": "至少需要2名参与者",
+        "select_me": "ME 选择"
     },
     "roulette": {
         "spin_center": "旋转",

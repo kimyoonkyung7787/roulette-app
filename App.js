@@ -24,8 +24,32 @@ export default function App() {
       .catch(err => console.error('🎵 App: Failed to load audio assets:', err));
   }, []);
 
+  const linking = {
+    prefixes: ['http://localhost:19006', 'https://roulette-app.vercel.app', 'rouletteapp://'],
+    config: {
+      screens: {
+        Welcome: '', // Root path
+      },
+    },
+    // Extract roomId from query parameters
+    getStateFromPath: (path, options) => {
+      const state = options?.getStateFromPath(path, options);
+      if (path.includes('roomId')) {
+        const url = new URL(path, 'https://roulette-app.vercel.app');
+        const roomId = url.searchParams.get('roomId');
+        if (roomId && state?.routes) {
+          const welcomeRoute = state.routes.find(r => r.name === 'Welcome');
+          if (welcomeRoute) {
+            welcomeRoute.params = { ...welcomeRoute.params, roomId };
+          }
+        }
+      }
+      return state;
+    }
+  };
+
   return (
-    <NavigationContainer>
+    <NavigationContainer linking={linking}>
       <Stack.Navigator
         initialRouteName="Entry"
         screenOptions={{

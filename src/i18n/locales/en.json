@@ -20,7 +20,10 @@
         "cancel": "Cancel",
         "confirm": "Confirm",
         "item": "Item",
-        "join": "JOIN"
+        "join": "JOIN",
+        "not_connected": "NOT CONNECTED",
+        "not_in_list": "NOT IN LIST",
+        "force_exit": "FORCE EXIT"
     },
     "categories": {
         "coffee": "COFFEE",
@@ -105,7 +108,8 @@
         "host_setting_up": "Host is setting up...",
         "select_menu_error": "Please click a menu item to select",
         "connection_error": "Failed to connect to room",
-        "min_participants_error": "At least 2 participants are required"
+        "min_participants_error": "At least 2 participants are required",
+        "select_me": "ME SELECT"
     },
     "roulette": {
         "spin_center": "SPIN",

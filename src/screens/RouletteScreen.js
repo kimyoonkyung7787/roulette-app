@@ -788,31 +788,6 @@ export default function RouletteScreen({ route, navigation }) {
                         </Text>
                     </View>
                 </View>
-
-                <TouchableOpacity
-                    onPress={async () => {
-                        // Check if voting is already finished by the owner or all votes
-                        const expectedVoterCount = Math.max(participantsState.length, onlineUsers.length);
-                        const roomData = await syncService.getRoomData(roomId);
-
-                        if (roomData?.final_results || (votes.length >= expectedVoterCount && expectedVoterCount > 0)) {
-                            Alert.alert(t('common.alert'), t('roulette.voting_already_finished'));
-                            return;
-                        }
-
-                        try { feedbackService.playClick(); } catch (e) { }
-                        await syncService.removeMyVote();
-                        navigation.navigate('NameInput', {
-                            roomId, role, category,
-                            resetSelection: true,
-                            initialTab: spinTarget
-                        });
-                    }}
-                    style={styles.reselectButton}
-                >
-                    <HandMetal color={Colors.primary} size={20} strokeWidth={2.5} style={{ marginRight: 8 }} />
-                    <Text style={styles.reselectText}>RE-PICK</Text>
-                </TouchableOpacity>
             </View>
         );
     };
@@ -911,15 +886,58 @@ export default function RouletteScreen({ route, navigation }) {
                                         <View style={[styles.pointerOuterGlow, { backgroundColor: Colors.accent, opacity: 0.3 }]} />
                                     </View>
                                 </View>
+                            </>
+                        )}
+                    </View>
 
-                                <View style={styles.footer}>
+                    <View style={styles.footer}>
+                        {(votedItem && !spinning) ? (
+                            <>
+                                <TouchableOpacity
+                                    onPress={async () => {
+                                        const expectedVoterCount = Math.max(participantsState.length, onlineUsers.length);
+                                        const roomData = await syncService.getRoomData(roomId);
+                                        if (roomData?.final_results || (votes.length >= expectedVoterCount && expectedVoterCount > 0)) {
+                                            Alert.alert(t('common.alert'), t('roulette.voting_already_finished'));
+                                            return;
+                                        }
+                                        try { feedbackService.playClick(); } catch (e) { }
+                                        await syncService.removeMyVote();
+                                        navigation.navigate('NameInput', {
+                                            roomId, role, category,
+                                            resetSelection: true,
+                                            initialTab: spinTarget
+                                        });
+                                    }}
+                                    activeOpacity={0.8}
+                                    style={[styles.reselectButton, { marginBottom: 18 }]}
+                                >
+                                    <HandMetal color={Colors.primary} size={20} strokeWidth={2.5} style={{ marginRight: 8 }} />
+                                    <Text style={styles.reselectText}>RE PICK</Text>
+                                </TouchableOpacity>
+
+                                {role === 'owner' && (
+                                    <TouchableOpacity
+                                        onPress={() => processFinalResult(true)}
+                                        activeOpacity={0.7}
+                                        style={styles.forceResultButton}
+                                    >
+                                        <Gavel color="#fff" size={20} style={{ marginRight: 10 }} />
+                                        <Text style={styles.forceResultText}>{t('roulette.force_result').toUpperCase()}</Text>
+                                    </TouchableOpacity>
+                                )}
+                            </>
+                        ) : (
+                            !votedItem && (
+                                <>
                                     <TouchableOpacity
                                         onPress={spinRoulette}
                                         disabled={!!(spinning || votes.find(v => v.userId === syncService.myId))}
                                         activeOpacity={0.8}
                                         style={[
                                             styles.spinButton,
-                                            (spinning || votes.find(v => v.userId === syncService.myId)) && styles.disabledButton
+                                            (spinning || votes.find(v => v.userId === syncService.myId)) && styles.disabledButton,
+                                            { marginBottom: role === 'owner' && votes.length > 0 ? 18 : 0 }
                                         ]}
                                     >
                                         <RotateCw color={spinning || votes.find(v => v.userId === syncService.myId) ? Colors.textSecondary : Colors.primary} size={24} style={{ marginRight: 12 }} />
@@ -928,7 +946,6 @@ export default function RouletteScreen({ route, navigation }) {
                                         </NeonText>
                                     </TouchableOpacity>
 
-                                    {/* Force Result Button for Owner - Redesigned for "Forced Action" feel */}
                                     {role === 'owner' && votes.length > 0 && votes.length < Math.max(participantsState.length, onlineUsers.length) && (
                                         <TouchableOpacity
                                             onPress={() => processFinalResult(true)}
@@ -941,9 +958,8 @@ export default function RouletteScreen({ route, navigation }) {
                                             </Text>
                                         </TouchableOpacity>
                                     )}
-
-                                </View>
-                            </>
+                                </>
+                            )
                         )}
                     </View>
                 </View>
@@ -972,25 +988,65 @@ export default function RouletteScreen({ route, navigation }) {
                             </View>
 
                             <ScrollView style={{ maxHeight: 400 }}>
-                                {onlineUsers.map((user, idx) => {
-                                    const userVote = votes.find(v => v.userId === user.id);
+                                {participantsState.map((participant, idx) => {
+                                    const pName = typeof participant === 'object' ? (participant.name || participant.text || '') : String(participant);
+                                    if (!pName.trim()) return null;
+
+                                    const onlineUser = onlineUsers.find(u => u.name === pName);
+                                    const userVote = votes.find(v => v.userName === pName || (onlineUser && v.userId === onlineUser.id));
+                                    const isMe = mySelectedName === pName;
+
                                     return (
-                                        <View key={user.id} style={styles.userItem}>
+                                        <View key={`part-${idx}`} style={styles.userItem}>
                                             <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center' }}>
-                                                <View style={[styles.userStatusDot, { backgroundColor: userVote ? Colors.success : Colors.primary }]} />
-                                                <Text style={styles.userName}>
-                                                    {user.name} {user.id === syncService.myId ? <Text style={{ fontSize: 11 }}> {t('common.me')}</Text> : ''}
+                                                <View style={[
+                                                    styles.userStatusDot,
+                                                    { backgroundColor: onlineUser ? (userVote ? Colors.success : Colors.primary) : '#444' }
+                                                ]} />
+                                                <Text style={[
+                                                    styles.userName,
+                                                    { opacity: onlineUser ? 1 : 0.4 }
+                                                ]}>
+                                                    {pName} {isMe ? <Text style={{ fontSize: 11, color: Colors.primary }}> {t('common.me')}</Text> : ''}
                                                 </Text>
                                             </View>
-                                            <View style={{ backgroundColor: 'rgba(255,255,255,0.05)', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 6, borderWidth: 1, borderColor: userVote ? 'rgba(57, 255, 20, 0.2)' : 'rgba(255,255,255,0.1)' }}>
-                                                <Text style={{ color: userVote ? Colors.success : 'rgba(255,255,255,0.3)', fontSize: 12, fontWeight: 'bold' }}>
-                                                    {userVote ? userVote.votedFor : t('name_input.waiting').toUpperCase()}
+                                            <View style={{
+                                                backgroundColor: onlineUser ? 'rgba(255,255,255,0.05)' : 'transparent',
+                                                paddingHorizontal: 10,
+                                                paddingVertical: 4,
+                                                borderRadius: 6,
+                                                borderWidth: 1,
+                                                borderColor: onlineUser ? (userVote ? 'rgba(57, 255, 20, 0.2)' : 'rgba(255,255,255,0.1)') : 'transparent'
+                                            }}>
+                                                <Text style={{
+                                                    color: onlineUser ? (userVote ? Colors.success : 'rgba(255,255,255,0.6)') : '#444',
+                                                    fontSize: 12,
+                                                    fontWeight: 'bold'
+                                                }}>
+                                                    {onlineUser
+                                                        ? (userVote ? userVote.votedFor : t('name_input.waiting').toUpperCase())
+                                                        : (t('common.not_connected') || 'OFFLINE').toUpperCase()}
                                                 </Text>
                                             </View>
                                         </View>
                                     );
                                 })}
-                                {onlineUsers.length === 0 && (
+
+                                {/* Loose participants section */}
+                                {onlineUsers.filter(u => !participantsState.some(p => (typeof p === 'object' ? p.name : p) === u.name)).map((user, index) => (
+                                    <View key={`loose-${index}`} style={[styles.userItem, { opacity: 0.5 }]}>
+                                        <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center' }}>
+                                            <View style={[styles.userStatusDot, { backgroundColor: '#666' }]} />
+                                            <Text style={[styles.userName, { color: '#666' }]}>{user.name || 'Anonymous'}</Text>
+                                            <View style={{ marginLeft: 8, backgroundColor: '#222', paddingHorizontal: 4, borderRadius: 4 }}>
+                                                <Text style={{ color: '#444', fontSize: 9 }}>NOT IN LIST</Text>
+                                            </View>
+                                        </View>
+                                        <Text style={{ color: '#444', fontSize: 11, fontWeight: 'bold' }}>GUEST</Text>
+                                    </View>
+                                ))}
+
+                                {participantsState.length === 0 && onlineUsers.length === 0 && (
                                     <Text style={{ color: 'rgba(255,255,255,0.5)', textAlign: 'center', marginVertical: 20 }}>{t('roulette.no_participants').toUpperCase()}</Text>
                                 )}
                             </ScrollView>
@@ -1003,7 +1059,7 @@ export default function RouletteScreen({ route, navigation }) {
                     visible={showExitConfirm}
                     title={t('common.alert')}
                     message={t('common.exit_confirm')}
-                    onConfirm={() => {
+                    onConfirm={async () => {
                         setShowExitConfirm(false);
                         if (mode === 'offline') {
                             navigation.reset({
@@ -1011,6 +1067,7 @@ export default function RouletteScreen({ route, navigation }) {
                                 routes: [{ name: 'OfflineInput', params: { items: originalItems } }]
                             });
                         } else {
+                            await syncService.clearPresence();
                             navigation.reset({ index: 0, routes: [{ name: 'Welcome' }] });
                         }
                     }}
@@ -1268,7 +1325,6 @@ const styles = StyleSheet.create({
         letterSpacing: 1,
     },
     reselectButton: {
-        marginTop: 40,
         width: '100%',
         backgroundColor: 'transparent',
         paddingVertical: 14,
@@ -1286,7 +1342,6 @@ const styles = StyleSheet.create({
         letterSpacing: 2,
     },
     forceResultButton: {
-        marginTop: 20,
         backgroundColor: '#8B1A1A', // Muted deep red for better comfort
         paddingVertical: 14,
         paddingHorizontal: 24,

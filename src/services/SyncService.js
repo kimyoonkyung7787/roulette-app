@@ -436,6 +436,32 @@ class SyncService {
             console.error('SyncService: Failed to pre-init room:', e);
         }
     }
+
+    async clearPresence() {
+        if (this.myId && this.roomId && db) {
+            try {
+                console.log(`SyncService: Manually clearing presence for ${this.myName || this.myId} in room ${this.roomId}`);
+
+                // 1. Remove from Firebase presence immediately
+                const presenceRef = ref(db, `${this.roomPath}/presence/${this.myId}`);
+                await set(presenceRef, null);
+
+                // 2. Clear local memory state
+                this.myName = null;
+
+                // 3. Optional: Clear persisted display name if they should re-pick next time
+                // Keep the my_user_id though, as that's their unique device ID
+                await AsyncStorage.removeItem('my_display_name');
+
+                // 4. Force a small delay to ensure Firebase processes the removal before next action if needed
+                return true;
+            } catch (err) {
+                console.error('SyncService: Failed to clear presence:', err);
+                return false;
+            }
+        }
+        return false;
+    }
 }
 
 export const syncService = new SyncService();

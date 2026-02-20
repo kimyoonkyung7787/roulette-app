@@ -20,7 +20,10 @@
         "cancel": "취소",
         "confirm": "확인",
         "item": "항목",
-        "join": "입장하기"
+        "join": "입장하기",
+        "not_connected": "미접속",
+        "not_in_list": "목록에 없음",
+        "force_exit": "강제종료"
     },
     "categories": {
         "coffee": "커피",
@@ -115,7 +118,8 @@
         "host_setting_up": "호스트가 설정 중입니다...",
         "select_menu_error": "선택할 메뉴를 클릭해 주세요",
         "connection_error": "방 연결에 실패했습니다",
-        "min_participants_error": "최소 2명의 참여자가 필요합니다"
+        "min_participants_error": "최소 2명의 참여자가 필요합니다",
+        "select_me": "ME 선택"
     },
     "roulette": {
         "spin_center": "회전",

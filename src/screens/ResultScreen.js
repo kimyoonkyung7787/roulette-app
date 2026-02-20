@@ -9,7 +9,7 @@ import { feedbackService } from '../services/FeedbackService';
 import { historyService } from '../services/HistoryService';
 import { syncService } from '../services/SyncService';
 import { useTranslation } from 'react-i18next';
-import { Share2, ListChecks, History, LogOut, Trophy, Loader, RefreshCw, X, Home, Zap, Cpu, Radio, Activity, Drum, Sparkle } from 'lucide-react-native';
+import { Share2, ListChecks, History, LogOut, Trophy, Loader, RefreshCw, X, Home, Zap, Cpu, Radio, Activity, Drum, Sparkle, HandMetal, Gavel } from 'lucide-react-native';
 import { Confetti } from '../components/Confetti';
 
 export default function ResultScreen({ route, navigation }) {
@@ -137,24 +137,54 @@ export default function ResultScreen({ route, navigation }) {
     const [showUsersModal, setShowUsersModal] = useState(false);
     const [showExitConfirm, setShowExitConfirm] = useState(false);
     const hasSavedRef = useRef(false);
-
-    // Animation for Trumpet in offline mode
+    // Animations for Results
+    const drumBeatAnim = useRef(new Animated.Value(0)).current;
     const trumpetBeatAnim = useRef(new Animated.Value(0)).current;
+    const drumPulseAnim = useRef(new Animated.Value(0)).current;
 
     useEffect(() => {
-        if (mode === 'offline' && allVoted) {
+        if (!allVoted) {
             const animation = Animated.loop(
+                Animated.sequence([
+                    Animated.timing(drumPulseAnim, { toValue: 1, duration: 400, easing: Easing.out(Easing.back(1.5)), useNativeDriver: true }),
+                    Animated.timing(drumPulseAnim, { toValue: 0, duration: 300, easing: Easing.inOut(Easing.sin), useNativeDriver: true }),
+                    Animated.delay(100)
+                ])
+            );
+            animation.start();
+            return () => animation.stop();
+        }
+    }, [allVoted]);
+
+    useEffect(() => {
+        if (allVoted) {
+            const drumAnim = Animated.loop(
+                Animated.sequence([
+                    Animated.timing(drumBeatAnim, { toValue: 1, duration: 150, easing: Easing.out(Easing.back(2)), useNativeDriver: true }),
+                    Animated.timing(drumBeatAnim, { toValue: 0, duration: 400, easing: Easing.inOut(Easing.sin), useNativeDriver: true }),
+                    Animated.delay(300)
+                ])
+            );
+            const trumpetAnim = Animated.loop(
                 Animated.sequence([
                     Animated.timing(trumpetBeatAnim, { toValue: 1, duration: 150, easing: Easing.out(Easing.back(2)), useNativeDriver: true }),
                     Animated.timing(trumpetBeatAnim, { toValue: 0, duration: 400, easing: Easing.inOut(Easing.sin), useNativeDriver: true }),
                     Animated.delay(300)
                 ])
             );
-            animation.start();
-            return () => animation.stop();
-        }
-    }, [mode, allVoted]);
 
+            if (mode === 'online') drumAnim.start();
+            else trumpetAnim.start();
+
+            return () => {
+                drumAnim.stop();
+                trumpetAnim.stop();
+            };
+        }
+    }, [allVoted, mode]);
+
+    const drumScale = drumBeatAnim.interpolate({ inputRange: [0, 1], outputRange: [1, 1.25] });
+    const drumOpacity = drumBeatAnim.interpolate({ inputRange: [0, 1], outputRange: [0.8, 1] });
     const trumpetScale = trumpetBeatAnim.interpolate({ inputRange: [0, 1], outputRange: [1, 1.25] });
     const trumpetOpacity = trumpetBeatAnim.interpolate({ inputRange: [0, 1], outputRange: [0.8, 1] });
 
@@ -326,6 +356,7 @@ export default function ResultScreen({ route, navigation }) {
 
     return (
         <CyberBackground>
+            <Confetti active={allVoted} />
             <SafeAreaView style={{ flex: 1 }}>
                 <ScrollView contentContainerStyle={{ flexGrow: 1 }} showsVerticalScrollIndicator={false}>
                     <View style={styles.container}>
@@ -384,10 +415,14 @@ export default function ResultScreen({ route, navigation }) {
                                     <View style={styles.trophyGlow} />
                                 </>
                             ) : (
-                                <>
-                                    <Loader color={Colors.primary} size={80} strokeWidth={1.5} />
+                                <Animated.View style={{ transform: [{ scale: drumPulseAnim.interpolate({ inputRange: [0, 1], outputRange: [1, 1.25] }) }] }}>
+                                    <Image
+                                        source={{ uri: 'https://raw.githubusercontent.com/googlefonts/noto-emoji/main/png/128/emoji_u1f941.png' }}
+                                        style={{ width: 80, height: 80 }}
+                                        resizeMode="contain"
+                                    />
                                     <View style={styles.loaderGlow} />
-                                </>
+                                </Animated.View>
                             )}
                         </View>
 
@@ -411,21 +446,25 @@ export default function ResultScreen({ route, navigation }) {
                             </View>
                             {allVoted && isTie && <Text style={styles.tieSubText}>{t('result.tie_subtext')}</Text>}
 
-                            {/* Celebration Element for Offline Mode */}
-                            {mode === 'offline' && (
+                            {/* Celebration Element for All Modes */}
+                            {allVoted && (
                                 <View style={styles.offlineCelebration}>
                                     <View style={styles.badgeLine} />
                                     <View style={{ position: 'relative', alignItems: 'center', justifyContent: 'center' }}>
                                         <ConfettiExplosion />
                                         <Animated.Image
-                                            source={{ uri: 'https://raw.githubusercontent.com/googlefonts/noto-emoji/main/png/128/emoji_u1f3ba.png' }}
+                                            source={{
+                                                uri: mode === 'online'
+                                                    ? 'https://raw.githubusercontent.com/googlefonts/noto-emoji/main/png/128/emoji_u1f941.png' // Drum for online
+                                                    : 'https://raw.githubusercontent.com/googlefonts/noto-emoji/main/png/128/emoji_u1f3ba.png' // Trumpet for offline
+                                            }}
                                             style={[
                                                 styles.celebrationImage,
                                                 {
                                                     width: 60,
                                                     height: 60,
-                                                    transform: [{ scale: trumpetScale }],
-                                                    opacity: trumpetOpacity
+                                                    transform: [{ scale: mode === 'online' ? drumScale : trumpetScale }],
+                                                    opacity: mode === 'online' ? drumOpacity : trumpetOpacity
                                                 }
                                             ]}
                                             resizeMode="contain"
@@ -475,14 +514,36 @@ export default function ResultScreen({ route, navigation }) {
 
                 {role === 'owner' || mode === 'offline' ? (
                     <View style={styles.footer}>
-                        <TouchableOpacity
-                            onPress={handleReset}
-                            activeOpacity={0.7}
-                            style={styles.retryButton}
-                        >
-                            <RefreshCw color={Colors.primary} size={24} style={{ marginRight: 10 }} />
-                            <Text style={styles.retryText}>{t('result.retry').toUpperCase()}</Text>
-                        </TouchableOpacity>
+                        {mode === 'online' && type === 'menu' ? (
+                            <>
+                                <TouchableOpacity
+                                    onPress={handleReset}
+                                    activeOpacity={0.7}
+                                    style={[styles.retryButton, { marginBottom: 18 }]}
+                                >
+                                    <HandMetal color={Colors.primary} size={20} strokeWidth={2.5} style={{ marginRight: 10 }} />
+                                    <Text style={styles.retryText}>RE PICK</Text>
+                                </TouchableOpacity>
+
+                                <TouchableOpacity
+                                    onPress={handleExit}
+                                    activeOpacity={0.7}
+                                    style={styles.forceResultButton}
+                                >
+                                    <Gavel color="#fff" size={20} style={{ marginRight: 10 }} />
+                                    <Text style={styles.forceResultText}>{t('common.force_exit').toUpperCase()}</Text>
+                                </TouchableOpacity>
+                            </>
+                        ) : (
+                            <TouchableOpacity
+                                onPress={handleReset}
+                                activeOpacity={0.7}
+                                style={styles.retryButton}
+                            >
+                                <RefreshCw color={Colors.primary} size={24} style={{ marginRight: 10 }} />
+                                <Text style={styles.retryText}>{t('result.retry').toUpperCase()}</Text>
+                            </TouchableOpacity>
+                        )}
                     </View>
                 ) : null}
 
@@ -537,7 +598,7 @@ export default function ResultScreen({ route, navigation }) {
                     visible={showExitConfirm}
                     title={t('common.alert')}
                     message={t('common.exit_confirm')}
-                    onConfirm={() => {
+                    onConfirm={async () => {
                         setShowExitConfirm(false);
                         if (mode === 'offline') {
                             navigation.reset({
@@ -545,6 +606,7 @@ export default function ResultScreen({ route, navigation }) {
                                 routes: [{ name: 'OfflineInput', params: { items: originalItems } }]
                             });
                         } else {
+                            await syncService.clearPresence();
                             navigation.reset({ index: 0, routes: [{ name: 'Welcome' }] });
                         }
                     }}
@@ -592,8 +654,8 @@ const styles = StyleSheet.create({
         borderColor: 'rgba(0, 255, 255, 0.2)',
     },
     trophyContainer: {
-        marginTop: 10,
-        marginBottom: 40, // Increased spacing as requested, but balanced for single screen
+        marginTop: 70,
+        marginBottom: 40,
         position: 'relative',
         alignItems: 'center',
         justifyContent: 'center',
@@ -721,6 +783,27 @@ const styles = StyleSheet.create({
         fontSize: 20,
         fontWeight: '900',
         letterSpacing: 2,
+    },
+    forceResultButton: {
+        backgroundColor: '#8B1A1A',
+        paddingVertical: 14,
+        paddingHorizontal: 24,
+        borderRadius: 12,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        width: '100%',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.3,
+        shadowRadius: 4,
+        elevation: 4,
+    },
+    forceResultText: {
+        color: '#fff',
+        fontSize: 16,
+        fontWeight: '900',
+        letterSpacing: 1.5,
     },
     homeButton: {
         flex: 1,

@@ -66,7 +66,8 @@
         "host_setting_up": "ホストが設定中です...",
         "select_menu_error": "選択するメニューをクリックしてください",
         "connection_error": "ルームへの接続に失敗しました",
-        "min_participants_error": "少なくとも2人の参加者が必要です"
+        "min_participants_error": "少なくとも2人の参加者が必要です",
+        "select_me": "ME 選択"
     },
     "roulette": {
         "spin_center": "回転",

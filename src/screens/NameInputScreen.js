@@ -1,12 +1,12 @@
 
 import React, { useState, useEffect, useRef } from 'react';
-import { View, TextInput, TouchableOpacity, FlatList, Text, Modal, ScrollView, Platform, Alert, StyleSheet, LayoutAnimation, UIManager } from 'react-native';
+import { View, TextInput, TouchableOpacity, FlatList, Text, Modal, ScrollView, Platform, Alert, StyleSheet, LayoutAnimation, UIManager, Share } from 'react-native';
 import { useIsFocused } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Colors } from '../theme/colors';
 import { CyberBackground } from '../components/CyberBackground';
 import { NeonText } from '../components/NeonText';
-import { UserPlus, Trash2, Play, History, CheckCircle2, ListChecks, Users, X, Loader, LogOut, Crown, Utensils, Coffee, Cookie, User, HelpCircle, Circle, Zap, Target, Home, RotateCw, Guitar, Pencil, Check } from 'lucide-react-native';
+import { UserPlus, Trash2, Play, History, CheckCircle2, ListChecks, Users, X, Loader, LogOut, Crown, Utensils, Coffee, Cookie, User, HelpCircle, Circle, Zap, Target, Home, RotateCw, Guitar, Pencil, Check, Share2 } from 'lucide-react-native';
 import { syncService } from '../services/SyncService';
 import { participantService } from '../services/ParticipantService';
 import { CyberAlert } from '../components/CyberAlert';
@@ -45,6 +45,8 @@ export default function NameInputScreen({ route, navigation }) {
     const [showIdentityModal, setShowIdentityModal] = useState(false);
     const [editingParticipantIndex, setEditingParticipantIndex] = useState(null);
     const [editingParticipantName, setEditingParticipantName] = useState('');
+    const [modalFocusedIndex, setModalFocusedIndex] = useState(null);
+    const participantRefs = useRef([]);
 
     const startEditingParticipant = (index, currentName) => {
         setEditingParticipantIndex(index);
@@ -143,9 +145,28 @@ export default function NameInputScreen({ route, navigation }) {
                         ];
                         setParticipants(defaultParticipants);
                         await syncService.setParticipants(defaultParticipants);
+
+                        // AUTO-SELECT for owner if not set
+                        if (role === 'owner' && !mySelectedName && !syncService.myName) {
+                            const firstGuestName = defaultParticipants[0].name;
+                            setMySelectedName(firstGuestName);
+                            await syncService.setIdentity(firstGuestName);
+                        }
                     } else {
                         setParticipants(sanitizedParticipants);
                         await syncService.setParticipants(sanitizedParticipants);
+
+                        // AUTO-SELECT for owner if not set
+                        if (role === 'owner' && !mySelectedName && !syncService.myName) {
+                            const firstGuestName = typeof sanitizedParticipants[0] === 'object'
+                                ? (sanitizedParticipants[0].name || sanitizedParticipants[0].text)
+                                : sanitizedParticipants[0];
+
+                            if (firstGuestName) {
+                                setMySelectedName(firstGuestName);
+                                await syncService.setIdentity(firstGuestName);
+                            }
+                        }
                     }
 
                     // Default category setup
@@ -271,6 +292,32 @@ export default function NameInputScreen({ route, navigation }) {
             activeUnsubs.forEach(unsub => unsub && unsub());
         };
     }, []);
+
+    // Effect to identify the first available participant when the identity modal opens
+    useEffect(() => {
+        if (showIdentityModal) {
+            // Priority: Find first one that is NOT taken and NOT me
+            let index = participants.findIndex(p => {
+                const pName = typeof p === 'object' ? (p.name || p.text || '') : String(p);
+                if (!pName.trim()) return false;
+                const isTaken = onlineUsers.some(u => u.name === pName && u.id !== syncService.myId);
+                const isMe = mySelectedName === pName;
+                return !isTaken && !isMe;
+            });
+
+            // Fallback: If no others available, maybe focus on myself
+            if (index === -1) {
+                index = participants.findIndex(p => {
+                    const pName = typeof p === 'object' ? (p.name || p.text || '') : String(p);
+                    return mySelectedName === pName;
+                });
+            }
+
+            setModalFocusedIndex(index !== -1 ? index : null);
+        } else {
+            setModalFocusedIndex(null);
+        }
+    }, [showIdentityModal, participants, onlineUsers, mySelectedName]);
 
     // Auto-navigate ONLY to Result screen when game is finished
     // Participants must manually click "WHAT?" button to join roulette screen
@@ -582,12 +629,17 @@ export default function NameInputScreen({ route, navigation }) {
     const toggleMe = async (participantName) => {
         if (!participantName || participantName.trim() === '') return;
 
+        // Check if taken by other
+        const isTaken = isPeopleTab && onlineUsers.some(u => u.name === participantName && u.id !== syncService.myId);
+
         if (mySelectedName === participantName) {
             setMySelectedName(null);
             await syncService.setIdentity('');
-        } else {
+        } else if (!isTaken) {
             setMySelectedName(participantName);
             await syncService.setIdentity(participantName);
+        } else {
+            Alert.alert(t('common.alert'), t('name_input.already_taken'));
         }
     };
 
@@ -807,9 +859,12 @@ export default function NameInputScreen({ route, navigation }) {
     };
 
     const checkIdentityBeforeAction = () => {
-        // Only check if we are in menu mode (where identity matters for voting/spinning)
-        // or if we want to enforce identity selection always.
-        // User request: "before selecting menu, must select people first"
+        // Offline mode: No need for identity selection as people are gathered together
+        if (mode === 'offline') {
+            return true;
+        }
+
+        // Online mode: Mandatory identity selection to track remote participants
         if (!mySelectedName) {
             Alert.alert(t('common.alert'), t('name_input.please_select_name'));
             setShowIdentityModal(true);
@@ -829,6 +884,21 @@ export default function NameInputScreen({ route, navigation }) {
 
     const handleExit = () => {
         setShowExitConfirm(true);
+    };
+
+    const handleShare = async () => {
+        try {
+            const inviteUrl = `https://roulette-app.vercel.app/?roomId=${roomId}`;
+            const message = `[돌림판 게임 초대] 🎮\n\n${mySelectedName || 'Host'}님이 돌림판 게임에 초대했습니다!\n\n방 번호: ${roomId.toUpperCase()}\n\n아래 링크를 클릭해서 바로 참여하세요!\n${inviteUrl}`;
+
+            await Share.share({
+                message,
+                url: inviteUrl, // iOS supports this
+                title: '돌림판 게임 초대'
+            });
+        } catch (error) {
+            console.error('Error sharing:', error);
+        }
     };
 
     const totalParticipantsWeight = participants.reduce((sum, p) => sum + (p.weight || 0), 0);
@@ -857,6 +927,11 @@ export default function NameInputScreen({ route, navigation }) {
                         {mode === 'offline' && <View />}
 
                         <View style={{ flexDirection: 'row', gap: 10, alignItems: 'center' }}>
+                            {mode === 'online' && role === 'owner' && (
+                                <TouchableOpacity onPress={handleShare} style={{ padding: 4 }}>
+                                    <Share2 color={Colors.accent} size={24} />
+                                </TouchableOpacity>
+                            )}
                             <TouchableOpacity onPress={() => setShowUsersModal(true)} style={{ padding: 4 }}>
                                 <ListChecks color={Colors.success} size={24} />
                             </TouchableOpacity>
@@ -953,7 +1028,7 @@ export default function NameInputScreen({ route, navigation }) {
                             >
                                 <User size={16} color={mySelectedName ? Colors.primary : Colors.accent} style={{ marginRight: 8 }} />
                                 <Text style={{ color: mySelectedName ? 'white' : Colors.accent, fontSize: 13, fontWeight: '900' }}>
-                                    {mySelectedName ? mySelectedName : 'PEOPLE 선택'}
+                                    {mySelectedName ? mySelectedName : t('name_input.select_me')}
                                 </Text>
                             </TouchableOpacity>
                         )}
@@ -1156,18 +1231,12 @@ export default function NameInputScreen({ route, navigation }) {
                                                     <View style={{
                                                         backgroundColor: `${Colors.accent}25`,
                                                         borderColor: Colors.accent,
-                                                        borderWidth: 1.5,
-                                                        borderRadius: 6,
-                                                        paddingHorizontal: 6,
-                                                        paddingVertical: 1,
-                                                        marginLeft: 8,
+                                                        borderWidth: 1,
+                                                        borderRadius: 4,
+                                                        paddingHorizontal: 4,
+                                                        marginLeft: 6,
                                                         flexDirection: 'row',
                                                         alignItems: 'center',
-                                                        shadowColor: Colors.accent,
-                                                        shadowOffset: { width: 0, height: 0 },
-                                                        shadowOpacity: 0.8,
-                                                        shadowRadius: 6,
-                                                        elevation: 3
                                                     }}>
                                                         <Crown color={Colors.accent} size={12} fill={`${Colors.accent}33`} style={{ marginRight: 4 }} />
                                                         <Text style={{ color: Colors.accent, fontSize: 10, fontWeight: '900' }}>{t('common.host').toUpperCase()}</Text>
@@ -1400,7 +1469,7 @@ export default function NameInputScreen({ route, navigation }) {
                                             borderWidth: 1,
                                             borderColor: '#444'
                                         }}>
-                                            <Text style={{ color: '#888', fontSize: 10, fontWeight: 'bold' }}>GUEST</Text>
+                                            <Text style={{ color: '#888', fontSize: 10, fontWeight: 'bold' }}>PARTICIPANT</Text>
                                         </View>
                                     )}
                                     <NeonText style={{ fontSize: 24, color: Colors.primary }}>PARTICIPANTS</NeonText>
@@ -1419,7 +1488,8 @@ export default function NameInputScreen({ route, navigation }) {
                                                 color: 'white',
                                                 borderWidth: 1,
                                                 borderColor: '#333',
-                                                fontSize: 14
+                                                fontSize: 14,
+                                                outlineStyle: 'none'
                                             }}
                                             placeholder={t('name_input.add_participant')}
                                             placeholderTextColor="#666"
@@ -1427,6 +1497,7 @@ export default function NameInputScreen({ route, navigation }) {
                                             onChangeText={setName}
                                             onSubmitEditing={addParticipantFromModal}
                                             maxLength={15}
+                                            autoFocus={false}
                                         />
                                         <TouchableOpacity
                                             onPress={addParticipantFromModal}
@@ -1472,24 +1543,17 @@ export default function NameInputScreen({ route, navigation }) {
                                                             justifyContent: 'space-between',
                                                             padding: 8,
                                                             borderRadius: 12,
-                                                            marginBottom: 10,
+                                                            marginBottom: 6,
                                                             backgroundColor: '#222',
                                                             borderWidth: 1,
                                                             borderColor: Colors.primary,
                                                         }}
                                                     >
                                                         <View style={{ padding: 8, marginRight: 5 }}>
-                                                            <View style={{
-                                                                width: 20,
-                                                                height: 20,
-                                                                borderRadius: 10,
-                                                                borderWidth: 2,
-                                                                borderColor: isMe ? Colors.primary : '#444',
-                                                                justifyContent: 'center',
-                                                                alignItems: 'center',
-                                                            }}>
-                                                                {isMe && <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: Colors.primary }} />}
-                                                            </View>
+                                                            <CheckCircle2
+                                                                size={20}
+                                                                color={isMe ? Colors.primary : '#444'}
+                                                            />
                                                         </View>
                                                         <TextInput
                                                             style={{
@@ -1523,12 +1587,14 @@ export default function NameInputScreen({ route, navigation }) {
                                                         flexDirection: 'row',
                                                         alignItems: 'center',
                                                         justifyContent: 'space-between',
-                                                        padding: 8,
+                                                        paddingHorizontal: 16,
+                                                        paddingVertical: 10,
                                                         borderRadius: 12,
-                                                        marginBottom: 10,
-                                                        backgroundColor: '#111',
+                                                        marginBottom: 4,
+                                                        backgroundColor: '#0a0a0a',
                                                         borderWidth: 1,
-                                                        borderColor: isMe ? Colors.primary : '#333',
+                                                        borderColor: isMe ? Colors.primary : (index === modalFocusedIndex ? 'rgba(255, 255, 255, 0.4)' : '#222'),
+                                                        borderStyle: 'solid',
                                                     }}
                                                 >
                                                     <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
@@ -1537,20 +1603,15 @@ export default function NameInputScreen({ route, navigation }) {
                                                             disabled={(isTaken && !isMe)}
                                                             style={{ padding: 8, marginRight: 5 }}
                                                         >
-                                                            <View style={{
-                                                                width: 20,
-                                                                height: 20,
-                                                                borderRadius: 10,
-                                                                borderWidth: 2,
-                                                                borderColor: isMe ? Colors.primary : '#444',
-                                                                justifyContent: 'center',
-                                                                alignItems: 'center',
-                                                            }}>
-                                                                {isMe && <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: Colors.primary }} />}
-                                                            </View>
+                                                            <CheckCircle2
+                                                                size={20}
+                                                                color={isMe ? Colors.primary : (index === modalFocusedIndex ? 'rgba(255, 255, 255, 0.5)' : '#444')}
+                                                                style={{ opacity: isMe ? 1 : 0.6 }}
+                                                            />
                                                         </TouchableOpacity>
 
                                                         <TouchableOpacity
+                                                            ref={el => participantRefs.current[index] = el}
                                                             onPress={() => {
                                                                 if (role === 'owner') {
                                                                     startEditingParticipant(index, pName);
@@ -1565,9 +1626,28 @@ export default function NameInputScreen({ route, navigation }) {
                                                                 color: isMe ? 'white' : (isTaken ? '#666' : 'white'),
                                                                 fontSize: 16,
                                                                 fontWeight: isMe ? 'bold' : 'normal',
-                                                                textDecorationLine: isTaken && !isMe ? 'line-through' : 'none'
+                                                                flexDirection: 'row',
+                                                                alignItems: 'center'
                                                             }}>
-                                                                {pName} {isMe ? '(ME)' : (isTaken ? '(TAKEN)' : '')}
+                                                                {pName}
+                                                                {isMe && <Text style={{ fontSize: 12, color: Colors.primary }}> (ME)</Text>}
+                                                                {isTaken && !isMe && <Text style={{ fontSize: 12, color: '#666' }}> ({t('name_input.selected')})</Text>}
+                                                                {onlineUsers.find(u => u.name === pName)?.role === 'owner' && (
+                                                                    <View style={{
+                                                                        backgroundColor: `${Colors.accent}15`,
+                                                                        borderColor: Colors.accent,
+                                                                        borderWidth: 1,
+                                                                        borderRadius: 4,
+                                                                        paddingHorizontal: 4,
+                                                                        marginLeft: 6,
+                                                                        flexDirection: 'row',
+                                                                        alignItems: 'center',
+                                                                        transform: [{ translateY: 1 }]
+                                                                    }}>
+                                                                        <Crown color={Colors.accent} size={10} fill={`${Colors.accent}33`} style={{ marginRight: 2 }} />
+                                                                        <Text style={{ color: Colors.accent, fontSize: 9, fontWeight: '900' }}>HOST</Text>
+                                                                    </View>
+                                                                )}
                                                             </Text>
                                                         </TouchableOpacity>
                                                     </View>
@@ -1602,7 +1682,14 @@ export default function NameInputScreen({ route, navigation }) {
                                     </TouchableOpacity>
 
                                     <TouchableOpacity
-                                        onPress={() => setShowIdentityModal(false)}
+                                        onPress={() => {
+                                            if (!mySelectedName && modalFocusedIndex !== null) {
+                                                const p = participants[modalFocusedIndex];
+                                                const pName = typeof p === 'object' ? (p.name || p.text || '') : String(p);
+                                                toggleMe(pName);
+                                            }
+                                            setShowIdentityModal(false);
+                                        }}
                                         style={{
                                             flex: 1,
                                             padding: 15,
@@ -1632,8 +1719,9 @@ export default function NameInputScreen({ route, navigation }) {
                         type="info"
                         confirmText={t('common.confirm')}
                         cancelText={t('common.cancel')}
-                        onConfirm={() => {
+                        onConfirm={async () => {
                             setShowExitConfirm(false);
+                            await syncService.clearPresence();
                             navigation.reset({
                                 index: 0,
                                 routes: [{ name: 'Welcome' }],
@@ -1671,23 +1759,31 @@ export default function NameInputScreen({ route, navigation }) {
                                     </TouchableOpacity>
                                 </View>
                                 <ScrollView style={{ maxHeight: 300 }}>
-                                    {onlineUsers.map((user, index) => {
-                                        const userVote = votes.find(v => v.userId === user.id);
+                                    {participants.map((p, index) => {
+                                        const pName = typeof p === 'object' ? (p.name || p.text || '') : String(p);
+                                        if (!pName.trim()) return null;
+
+                                        const onlineUser = onlineUsers.find(u => u.name === pName);
+                                        const userVote = votes.find(v => v.userName === pName || (onlineUser && v.userId === onlineUser.id));
+                                        const isMe = mySelectedName === pName;
+
                                         return (
-                                            <View key={index} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.05)' }}>
-                                                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                                            <View key={`part-${index}`} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.05)' }}>
+                                                <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
                                                     <View style={{
                                                         width: 8,
                                                         height: 8,
                                                         borderRadius: 4,
-                                                        backgroundColor: userVote ? Colors.success : Colors.primary,
+                                                        backgroundColor: onlineUser ? (userVote ? Colors.success : Colors.primary) : '#444',
                                                         marginRight: 10,
-                                                        shadowColor: userVote ? Colors.success : Colors.primary,
+                                                        shadowColor: onlineUser ? (userVote ? Colors.success : Colors.primary) : '#000',
                                                         shadowRadius: 4,
                                                         shadowOpacity: 0.5
                                                     }} />
-                                                    <Text style={{ color: 'white', fontSize: 16, fontWeight: '500' }}>{user.name || 'Anonymous'}</Text>
-                                                    {user.role === 'owner' && (
+                                                    <Text style={{ color: onlineUser ? 'white' : 'rgba(255,255,255,0.3)', fontSize: 16, fontWeight: '500' }}>
+                                                        {pName} {isMe ? <Text style={{ fontSize: 11, color: Colors.primary }}> {t('common.me')}</Text> : ''}
+                                                    </Text>
+                                                    {onlineUser?.role === 'owner' && (
                                                         <View style={{
                                                             backgroundColor: `${Colors.accent}25`,
                                                             borderColor: Colors.accent,
@@ -1698,44 +1794,61 @@ export default function NameInputScreen({ route, navigation }) {
                                                             marginLeft: 8,
                                                             flexDirection: 'row',
                                                             alignItems: 'center',
-                                                            shadowColor: Colors.accent,
-                                                            shadowOffset: { width: 0, height: 0 },
-                                                            shadowOpacity: 0.8,
-                                                            shadowRadius: 6,
-                                                            elevation: 3
                                                         }}>
-                                                            <Crown color={Colors.accent} size={12} fill={`${Colors.accent}33`} style={{ marginRight: 4 }} />
+                                                            <Crown color={Colors.accent} size={10} fill={`${Colors.accent}33`} style={{ marginRight: 4 }} />
                                                             <Text style={{ color: Colors.accent, fontSize: 10, fontWeight: '900' }}>HOST</Text>
                                                         </View>
                                                     )}
                                                 </View>
                                                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                                                    {userVote ? (
-                                                        <View style={{
-                                                            backgroundColor: 'rgba(57, 255, 20, 0.1)',
-                                                            paddingHorizontal: 8,
-                                                            paddingVertical: 4,
-                                                            borderRadius: 4,
-                                                            borderWidth: 1,
-                                                            borderColor: 'rgba(57, 255, 20, 0.3)',
-                                                            flexDirection: 'row',
-                                                            alignItems: 'center'
-                                                        }}>
-                                                            <CheckCircle2 size={12} color={Colors.success} style={{ marginRight: 4 }} />
-                                                            <Text style={{ color: Colors.success, fontSize: 12, fontWeight: 'bold' }}>
-                                                                {userVote.votedFor ? userVote.votedFor.toUpperCase() : t('name_input.voter').toUpperCase()}
-                                                            </Text>
-                                                        </View>
+                                                    {onlineUser ? (
+                                                        userVote ? (
+                                                            <View style={{
+                                                                backgroundColor: 'rgba(57, 255, 20, 0.1)',
+                                                                paddingHorizontal: 8,
+                                                                paddingVertical: 4,
+                                                                borderRadius: 4,
+                                                                borderWidth: 1,
+                                                                borderColor: 'rgba(57, 255, 20, 0.3)',
+                                                                flexDirection: 'row',
+                                                                alignItems: 'center'
+                                                            }}>
+                                                                <CheckCircle2 size={12} color={Colors.success} style={{ marginRight: 4 }} />
+                                                                <Text style={{ color: Colors.success, fontSize: 11, fontWeight: 'bold' }}>
+                                                                    {userVote.votedFor ? userVote.votedFor.toUpperCase() : t('name_input.voter').toUpperCase()}
+                                                                </Text>
+                                                            </View>
+                                                        ) : (
+                                                            <Text style={{ color: Colors.primary, fontSize: 11, fontWeight: 'bold' }}>{t('name_input.waiting').toUpperCase()}</Text>
+                                                        )
                                                     ) : (
-                                                        <Text style={{ color: Colors.textSecondary, fontSize: 12, opacity: 0.6 }}>{t('name_input.waiting').toUpperCase()}</Text>
+                                                        <Text style={{ color: '#444', fontSize: 11, fontWeight: 'bold' }}>{t('common.not_connected') || 'OFFLINE'}</Text>
                                                     )}
                                                 </View>
                                             </View>
                                         );
                                     })}
-                                    {onlineUsers.length === 0 && (
-                                        <Text style={{ color: Colors.textSecondary, textAlign: 'center', py: 20 }}>No users online</Text>
+
+                                    {/* Show online users who are not in the participants list (e.g. they joined with a name that was later deleted) */}
+                                    {onlineUsers.filter(u => !participants.some(p => (typeof p === 'object' ? p.name : p) === u.name)).map((user, index) => {
+                                        return (
+                                            <View key={`loose-${index}`} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.05)', opacity: 0.6 }}>
+                                                <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
+                                                    <User size={14} color="#666" style={{ marginRight: 10 }} />
+                                                    <Text style={{ color: '#666', fontSize: 14 }}>{user.name || 'Anonymous'}</Text>
+                                                    <View style={{ marginLeft: 8, backgroundColor: '#333', paddingHorizontal: 5, borderRadius: 4 }}>
+                                                        <Text style={{ color: '#999', fontSize: 9 }}>NOT IN LIST</Text>
+                                                    </View>
+                                                </View>
+                                                <Text style={{ color: '#444', fontSize: 11 }}>GUEST</Text>
+                                            </View>
+                                        );
+                                    })}
+
+                                    {participants.length === 0 && onlineUsers.length === 0 && (
+                                        <Text style={{ color: Colors.textSecondary, textAlign: 'center', marginVertical: 20 }}>{t('roulette.no_participants').toUpperCase()}</Text>
                                     )}
+
                                 </ScrollView>
                             </View>
                         </View>

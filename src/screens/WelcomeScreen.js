@@ -22,12 +22,13 @@ export default function WelcomeScreen({ route, navigation }) {
     const [resumeConfig, setResumeConfig] = useState({ visible: false, roomId: '', category: '', spinTarget: '' });
     const [pendingHostType, setPendingHostType] = useState(null);
 
-    // Initial check is removed as per user request to show this only on button click
-    /*
+    // Check for roomId from deep link
     React.useEffect(() => {
-        ...
-    }, []);
-    */
+        if (route.params?.roomId) {
+            setInputRoomId(route.params.roomId);
+            setSelectedRole('participant'); // Automatically switch to join tab
+        }
+    }, [route.params?.roomId]);
 
     const handleResume = async () => {
         feedbackService.loadAssets();
