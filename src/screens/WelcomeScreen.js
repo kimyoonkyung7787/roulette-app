@@ -93,26 +93,30 @@ export default function WelcomeScreen({ route, navigation }) {
             const savedRoomId = await AsyncStorage.getItem('last_room_id');
 
             if (savedRole === 'owner' && savedRoomId) {
-                // Fetch actual room data to check its mode (people or menu)
+                // Fetch actual room data to verify it's still valid
                 const roomData = await syncService.getRoomData(savedRoomId);
 
-                // Only show resume popup if the session mode matches the clicked button
-                if (roomData && roomData.spin_target === setupType) {
+                // Only prompt to resume if the room exists AND the mode matches
+                // If I'm trying to start 'menu' but the old room was 'people', just start new.
+                const storedTarget = roomData?.spin_target || 'people';
+
+                if (roomData && storedTarget === setupType) {
+                    console.log(`WelcomeScreen: Found matching existing session ${savedRoomId} (${storedTarget}), asking user...`);
                     setPendingHostType(setupType);
                     setResumeConfig({
                         visible: true,
                         roomId: savedRoomId,
                         category: roomData.category || 'coffee',
-                        spinTarget: roomData.spin_target || setupType
+                        spinTarget: storedTarget
                     });
-                    return; // Wait for user decision
+                    return;
                 }
             }
         } catch (e) {
             console.log('WelcomeScreen: Session check failed during host start', e);
         }
 
-        // No session or check failed, proceed to start new
+        // No valid existing session OR session type mismatch, proceed to start new
         startNewSession(setupType);
     };
 

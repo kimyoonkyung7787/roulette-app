@@ -6,7 +6,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Colors } from '../theme/colors';
 import { CyberBackground } from '../components/CyberBackground';
 import { NeonText } from '../components/NeonText';
-import { UserPlus, Trash2, Play, History, CheckCircle2, ListChecks, Users, X, Loader, LogOut, Crown, Utensils, Coffee, Cookie, User, HelpCircle, Circle, Zap, Target, Home, RotateCw } from 'lucide-react-native';
+import { UserPlus, Trash2, Play, History, CheckCircle2, ListChecks, Users, X, Loader, LogOut, Crown, Utensils, Coffee, Cookie, User, HelpCircle, Circle, Zap, Target, Home, RotateCw, Guitar, Pencil, Check } from 'lucide-react-native';
 import { syncService } from '../services/SyncService';
 import { participantService } from '../services/ParticipantService';
 import { CyberAlert } from '../components/CyberAlert';
@@ -18,12 +18,7 @@ if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental
     UIManager.setLayoutAnimationEnabledExperimental(true);
 }
 
-const POPULAR_ITEMS = {
-    coffee: ['AMERICANO', 'CAFE LATTE', 'VANILLA LATTE', 'CAPPUCCINO', 'ADE', 'GREEN TEA LATTE', 'SMOOTHIE', 'ESPRESSO'],
-    meal: ['KIMCHI STEW', 'BULGOGI', 'BIBIMBAP', 'TONKATSU', 'RAMEN', 'PASTA', 'SUSHI', 'FRIED RICE'],
-    snack: ['TTEOKBOKKI', 'FRIED CHICKEN', 'PIZZA', 'SANDWICH', 'SALAD', 'HAMBURGER', 'GIMBAP', 'TACOS'],
-    etc: []
-};
+
 
 export default function NameInputScreen({ route, navigation }) {
     const { category = 'coffee', role = 'owner', roomId = 'default', mode = 'online', initialTab } = route.params || {};
@@ -47,6 +42,44 @@ export default function NameInputScreen({ route, navigation }) {
     const [alertConfig, setAlertConfig] = useState({ visible: false, title: '', message: '' });
     const [selectedMenuIndex, setSelectedMenuIndex] = useState(null);
     const [showExitConfirm, setShowExitConfirm] = useState(false);
+    const [showIdentityModal, setShowIdentityModal] = useState(false);
+    const [editingParticipantIndex, setEditingParticipantIndex] = useState(null);
+    const [editingParticipantName, setEditingParticipantName] = useState('');
+
+    const startEditingParticipant = (index, currentName) => {
+        setEditingParticipantIndex(index);
+        setEditingParticipantName(currentName);
+    };
+
+    const saveEditingParticipant = async () => {
+        if (editingParticipantIndex === null) return;
+        const trimmed = editingParticipantName.trim();
+        if (!trimmed) {
+            setEditingParticipantIndex(null);
+            return;
+        }
+
+        const updated = [...participants];
+        const original = updated[editingParticipantIndex];
+
+        let oldName = '';
+        if (typeof original === 'object') {
+            updated[editingParticipantIndex] = { ...original, name: trimmed };
+            oldName = original.name;
+        } else {
+            updated[editingParticipantIndex] = { name: trimmed, weight: 1 };
+            oldName = original;
+        }
+
+        if (mySelectedName === oldName) {
+            setMySelectedName(trimmed);
+        }
+
+        setParticipants(updated);
+        if (role === 'owner') await syncService.setParticipants(updated);
+        setEditingParticipantIndex(null);
+        setEditingParticipantName('');
+    };
 
     useEffect(() => {
         categoryRef.current = activeCategory;
@@ -72,6 +105,8 @@ export default function NameInputScreen({ route, navigation }) {
             if (syncService.myName) {
                 console.log('NameInputScreen: Restoring identity:', syncService.myName);
                 setMySelectedName(syncService.myName);
+            } else {
+                console.log('NameInputScreen: No identity found in syncService');
             }
 
             // Sync room state based on role
@@ -93,29 +128,63 @@ export default function NameInputScreen({ route, navigation }) {
                         savedParticipants = await participantService.getParticipants();
                     }
 
-                    // Normalize participants (handle legacy string format and ensure weights)
-                    savedParticipants = savedParticipants.map(p =>
-                        typeof p === 'string' ? { name: p, weight: 1 } : { ...p, weight: p.weight ?? 1 }
-                    );
+                    // Standardize and filter out completely empty entries if they somehow exist
+                    let sanitizedParticipants = savedParticipants.filter(p => {
+                        const n = typeof p === 'object' ? (p.name || p.text || '') : String(p);
+                        return n.trim() !== '';
+                    });
 
-                    setParticipants(savedParticipants);
-                    await syncService.setParticipants(savedParticipants);
+                    // Default to at least 2 participants if empty or all was blank
+                    if (sanitizedParticipants.length === 0) {
+                        const pName = t('common.participant') || 'Participant';
+                        const defaultParticipants = [
+                            { name: `${pName} 1`, weight: 1 },
+                            { name: `${pName} 2`, weight: 1 }
+                        ];
+                        setParticipants(defaultParticipants);
+                        await syncService.setParticipants(defaultParticipants);
+                    } else {
+                        setParticipants(sanitizedParticipants);
+                        await syncService.setParticipants(sanitizedParticipants);
+                    }
 
-                    let existingMenus = await syncService.getMenuItems();
-                    let menuList = [];
-
-                    // Default to coffee if no existing menus and it's a fresh start
+                    // Default category setup
+                    // Default category setup
                     const initialCat = category || 'coffee';
                     setActiveCategory(initialCat);
-                    await syncService.setRoomCategory(initialCat);
 
-                    if (existingMenus && existingMenus.length > 0) {
-                        menuList = existingMenus;
-                    } else {
-                        menuList = (POPULAR_ITEMS[initialCat] || []).map(name => ({ name }));
+                    // PROACTIVE SETUP: Ensure ALL categories have default menus if empty
+                    const categoriesToInit = ['coffee', 'meal', 'snack', 'etc'];
+                    console.log('NameInputScreen: Starting proactive menu initialization for room:', roomId);
+
+                    for (const cat of categoriesToInit) {
+                        const existing = await syncService.getMenuByCategory(cat);
+
+                        // If category is empty, populate with 8 popular items
+                        if (!existing || !Array.isArray(existing) || existing.length === 0) {
+                            console.log(`NameInputScreen: Initializing default 8 items for ${cat}`);
+                            const translatedPopular = t(`popular_items.${cat}`, { returnObjects: true });
+                            const popular = Array.isArray(translatedPopular) ? translatedPopular : [];
+
+                            // Ensure we prioritize 8 items from i18n
+                            const defaultMenus = popular.length > 0
+                                ? popular.map(name => ({ name }))
+                                : [{ name: `${t('common.item') || 'Item'} 1` }, { name: `${t('common.item') || 'Item'} 2` }];
+
+                            // Save to Firebase immediately
+                            await syncService.setMenuByCategory(cat, defaultMenus);
+
+                            // If this is the starting category, update local state
+                            if (cat === initialCat) {
+                                console.log(`NameInputScreen: Setting initial state for ${cat}`);
+                                setMenuItems(defaultMenus);
+                            }
+                        } else if (cat === initialCat) {
+                            // If already exists and is the initial category, just load it
+                            console.log(`NameInputScreen: Loading existing data for initial category ${cat}`);
+                            setMenuItems(existing);
+                        }
                     }
-                    setMenuItems(menuList);
-                    await syncService.setMenuItems(menuList);
 
                     await syncService.clearSpinState();
                     await syncService.clearVotes();
@@ -144,16 +213,21 @@ export default function NameInputScreen({ route, navigation }) {
                 setActiveCategory(cat);
             }));
 
-            // If participant, subscribe to other room states
+            // If participant OR host re-syncing, subscribe to other room states
+            // Important: Host should NOT subscribe to their own updates to avoid overwriting local state while editing
             if (role === 'participant') {
                 unsubs.push(syncService.subscribeToParticipants(list => {
-                    console.log('NameInputScreen: Received participants update:', list.length, 'items');
-                    setParticipants(list);
+                    if (list && list.length > 0) {
+                        console.log('NameInputScreen: Received participants update:', list.length, 'items');
+                        setParticipants(list);
+                    }
                 }));
 
                 unsubs.push(syncService.subscribeToMenuItems(list => {
-                    console.log('NameInputScreen: Received menu items update:', list.length, 'items');
-                    setMenuItems(list);
+                    if (list && list.length > 0) {
+                        console.log('NameInputScreen: Received menu items update:', list.length, 'items');
+                        setMenuItems(list);
+                    }
                 }));
             }
 
@@ -298,13 +372,27 @@ export default function NameInputScreen({ route, navigation }) {
     }, [initialTab]);
 
 
-    // Save participants whenever they change
+    // Save participants whenever they change (Only work in owner mode and once loaded)
     useEffect(() => {
+        // We only save if there's actually something to save
         if (role === 'owner' && isLoaded && participants.length > 0) {
+            console.log('NameInputScreen: Syncing participants to DB...', participants.length);
             participantService.saveParticipants(participants);
             syncService.setParticipants(participants);
         }
-    }, [participants, isLoaded]);
+    }, [participants, role, isLoaded]);
+
+    // Save menus whenever they change
+    useEffect(() => {
+        // PREVENT OVERWRITE: Only save if the current menuItems actually belong to the current activeCategory
+        // We check if the items are legacy (all coffee) when they shouldn't be, or use a simpler check
+        if (role === 'owner' && isLoaded && menuItems.length > 0) {
+            // We only save if we're not in the middle of a category transition
+            // A simple way is to check if the first item matches the new category's defaults if it was just loaded
+            console.log(`NameInputScreen: Syncing ${activeCategory} menu to DB...`, menuItems.length);
+            syncService.setMenuByCategory(activeCategory, menuItems);
+        }
+    }, [menuItems, role, isLoaded]); // Removed activeCategory from dependency to prevent transition-overwrites
 
     // Validate identity against participant list
     useEffect(() => {
@@ -325,12 +413,21 @@ export default function NameInputScreen({ route, navigation }) {
             console.log(`NameInputScreen: Restoring ${type} from history...`);
 
             if (type === 'people') {
-                setParticipants(list);
-                syncService.setParticipants(list);
+                // Normalize list: handle both {name} and {text} formats from history
+                const normalizedList = list.map(p => {
+                    const itemName = typeof p === 'object' ? (p.name || p.text || '') : p;
+                    return { name: itemName, weight: p.weight ?? 1 };
+                });
+                setParticipants(normalizedList);
+                syncService.setParticipants(normalizedList);
                 setActiveTab('people');
             } else {
-                setMenuItems(list);
-                syncService.setMenuItems(list);
+                const normalizedList = list.map(m => {
+                    const itemName = typeof m === 'object' ? (m.name || m.text || m) : m;
+                    return { name: itemName };
+                });
+                setMenuItems(normalizedList);
+                syncService.setMenuItems(normalizedList);
                 setActiveTab('menu');
             }
 
@@ -339,25 +436,43 @@ export default function NameInputScreen({ route, navigation }) {
         }
     }, [route.params?.restoredData]);
 
-    const handleCategoryChange = (newCat) => {
+    const handleCategoryChange = async (newCat) => {
         if (role !== 'owner') return;
 
-        console.log(`NameInputScreen: Switching category to ${newCat}`);
-        try { feedbackService.playClick(); } catch (e) { }
+        if (activeCategory !== newCat) {
+            console.log(`NameInputScreen: Category switching from ${activeCategory} to ${newCat}`);
+            try { feedbackService.playClick(); } catch (e) { }
 
-        // Immediate local UI update for "snappy" feel
-        if (Platform.OS !== 'web') {
-            LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+            // 1. Save current one explicitly before switching
+            await syncService.setMenuByCategory(activeCategory, menuItems);
+
+            // 2. Clear state that should be reset
+            setSelectedMenuIndex(null);
+
+            // 3. Update category state
+            setActiveCategory(newCat);
+            await syncService.setRoomCategory(newCat);
+
+            // 4. Fetch the NEW items FIRST, then set them
+            // This order is crucial to prevent the 'save' useEffect from seeing old items with new category
+            const savedMenus = await syncService.getMenuByCategory(newCat);
+
+            if (savedMenus && savedMenus.length > 0) {
+                console.log(`NameInputScreen: Loaded saved menu for ${newCat}`);
+                setMenuItems(savedMenus);
+            } else {
+                console.log(`NameInputScreen: Loading defaults for ${newCat}`);
+                const translatedPopular = t(`popular_items.${newCat}`, { returnObjects: true });
+                const popular = Array.isArray(translatedPopular) ? translatedPopular : [];
+                const newItems = popular.length > 0 ? popular.map(name => ({ name })) : [{ name: `${t('common.item') || 'Item'} 1` }];
+                setMenuItems(newItems);
+                // The useEffect will handle saving these new defaults
+            }
+
+            if (Platform.OS !== 'web') {
+                LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+            }
         }
-
-        setActiveCategory(newCat);
-        const newItems = (POPULAR_ITEMS[newCat] || []).map(name => ({ name }));
-        setMenuItems(newItems);
-        setSelectedMenuIndex(null);
-
-        // Sync with DB in background
-        syncService.setRoomCategory(newCat).catch(err => console.error("Sync Category Error:", err));
-        syncService.setMenuItems(newItems).catch(err => console.error("Sync Menu Error:", err));
     };
 
     const redistributeWeights = (list) => {
@@ -365,16 +480,31 @@ export default function NameInputScreen({ route, navigation }) {
     };
 
     const addParticipant = async () => {
-        if (!name.trim()) return;
+        const trimmedName = name.trim();
+        if (!trimmedName) return;
+
         if (activeTab === 'people') {
-            const updated = [...participants, { name: name.trim(), weight: 1 }];
+            const updated = [...participants, { name: trimmedName, weight: 1 }];
             setParticipants(updated);
             if (role === 'owner') await syncService.setParticipants(updated);
         } else {
-            const updated = [...menuItems, { name: name.trim() }];
+            const updated = [...menuItems, { name: trimmedName }];
             setMenuItems(updated);
             if (role === 'owner') await syncService.setMenuItems(updated);
         }
+        setName('');
+    };
+
+    // Dedicated function for Modal to ensure it always adds to PEOPLE list regardless of activeTab
+    const addParticipantFromModal = async () => {
+        const trimmedName = name.trim();
+        if (!trimmedName) return;
+
+        // Force add to participants list
+        const updated = [...participants, { name: trimmedName, weight: 1 }];
+        setParticipants(updated);
+        if (role === 'owner') await syncService.setParticipants(updated);
+
         setName('');
     };
 
@@ -391,6 +521,16 @@ export default function NameInputScreen({ route, navigation }) {
             setSelectedMenuIndex(null);
             if (role === 'owner') await syncService.setMenuItems(updated);
         }
+    };
+
+    // Dedicated removal for Modal
+    const removeParticipantFromModal = async (index) => {
+        const removedItem = participants[index];
+        if (removedItem && removedItem.name === mySelectedName) setMySelectedName(null);
+
+        const updated = participants.filter((_, i) => i !== index);
+        setParticipants(updated);
+        if (role === 'owner') await syncService.setParticipants(updated);
     };
 
     const startEditing = (index) => {
@@ -440,6 +580,8 @@ export default function NameInputScreen({ route, navigation }) {
     };
 
     const toggleMe = async (participantName) => {
+        if (!participantName || participantName.trim() === '') return;
+
         if (mySelectedName === participantName) {
             setMySelectedName(null);
             await syncService.setIdentity('');
@@ -664,7 +806,24 @@ export default function NameInputScreen({ route, navigation }) {
         }
     };
 
+    const checkIdentityBeforeAction = () => {
+        // Only check if we are in menu mode (where identity matters for voting/spinning)
+        // or if we want to enforce identity selection always.
+        // User request: "before selecting menu, must select people first"
+        if (!mySelectedName) {
+            Alert.alert(t('common.alert'), t('name_input.please_select_name'));
+            setShowIdentityModal(true);
+            return false;
+        }
+        return true;
+    };
+
     const activeMenuColor = Colors.primary;
+
+    const categoryColor = activeCategory === 'coffee' ? Colors.neonPink :
+        activeCategory === 'meal' ? Colors.success :
+            activeCategory === 'snack' ? Colors.accent :
+                Colors.textSecondary;
 
     const isPeopleTab = activeTab === 'people';
 
@@ -713,15 +872,39 @@ export default function NameInputScreen({ route, navigation }) {
                         </View>
                     </View>
 
-                    <View style={{ marginBottom: 20 }}>
-                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 5 }}>
-                            <View style={{ backgroundColor: 'rgba(255,255,255,0.05)', paddingHorizontal: 8, paddingVertical: 2, borderRadius: 4, borderWidth: 1, borderColor: 'rgba(255,255,255,0.4)' }}>
-                                <Text style={{ color: Colors.textSecondary, fontSize: 10, fontWeight: 'bold' }}>{t(`common.${role === 'owner' ? 'host' : 'participant'}`).toUpperCase()}</Text>
-                            </View>
+                    <View style={{ marginBottom: 5 }}>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 5 }}>
+                            {role === 'owner' ? (
+                                <View style={{
+                                    backgroundColor: `${Colors.accent}25`,
+                                    borderColor: Colors.accent,
+                                    borderWidth: 1.5,
+                                    borderRadius: 6,
+                                    paddingHorizontal: 8,
+                                    paddingVertical: 2,
+                                    flexDirection: 'row',
+                                    alignItems: 'center',
+                                    marginRight: 10,
+                                    shadowColor: Colors.accent,
+                                    shadowOffset: { width: 0, height: 0 },
+                                    shadowOpacity: 0.8,
+                                    shadowRadius: 6,
+                                    elevation: 3
+                                }}>
+                                    <Crown color={Colors.accent} size={12} fill={`${Colors.accent}33`} style={{ marginRight: 4 }} />
+                                    <Text style={{ color: Colors.accent, fontSize: 10, fontWeight: '900' }}>HOST</Text>
+                                </View>
+                            ) : (
+                                <View style={{ backgroundColor: 'rgba(255,255,255,0.05)', paddingHorizontal: 8, paddingVertical: 2, borderRadius: 4, borderWidth: 1, borderColor: 'rgba(255,255,255,0.4)', marginRight: 10 }}>
+                                    <Text style={{ color: Colors.textSecondary, fontSize: 10, fontWeight: 'bold' }}>PARTICIPANT</Text>
+                                </View>
+                            )}
+
                             {activeTab !== 'people' && (() => {
-                                const catColor = activeCategory === 'coffee' ? Colors.neonPink :
-                                    activeCategory === 'meal' ? Colors.success :
-                                        activeCategory === 'snack' ? Colors.accent :
+                                const cat = activeCategory || 'coffee';
+                                const catColor = cat === 'coffee' ? Colors.neonPink :
+                                    cat === 'meal' ? Colors.success :
+                                        cat === 'snack' ? Colors.accent :
                                             Colors.textSecondary;
                                 return (
                                     <View style={{
@@ -733,18 +916,52 @@ export default function NameInputScreen({ route, navigation }) {
                                         borderColor: catColor
                                     }}>
                                         <Text style={{ color: catColor, fontSize: 10, fontWeight: 'bold' }}>
-                                            {(activeCategory || 'coffee').toUpperCase()}
+                                            {cat.toUpperCase()}
                                         </Text>
                                     </View>
                                 );
                             })()}
                         </View>
-                        <NeonText className="text-4xl">{activeTab === 'people' ? t('name_input.participants') : t('name_input.menu_items')}</NeonText>
-                        <View style={{ height: 2, width: 100, backgroundColor: activeTab === 'people' ? Colors.primary : activeMenuColor, marginTop: 10, shadowColor: activeTab === 'people' ? Colors.primary : activeMenuColor, shadowOpacity: 0.8, shadowRadius: 10, elevation: 5 }} />
                     </View>
 
+                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 5, marginBottom: 25 }}>
+                        <View style={{ flex: 1 }}>
+                            <NeonText className="text-4xl" style={{ fontSize: 28 }}>{activeTab === 'people' ? t('name_input.participants') : t('name_input.menu_items')}</NeonText>
+                            <View style={{ height: 2, width: 60, backgroundColor: activeTab === 'people' ? Colors.primary : activeMenuColor, marginTop: 10, shadowColor: activeTab === 'people' ? Colors.primary : activeMenuColor, shadowOpacity: 0.8, shadowRadius: 10, elevation: 5 }} />
+                        </View>
+
+                        {activeTab === 'menu' && (
+                            <TouchableOpacity
+                                onPress={() => setShowIdentityModal(true)}
+                                style={{
+                                    flexDirection: 'row',
+                                    alignItems: 'center',
+                                    backgroundColor: mySelectedName ? `${Colors.primary}20` : `${Colors.accent}20`,
+                                    paddingHorizontal: 15,
+                                    paddingVertical: 10,
+                                    borderRadius: 12,
+                                    borderWidth: 1.5,
+                                    borderColor: mySelectedName ? Colors.primary : Colors.accent,
+                                    marginLeft: 10,
+                                    minWidth: 110,
+                                    justifyContent: 'center',
+                                    shadowColor: mySelectedName ? Colors.primary : Colors.accent,
+                                    shadowOpacity: 0.5,
+                                    shadowRadius: 8,
+                                    elevation: 5
+                                }}
+                            >
+                                <User size={16} color={mySelectedName ? Colors.primary : Colors.accent} style={{ marginRight: 8 }} />
+                                <Text style={{ color: mySelectedName ? 'white' : Colors.accent, fontSize: 13, fontWeight: '900' }}>
+                                    {mySelectedName ? mySelectedName : 'PEOPLE 선택'}
+                                </Text>
+                            </TouchableOpacity>
+                        )}
+                    </View>
+
+
                     {activeTab === 'menu' && role === 'owner' && (
-                        <View style={{ flexDirection: 'row', gap: 8, marginBottom: 20, flexWrap: 'wrap' }}>
+                        <View style={{ flexDirection: 'row', marginBottom: 20, flexWrap: 'wrap' }}>
                             {['coffee', 'meal', 'snack', 'etc'].map((cat) => {
                                 const isSelected = activeCategory === cat;
                                 const catColor = cat === 'coffee' ? Colors.neonPink :
@@ -765,7 +982,9 @@ export default function NameInputScreen({ route, navigation }) {
                                             borderColor: isSelected ? catColor : 'rgba(255,255,255,0.1)',
                                             backgroundColor: isSelected ? `${catColor}15` : 'rgba(255,255,255,0.03)',
                                             minWidth: 70,
-                                            alignItems: 'center'
+                                            alignItems: 'center',
+                                            marginRight: 8,
+                                            marginBottom: 8
                                         }}
                                     >
                                         <Text style={{
@@ -781,7 +1000,6 @@ export default function NameInputScreen({ route, navigation }) {
                             })}
                         </View>
                     )}
-
 
 
                     {role === 'owner' && (
@@ -800,10 +1018,10 @@ export default function NameInputScreen({ route, navigation }) {
                             <TouchableOpacity
                                 onPress={addParticipant}
                                 style={{
-                                    backgroundColor: activeTab === 'people' ? Colors.primary : activeMenuColor,
+                                    backgroundColor: activeTab === 'people' ? Colors.primary : categoryColor,
                                     padding: 16,
                                     borderRadius: 12,
-                                    shadowColor: activeTab === 'people' ? Colors.primary : activeMenuColor,
+                                    shadowColor: activeTab === 'people' ? Colors.primary : categoryColor,
                                     shadowOpacity: 0.5,
                                     shadowRadius: 15,
                                     elevation: 8,
@@ -824,7 +1042,11 @@ export default function NameInputScreen({ route, navigation }) {
                                             case 'coffee':
                                                 return <Coffee {...iconProps} />;
                                             case 'meal':
+                                                return <Utensils {...iconProps} />;
                                             case 'snack':
+                                                return <Cookie {...iconProps} />;
+                                            case 'etc':
+                                                return <Guitar {...iconProps} />;
                                             default:
                                                 return <Utensils {...iconProps} />;
                                         }
@@ -836,12 +1058,15 @@ export default function NameInputScreen({ route, navigation }) {
 
                     <FlatList
                         data={activeTab === 'people' ? participants : menuItems}
-                        keyExtractor={(item, index) => index.toString()}
                         renderItem={({ item, index }) => {
-                            const nameToCheck = item.name || item;
-                            const isTakenByOther = isPeopleTab && onlineUsers.some(u => u.name === nameToCheck && u.id !== syncService.myId);
-                            const isMe = isPeopleTab && mySelectedName === nameToCheck;
-                            const isHost = isPeopleTab && (mode === 'online' ? onlineUsers.some(u => u.name === nameToCheck && u.role === 'owner') : (isMe && role === 'owner'));
+                            // Ensure nameToCheck is always a string
+                            const rawName = typeof item === 'object' ? (item.name || item.text || '') : String(item);
+                            const nameToCheck = rawName.trim();
+                            const hasName = nameToCheck !== '';
+
+                            const isTakenByOther = isPeopleTab && hasName && onlineUsers.some(u => u.name === nameToCheck && u.id !== syncService.myId);
+                            const isMe = isPeopleTab && hasName && mySelectedName === nameToCheck;
+                            const isHost = isPeopleTab && hasName && (mode === 'online' ? onlineUsers.some(u => u.name === nameToCheck && u.role === 'owner') : (isMe && role === 'owner'));
                             const activeThemeColor = isPeopleTab ? Colors.primary : activeMenuColor;
                             const currentList = activeTab === 'people' ? participants : menuItems;
                             let totalWeight = 1;
@@ -919,11 +1144,12 @@ export default function NameInputScreen({ route, navigation }) {
                                                 style={{ flex: 1, flexDirection: 'row', alignItems: 'center', paddingVertical: 8 }}
                                             >
                                                 <Text style={{
-                                                    color: (isTakenByOther && !isMe) ? Colors.textSecondary : 'white',
+                                                    color: !hasName ? 'rgba(255,255,255,0.2)' : ((isTakenByOther && !isMe) ? Colors.textSecondary : 'white'),
                                                     fontSize: 18,
-                                                    fontWeight: '500'
+                                                    fontWeight: '500',
+                                                    fontStyle: !hasName ? 'italic' : 'normal'
                                                 }}>
-                                                    {nameToCheck} {isMe && <Text style={{ color: Colors.primary, fontSize: 14 }}>{t('common.me')}</Text>}
+                                                    {hasName ? nameToCheck : t('common.unknown')} {isMe && <Text style={{ color: Colors.primary, fontSize: 14 }}>{t('common.me')}</Text>}
                                                     {isTakenByOther && !isMe && <Text style={{ color: Colors.textSecondary, fontSize: 12 }}> ({t('name_input.selected').toUpperCase()})</Text>}
                                                 </Text>
                                                 {isHost && (
@@ -1033,7 +1259,7 @@ export default function NameInputScreen({ route, navigation }) {
                                         borderColor: activeMenuColor
                                     }}
                                 >
-                                    <Target color={activeMenuColor} size={20} strokeWidth={2.5} />
+                                    <CheckCircle2 color={activeMenuColor} size={20} strokeWidth={2.5} />
                                     <Text style={{
                                         color: activeMenuColor,
                                         fontSize: 16,
@@ -1044,7 +1270,11 @@ export default function NameInputScreen({ route, navigation }) {
                                 </TouchableOpacity>
 
                                 <TouchableOpacity
-                                    onPress={() => startRoulette('menu')}
+                                    onPress={() => {
+                                        if (checkIdentityBeforeAction()) {
+                                            startRoulette('menu');
+                                        }
+                                    }}
                                     style={{
                                         flex: 1,
                                         backgroundColor: 'transparent',
@@ -1069,7 +1299,11 @@ export default function NameInputScreen({ route, navigation }) {
                             </View>
                         ) : (
                             <TouchableOpacity
-                                onPress={() => activeTab === 'menu' ? handleDirectPick() : startRoulette(activeTab)}
+                                onPress={() => {
+                                    if (checkIdentityBeforeAction()) {
+                                        activeTab === 'menu' ? handleDirectPick() : startRoulette(activeTab);
+                                    }
+                                }}
                                 style={{
                                     backgroundColor: 'transparent',
                                     paddingVertical: 14,
@@ -1094,7 +1328,7 @@ export default function NameInputScreen({ route, navigation }) {
                                     </View>
                                 ) : (
                                     <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                                        <Target color={activeMenuColor} size={24} strokeWidth={2.5} />
+                                        <CheckCircle2 color={activeMenuColor} size={24} strokeWidth={2.5} />
                                         <Text style={{
                                             color: activeMenuColor,
                                             fontSize: 20,
@@ -1107,6 +1341,282 @@ export default function NameInputScreen({ route, navigation }) {
                             </TouchableOpacity>
                         )}
                     </View>
+
+                    {/* Identity Selection Modal (When me is not set in menu mode) */}
+                    {/* Identity Selection Modal (When me is not set in menu mode) */}
+                    {/* Identity Selection Modal (When me is not set in menu mode) */}
+                    <Modal
+                        visible={showIdentityModal}
+                        transparent={true}
+                        animationType="slide"
+                        onRequestClose={() => setShowIdentityModal(false)}
+                    >
+                        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.9)', justifyContent: 'center', alignItems: 'center', padding: 20 }}>
+                            <View style={{
+                                width: '100%',
+                                maxWidth: 500,
+                                backgroundColor: '#050505',
+                                borderRadius: 24,
+                                padding: 24,
+                                borderWidth: 2,
+                                borderColor: Colors.primary,
+                                shadowColor: Colors.primary,
+                                shadowOffset: { width: 0, height: 0 },
+                                shadowOpacity: 0.5,
+                                shadowRadius: 20,
+                                elevation: 10,
+                                maxHeight: '80%'
+                            }}>
+                                <View style={{ marginBottom: 20 }}>
+                                    {role === 'owner' ? (
+                                        <View style={{
+                                            backgroundColor: `${Colors.accent}25`,
+                                            borderColor: Colors.accent,
+                                            borderWidth: 1.5,
+                                            borderRadius: 6,
+                                            paddingHorizontal: 8,
+                                            paddingVertical: 2,
+                                            flexDirection: 'row',
+                                            alignItems: 'center',
+                                            marginBottom: 5,
+                                            alignSelf: 'flex-start',
+                                            shadowColor: Colors.accent,
+                                            shadowOffset: { width: 0, height: 0 },
+                                            shadowOpacity: 0.8,
+                                            shadowRadius: 6,
+                                            elevation: 3
+                                        }}>
+                                            <Crown color={Colors.accent} size={12} fill={`${Colors.accent}33`} style={{ marginRight: 4 }} />
+                                            <Text style={{ color: Colors.accent, fontSize: 10, fontWeight: '900' }}>HOST</Text>
+                                        </View>
+                                    ) : (
+                                        <View style={{
+                                            backgroundColor: '#222',
+                                            paddingHorizontal: 8,
+                                            paddingVertical: 2,
+                                            borderRadius: 4,
+                                            alignSelf: 'flex-start',
+                                            marginBottom: 5,
+                                            borderWidth: 1,
+                                            borderColor: '#444'
+                                        }}>
+                                            <Text style={{ color: '#888', fontSize: 10, fontWeight: 'bold' }}>GUEST</Text>
+                                        </View>
+                                    )}
+                                    <NeonText style={{ fontSize: 24, color: Colors.primary }}>PARTICIPANTS</NeonText>
+                                    <View style={{ height: 2, width: 40, backgroundColor: Colors.primary, marginTop: 5, shadowColor: Colors.primary, shadowOpacity: 1, shadowRadius: 8 }} />
+                                </View>
+
+                                {/* Host-only Input Field */}
+                                {role === 'owner' && (
+                                    <View style={{ flexDirection: 'row', marginBottom: 20 }}>
+                                        <TextInput
+                                            style={{
+                                                flex: 1,
+                                                backgroundColor: '#1a1a1a',
+                                                borderRadius: 12,
+                                                padding: 16,
+                                                color: 'white',
+                                                borderWidth: 1,
+                                                borderColor: '#333',
+                                                fontSize: 14
+                                            }}
+                                            placeholder={t('name_input.add_participant')}
+                                            placeholderTextColor="#666"
+                                            value={name}
+                                            onChangeText={setName}
+                                            onSubmitEditing={addParticipantFromModal}
+                                            maxLength={15}
+                                        />
+                                        <TouchableOpacity
+                                            onPress={addParticipantFromModal}
+                                            style={{
+                                                marginLeft: 10,
+                                                backgroundColor: Colors.primary,
+                                                borderRadius: 12,
+                                                width: 50,
+                                                justifyContent: 'center',
+                                                alignItems: 'center',
+                                                shadowColor: Colors.primary,
+                                                shadowOpacity: 0.5,
+                                                shadowRadius: 10
+                                            }}
+                                        >
+                                            <UserPlus color="black" size={24} />
+                                        </TouchableOpacity>
+                                    </View>
+                                )}
+
+                                <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={false}>
+                                    {participants.length === 0 ? (
+                                        <Text style={{ color: '#666', textAlign: 'center', marginTop: 20 }}>
+                                            {t('name_input.please_add_participants')}
+                                        </Text>
+                                    ) : (
+                                        participants.map((p, index) => {
+                                            const pName = typeof p === 'object' ? (p.name || p.text || '') : String(p);
+                                            const isTaken = onlineUsers.some(u => u.name === pName && u.id !== syncService.myId);
+                                            const isMe = mySelectedName === pName;
+                                            const isEditing = editingParticipantIndex === index;
+
+                                            // Skip empty names
+                                            if (!pName.trim()) return null;
+
+                                            if (isEditing) {
+                                                return (
+                                                    <View
+                                                        key={index}
+                                                        style={{
+                                                            flexDirection: 'row',
+                                                            alignItems: 'center',
+                                                            justifyContent: 'space-between',
+                                                            padding: 8,
+                                                            borderRadius: 12,
+                                                            marginBottom: 10,
+                                                            backgroundColor: '#222',
+                                                            borderWidth: 1,
+                                                            borderColor: Colors.primary,
+                                                        }}
+                                                    >
+                                                        <View style={{ padding: 8, marginRight: 5 }}>
+                                                            <View style={{
+                                                                width: 20,
+                                                                height: 20,
+                                                                borderRadius: 10,
+                                                                borderWidth: 2,
+                                                                borderColor: isMe ? Colors.primary : '#444',
+                                                                justifyContent: 'center',
+                                                                alignItems: 'center',
+                                                            }}>
+                                                                {isMe && <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: Colors.primary }} />}
+                                                            </View>
+                                                        </View>
+                                                        <TextInput
+                                                            style={{
+                                                                flex: 1,
+                                                                color: 'white',
+                                                                fontSize: 16,
+                                                                padding: 5
+                                                            }}
+                                                            value={editingParticipantName}
+                                                            onChangeText={setEditingParticipantName}
+                                                            autoFocus={true}
+                                                            onBlur={saveEditingParticipant}
+                                                            onSubmitEditing={saveEditingParticipant}
+                                                        />
+                                                        {role === 'owner' && (
+                                                            <TouchableOpacity
+                                                                onPress={() => removeParticipantFromModal(index)}
+                                                                style={{ padding: 8 }}
+                                                            >
+                                                                <Trash2 color="#444" size={20} />
+                                                            </TouchableOpacity>
+                                                        )}
+                                                    </View>
+                                                );
+                                            }
+
+                                            return (
+                                                <View
+                                                    key={index}
+                                                    style={{
+                                                        flexDirection: 'row',
+                                                        alignItems: 'center',
+                                                        justifyContent: 'space-between',
+                                                        padding: 8,
+                                                        borderRadius: 12,
+                                                        marginBottom: 10,
+                                                        backgroundColor: '#111',
+                                                        borderWidth: 1,
+                                                        borderColor: isMe ? Colors.primary : '#333',
+                                                    }}
+                                                >
+                                                    <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
+                                                        <TouchableOpacity
+                                                            onPress={() => toggleMe(pName)}
+                                                            disabled={(isTaken && !isMe)}
+                                                            style={{ padding: 8, marginRight: 5 }}
+                                                        >
+                                                            <View style={{
+                                                                width: 20,
+                                                                height: 20,
+                                                                borderRadius: 10,
+                                                                borderWidth: 2,
+                                                                borderColor: isMe ? Colors.primary : '#444',
+                                                                justifyContent: 'center',
+                                                                alignItems: 'center',
+                                                            }}>
+                                                                {isMe && <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: Colors.primary }} />}
+                                                            </View>
+                                                        </TouchableOpacity>
+
+                                                        <TouchableOpacity
+                                                            onPress={() => {
+                                                                if (role === 'owner') {
+                                                                    startEditingParticipant(index, pName);
+                                                                } else if (!isTaken || isMe) {
+                                                                    toggleMe(pName);
+                                                                }
+                                                            }}
+                                                            disabled={role !== 'owner' && isTaken && !isMe}
+                                                            style={{ flex: 1, paddingVertical: 8 }}
+                                                        >
+                                                            <Text style={{
+                                                                color: isMe ? 'white' : (isTaken ? '#666' : 'white'),
+                                                                fontSize: 16,
+                                                                fontWeight: isMe ? 'bold' : 'normal',
+                                                                textDecorationLine: isTaken && !isMe ? 'line-through' : 'none'
+                                                            }}>
+                                                                {pName} {isMe ? '(ME)' : (isTaken ? '(TAKEN)' : '')}
+                                                            </Text>
+                                                        </TouchableOpacity>
+                                                    </View>
+
+                                                    {role === 'owner' && (
+                                                        <TouchableOpacity
+                                                            onPress={() => removeParticipantFromModal(index)}
+                                                            style={{ padding: 8 }}
+                                                        >
+                                                            <Trash2 color="#444" size={20} />
+                                                        </TouchableOpacity>
+                                                    )}
+                                                </View>
+                                            );
+                                        })
+                                    )}
+                                </ScrollView>
+
+                                <View style={{ flexDirection: 'row', justifyContent: 'space-between', gap: 10, marginTop: 20 }}>
+                                    <TouchableOpacity
+                                        onPress={() => setShowIdentityModal(false)}
+                                        style={{
+                                            flex: 1,
+                                            padding: 15,
+                                            borderRadius: 12,
+                                            borderWidth: 1,
+                                            borderColor: '#444',
+                                            alignItems: 'center'
+                                        }}
+                                    >
+                                        <Text style={{ color: '#ccc', fontWeight: 'bold' }}>{t('common.cancel')}</Text>
+                                    </TouchableOpacity>
+
+                                    <TouchableOpacity
+                                        onPress={() => setShowIdentityModal(false)}
+                                        style={{
+                                            flex: 1,
+                                            padding: 15,
+                                            borderRadius: 12,
+                                            backgroundColor: Colors.primary,
+                                            alignItems: 'center'
+                                        }}
+                                    >
+                                        <Text style={{ color: 'black', fontWeight: 'bold' }}>{t('common.confirm')}</Text>
+                                    </TouchableOpacity>
+                                </View>
+                            </View>
+                        </View>
+                    </Modal>
 
                     <CyberAlert
                         visible={alertConfig.visible}
@@ -1177,6 +1687,27 @@ export default function NameInputScreen({ route, navigation }) {
                                                         shadowOpacity: 0.5
                                                     }} />
                                                     <Text style={{ color: 'white', fontSize: 16, fontWeight: '500' }}>{user.name || 'Anonymous'}</Text>
+                                                    {user.role === 'owner' && (
+                                                        <View style={{
+                                                            backgroundColor: `${Colors.accent}25`,
+                                                            borderColor: Colors.accent,
+                                                            borderWidth: 1.5,
+                                                            borderRadius: 6,
+                                                            paddingHorizontal: 6,
+                                                            paddingVertical: 1,
+                                                            marginLeft: 8,
+                                                            flexDirection: 'row',
+                                                            alignItems: 'center',
+                                                            shadowColor: Colors.accent,
+                                                            shadowOffset: { width: 0, height: 0 },
+                                                            shadowOpacity: 0.8,
+                                                            shadowRadius: 6,
+                                                            elevation: 3
+                                                        }}>
+                                                            <Crown color={Colors.accent} size={12} fill={`${Colors.accent}33`} style={{ marginRight: 4 }} />
+                                                            <Text style={{ color: Colors.accent, fontSize: 10, fontWeight: '900' }}>HOST</Text>
+                                                        </View>
+                                                    )}
                                                 </View>
                                                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                                                     {userVote ? (

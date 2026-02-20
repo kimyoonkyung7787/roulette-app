@@ -27,6 +27,38 @@
         "meal": "MEAL",
         "snack": "SNACK"
     },
+    "popular_items": {
+        "coffee": [
+            "Americano",
+            "Cafe Latte",
+            "Vanilla Latte",
+            "Cappuccino",
+            "Ade",
+            "Green Tea Latte",
+            "Smoothie",
+            "Espresso"
+        ],
+        "meal": [
+            "Kimchi Stew",
+            "Bulgogi",
+            "Bibimbap",
+            "Tonkatsu",
+            "Ramen",
+            "Pasta",
+            "Sushi",
+            "Fried Rice"
+        ],
+        "snack": [
+            "Tteokbokki",
+            "Fried Chicken",
+            "Pizza",
+            "Sandwich",
+            "Salad",
+            "Hamburger",
+            "Gimbap",
+            "Tacos"
+        ]
+    },
     "welcome": {
         "select_category": "SELECT CATEGORY",
         "choose_role": "CHOOSE ROLE",

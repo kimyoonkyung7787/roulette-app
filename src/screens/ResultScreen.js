@@ -132,72 +132,31 @@ export default function ResultScreen({ route, navigation }) {
         );
     };
 
-    const CyberDecoration = () => {
-        const beatAnim = useRef(new Animated.Value(0)).current;
-
-        useEffect(() => {
-            // Re-check audio on screen load to handle web autoplay restrictions
-            if (!feedbackService.isLoaded) {
-                feedbackService.loadAssets();
-            }
-
-            // No sound in result decoration as per user request
-            // const listenerId = beatAnim.addListener(({ value }) => {
-            //     // Play drum hit at the peak of the beat animation
-            //     if (value > 0.8) {
-            //         feedbackService.playDrum();
-            //     }
-            // });
-
-            const animation = Animated.loop(
-                Animated.sequence([
-                    Animated.timing(beatAnim, { toValue: 1, duration: 150, easing: Easing.out(Easing.back(2)), useNativeDriver: true }),
-                    Animated.timing(beatAnim, { toValue: 0, duration: 400, easing: Easing.inOut(Easing.sin), useNativeDriver: true }),
-                    Animated.delay(300)
-                ])
-            );
-            animation.start();
-
-            return () => {
-                animation.stop();
-            };
-        }, []);
-
-        const scale = beatAnim.interpolate({ inputRange: [0, 1], outputRange: [1, 1.25] });
-        const opacity = beatAnim.interpolate({ inputRange: [0, 1], outputRange: [0.6, 1] });
-
-        return (
-            <View style={{ alignItems: 'center', justifyContent: 'center', marginVertical: 60, width: '100%' }}>
-                <ConfettiExplosion />
-                <Animated.View style={{ transform: [{ scale }], opacity }}>
-                    <View style={{
-                        padding: 15,
-                        borderRadius: 40,
-                        backgroundColor: 'rgba(0, 255, 255, 0.1)',
-                        borderWidth: 2,
-                        borderColor: Colors.primary,
-                        shadowColor: Colors.primary,
-                        shadowOffset: { width: 0, height: 0 },
-                        shadowOpacity: 0.5,
-                        shadowRadius: 15,
-                    }}>
-                        <Drum color={Colors.primary} size={40} />
-                    </View>
-                </Animated.View>
-                <View style={{ flexDirection: 'row', gap: 5, marginTop: 15 }}>
-                    <Sparkle color={Colors.accent} size={12} />
-                    <NeonText style={{ fontSize: 11, letterSpacing: 3, opacity: 0.8 }}>FESTIVAL MODE ACTIVE</NeonText>
-                    <Sparkle color={Colors.accent} size={12} />
-                </View>
-            </View>
-        );
-    };
-
     const [allVoted, setAllVoted] = useState(false);
     const [onlineUsers, setOnlineUsers] = useState([]);
     const [showUsersModal, setShowUsersModal] = useState(false);
     const [showExitConfirm, setShowExitConfirm] = useState(false);
     const hasSavedRef = useRef(false);
+
+    // Animation for Trumpet in offline mode
+    const trumpetBeatAnim = useRef(new Animated.Value(0)).current;
+
+    useEffect(() => {
+        if (mode === 'offline' && allVoted) {
+            const animation = Animated.loop(
+                Animated.sequence([
+                    Animated.timing(trumpetBeatAnim, { toValue: 1, duration: 150, easing: Easing.out(Easing.back(2)), useNativeDriver: true }),
+                    Animated.timing(trumpetBeatAnim, { toValue: 0, duration: 400, easing: Easing.inOut(Easing.sin), useNativeDriver: true }),
+                    Animated.delay(300)
+                ])
+            );
+            animation.start();
+            return () => animation.stop();
+        }
+    }, [mode, allVoted]);
+
+    const trumpetScale = trumpetBeatAnim.interpolate({ inputRange: [0, 1], outputRange: [1, 1.25] });
+    const trumpetOpacity = trumpetBeatAnim.interpolate({ inputRange: [0, 1], outputRange: [0.8, 1] });
 
     useEffect(() => {
         // Check if all participants have voted OR it was forced by owner
@@ -456,29 +415,21 @@ export default function ResultScreen({ route, navigation }) {
                             {mode === 'offline' && (
                                 <View style={styles.offlineCelebration}>
                                     <View style={styles.badgeLine} />
-                                    <View style={{ position: 'relative' }}>
-                                        <Image
+                                    <View style={{ position: 'relative', alignItems: 'center', justifyContent: 'center' }}>
+                                        <ConfettiExplosion />
+                                        <Animated.Image
                                             source={{ uri: 'https://raw.githubusercontent.com/googlefonts/noto-emoji/main/png/128/emoji_u1f3ba.png' }}
-                                            style={[styles.celebrationImage, { width: 60, height: 60 }]}
+                                            style={[
+                                                styles.celebrationImage,
+                                                {
+                                                    width: 60,
+                                                    height: 60,
+                                                    transform: [{ scale: trumpetScale }],
+                                                    opacity: trumpetOpacity
+                                                }
+                                            ]}
                                             resizeMode="contain"
                                         />
-                                        {/* Animated Confetti Bits - Richer rotating/floating effect */}
-                                        <MovingConfetti color="#FFFF00" size={7} top={-15} left={-25} delay={0} />
-                                        <MovingConfetti color="#FF00FF" size={5} top={15} left={-35} delay={200} />
-                                        <MovingConfetti color="#00FF00" size={6} top={45} left={-15} delay={400} />
-                                        <MovingConfetti color="#FFD700" size={5} top={-10} right={-20} delay={100} />
-                                        <MovingConfetti color="#00FFFF" size={7} top={25} right={-30} delay={300} />
-                                        <MovingConfetti color="#FF4500" size={4} bottom={-10} right={-10} delay={500} />
-                                        {/* More particles */}
-                                        <MovingConfetti color="#39FF14" size={5} top={-20} left={10} delay={150} />
-                                        <MovingConfetti color="#FF007F" size={6} top={0} left={-10} delay={350} />
-                                        <MovingConfetti color="#7B68EE" size={4} top={60} right={0} delay={250} />
-                                        <MovingConfetti color="#FFA500" size={6} top={-5} left={30} delay={450} />
-                                        <MovingConfetti color="#FFFFFF" size={4} top={35} left={15} delay={50} />
-                                        <MovingConfetti color="#00FA9A" size={5} bottom={0} left={-25} delay={120} />
-                                        <MovingConfetti color="#FF1493" size={6} top={10} right={10} delay={380} />
-                                        <MovingConfetti color="#ADFF2F" size={4} top={-25} right={25} delay={220} />
-                                        <MovingConfetti color="#00CED1" size={5} top={55} left={-35} delay={480} />
                                     </View>
                                     <Text style={styles.badgeText}>{t('result.winner_shout')}</Text>
                                     <View style={styles.badgeLine} />
@@ -516,24 +467,24 @@ export default function ResultScreen({ route, navigation }) {
                             </Text>
                         </View>
 
-                        <CyberDecoration />
 
 
-                        {role === 'owner' || mode === 'offline' ? (
-                            <View style={styles.footer}>
-                                <TouchableOpacity
-                                    onPress={handleReset}
-                                    activeOpacity={0.7}
-                                    style={styles.retryButton}
-                                >
-                                    <RefreshCw color={Colors.primary} size={24} style={{ marginRight: 10 }} />
-                                    <Text style={styles.retryText}>{t('result.retry').toUpperCase()}</Text>
-                                </TouchableOpacity>
-                            </View>
-                        ) : null}
 
                     </View>
                 </ScrollView>
+
+                {role === 'owner' || mode === 'offline' ? (
+                    <View style={styles.footer}>
+                        <TouchableOpacity
+                            onPress={handleReset}
+                            activeOpacity={0.7}
+                            style={styles.retryButton}
+                        >
+                            <RefreshCw color={Colors.primary} size={24} style={{ marginRight: 10 }} />
+                            <Text style={styles.retryText}>{t('result.retry').toUpperCase()}</Text>
+                        </TouchableOpacity>
+                    </View>
+                ) : null}
 
                 {/* Online Users Modal */}
                 <Modal
@@ -749,11 +700,10 @@ const styles = StyleSheet.create({
     },
     footer: {
         width: '100%',
-        marginTop: 20,
-        flexDirection: 'row',
-        gap: 12,
-        justifyContent: 'center',
-        marginBottom: 30,
+        paddingHorizontal: 24,
+        paddingBottom: 20,
+        paddingTop: 10,
+        backgroundColor: 'transparent',
     },
     retryButton: {
         flex: 1,

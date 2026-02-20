@@ -201,6 +201,17 @@ class SyncService {
         }
     }
 
+    async setMenuByCategory(category, menuItems) {
+        try {
+            await set(ref(db, `${this.roomPath}/menus/${category}`), menuItems);
+            // Also update the active legacy path for backwards compatibility with participants
+            await this.setMenuItems(menuItems);
+            console.log(`SyncService: Menu for ${category} updated (${menuItems.length} items)`);
+        } catch (e) {
+            console.error('Failed to set menu by category:', e);
+        }
+    }
+
     subscribeToMenuItems(callback) {
         return onValue(ref(db, `${this.roomPath}/menu_items`), (snapshot) => {
             const menuItems = snapshot.val() || [];
@@ -226,6 +237,16 @@ class SyncService {
         } catch (e) {
             console.error('SyncService: Failed to get menu items:', e);
             return [];
+        }
+    }
+
+    async getMenuByCategory(category) {
+        try {
+            const snapshot = await get(ref(db, `${this.roomPath}/menus/${category}`));
+            return snapshot.val() || null;
+        } catch (e) {
+            console.error('SyncService: Failed to get menu by category:', e);
+            return null;
         }
     }
 

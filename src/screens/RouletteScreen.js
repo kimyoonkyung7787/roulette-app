@@ -576,7 +576,39 @@ export default function RouletteScreen({ route, navigation }) {
                 const largeArcFlag = angle > 180 ? 1 : 0;
                 const d = `M ${ROULETTE_SIZE / 2} ${ROULETTE_SIZE / 2} L ${x1} ${y1} A ${ROULETTE_SIZE / 2} ${ROULETTE_SIZE / 2} 0 ${largeArcFlag} 1 ${x2} ${y2} Z`;
 
-                // Dynamic Neon Generation using HSL
+                // Define 18 Distinct Rainbow Colors
+                const RAINBOW_COLORS = [
+                    '#FF6B6B', // Red
+                    '#FF4757', // Bright Red
+                    '#FF7F50', // Coral
+                    '#FFA502', // Orange
+                    '#FF9F43', // Light Orange
+                    '#ECCC68', // Golden Yellow
+                    '#F1C40F', // Yellow
+                    '#7BED9F', // Light Green
+                    '#2ECC71', // Green
+                    '#16A085', // Teal
+                    '#1ABC9C', // Turquoise
+                    '#7EFFF5', // Cyan
+                    '#70A1FF', // Light Blue
+                    '#1E90FF', // Dodger Blue
+                    '#5352ED', // Indigo
+                    '#3742FA', // Blue
+                    '#A29BFE', // Light Purple
+                    '#FF6348'  // Salmon/Pinkish
+                ];
+
+                // Calculate Color Index based on equidistance
+                // If 2 items: index 0 and 9 (18/2 = 9)
+                // If 3 items: index 0, 6, 12 (18/3 = 6)
+                const colorIndex = Math.floor((i * RAINBOW_COLORS.length) / currentList.length) % RAINBOW_COLORS.length;
+                const segmentColor = RAINBOW_COLORS[colorIndex];
+
+                // Determine text color based on brightness (simple heuristic or fixed white/black)
+                // For these vibrant colors, white usually looks good, or dark for very light ones.
+                // Let's stick to White for consistency or dynamic if needed.
+                const textColor = '#FFFFFF';
+
                 const totalItems = currentList.length;
                 const totalSegments = totalItems * REPEAT_COUNT;
 
@@ -604,21 +636,9 @@ export default function RouletteScreen({ route, navigation }) {
 
                 // Calculate colors
                 let color, strokeColor;
-                if (mode === 'offline' && p.color) {
-                    // Use the color from OfflineInputScreen
-                    color = hexToRgba(p.color, 0.4);
-                    strokeColor = p.color;
-                } else {
-                    // Dynamic Neon Generation using HSL (Online Mode)
-                    let hue;
-                    if (spinTarget === 'people') {
-                        hue = (180 + (i * (140 / Math.max(1, totalItems - 1)))) % 360;
-                    } else {
-                        hue = (330 + (i * (200 / Math.max(1, totalItems - 1)))) % 360;
-                    }
-                    color = `hsla(${hue}, 80%, 15%, 0.9)`;
-                    strokeColor = `hsl(${hue}, 100%, 70%)`;
-                }
+                // Use the calculated vibrant rainbow color
+                color = segmentColor;
+                strokeColor = segmentColor; // Using the same color for stroke as per instruction 3.
 
                 // Adjust font size for 1:1 mode
                 if (REPEAT_COUNT === 1) {
@@ -826,23 +846,7 @@ export default function RouletteScreen({ route, navigation }) {
                                     <ListChecks color={Colors.success} size={24} />
                                 </TouchableOpacity>
                             )}
-                            {['meal', 'coffee', 'snack'].includes(category) && spinTarget === 'menu' && (
-                                <TouchableOpacity
-                                    onPress={async () => {
-                                        await syncService.removeMyVote();
-                                        navigation.navigate('NameInput', {
-                                            roomId,
-                                            role,
-                                            category,
-                                            resetSelection: true,
-                                            initialTab: spinTarget
-                                        });
-                                    }}
-                                    style={{ padding: 4 }}
-                                >
-                                    <UserPlus color={Colors.accent} size={24} />
-                                </TouchableOpacity>
-                            )}
+
                             <TouchableOpacity
                                 onPress={handleExit}
                                 disabled={spinning}
