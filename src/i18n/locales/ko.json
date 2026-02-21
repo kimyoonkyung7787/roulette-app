@@ -28,7 +28,7 @@
         "re_pick": "다시 뽑기",
         "no_vote": "미투표",
         "invite_title": "🎮 룰렛 게임 초대",
-        "invite_message": "✨ {{name}}님이 룰렛 게임에 초대했습니다.\n\n🆔 방번호 : {{roomId}}\n\n🚀 링크를 클릭해서 바로 참여하세요!!!",
+        "invite_message": "🎮 Roulette Game Invite -\n{{name}}님이 룰렛 게임에 초대했습니다.\n\n🆔 방번호 : {{roomId}}\n\n🚀 링크를 클릭해서 바로 참여하세요!!!",
         "link_copied": "초대 링크가 복사되었습니다!"
     },
     "categories": {

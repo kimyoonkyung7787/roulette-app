@@ -28,7 +28,7 @@
         "re_pick": "RE PICK",
         "no_vote": "NO VOTE",
         "invite_title": "🎮 Roulette Game Invite",
-        "invite_message": "✨ {{name}} has invited you to a game.\n\n🆔 Room ID : {{roomId}}\n\n🚀 Click the link to join now!!!",
+        "invite_message": "🎮 Roulette Game Invite -\n{{name}} has invited you to a game.\n\n🆔 Room ID : {{roomId}}\n\n🚀 Click the link to join now!!!",
         "link_copied": "Invite link copied to clipboard!"
     },
     "categories": {
