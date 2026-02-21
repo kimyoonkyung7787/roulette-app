@@ -41,34 +41,32 @@ export default function App() {
     getStateFromPath: (path, config) => {
       const state = getStateFromPath(path, config);
 
-      // If we have a roomId in the path, inject it into the Welcome route params
-      if (path.includes('roomId')) {
-        // Handle various URL formats (full URL or just path)
-        let searchParams;
-        try {
-          if (path.includes('?')) {
-            const queryString = path.split('?')[1];
-            searchParams = new URLSearchParams(queryString);
-          } else {
-            // Basic check for roomId= in the path itself if it's not a standard query string
-            const match = path.match(/roomId=([^&]+)/);
-            if (match) {
-              const roomId = match[1];
-              injectRoomId(state, roomId);
-              return state;
-            }
-          }
-        } catch (e) {
-          console.error('App: Failed to parse path for roomId', e);
+      // Extract roomId from query parameters or path
+      let roomId = null;
+      try {
+        if (path.includes('roomId=')) {
+          const match = path.match(/roomId=([^&]+)/);
+          if (match) roomId = match[1];
         }
+      } catch (e) {
+        console.error('App: Failed to parse roomId from path', e);
+      }
 
-        if (searchParams) {
-          const roomId = searchParams.get('roomId');
-          if (roomId) {
-            injectRoomId(state, roomId);
-          }
+      if (roomId && state && state.routes) {
+        // If we land on Entry Screen with a roomId, redirect them to Welcome
+        const hasWelcome = state.routes.some(r => r.name === 'Welcome');
+        if (!hasWelcome) {
+          state.routes.push({
+            name: 'Welcome',
+            params: { mode: 'online', roomId }
+          });
+        } else {
+          // If Welcome is already there, just inject the roomId
+          const welcomeRoute = state.routes.find(r => r.name === 'Welcome');
+          welcomeRoute.params = { ...welcomeRoute.params, roomId };
         }
       }
+
       return state;
     }
   };
