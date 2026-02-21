@@ -52,6 +52,10 @@ export default function RouletteScreen({ route, navigation }) {
     const [remoteSpinState, setRemoteSpinState] = useState(null);
     const [votes, setVotes] = useState([]);
     const isNavigating = useRef(false);
+    const prevVotesRef = useRef([]);
+    const isInitialVoteLoad = useRef(true);
+    const autoCloseTimer = useRef(null);
+    const spinningRef = useRef(false);
     const [roomHostName, setRoomHostName] = useState(route.params?.hostName);
     const isFocused = useIsFocused();
     const lastTickIndex = useSharedValue(-1);
@@ -154,6 +158,37 @@ export default function RouletteScreen({ route, navigation }) {
 
             // Subscribe to votes
             unsubVotes = syncService.subscribeToVotes(vts => {
+                // Skip the very first callback (initial load)
+                if (isInitialVoteLoad.current) {
+                    isInitialVoteLoad.current = false;
+                    prevVotesRef.current = vts;
+                    setVotes(vts);
+                    return;
+                }
+
+                const prevVotes = prevVotesRef.current;
+                const newCount = vts.length;
+                const prevCount = prevVotes.length;
+
+                // Auto-show participant status modal when vote count increases
+                if (newCount > prevCount) {
+                    // Check if it was MY vote that just got added
+                    const hadMyVote = prevVotes.some(v => v.userId === syncService.myId);
+                    const hasMyVoteNow = vts.some(v => v.userId === syncService.myId);
+                    const isMyNewVote = !hadMyVote && hasMyVoteNow;
+
+                    if (!isMyNewVote && !spinningRef.current) {
+                        // Clear any existing timer
+                        if (autoCloseTimer.current) clearTimeout(autoCloseTimer.current);
+                        setShowUsersModal(true);
+                        autoCloseTimer.current = setTimeout(() => {
+                            setShowUsersModal(false);
+                            autoCloseTimer.current = null;
+                        }, 5000);
+                    }
+                }
+
+                prevVotesRef.current = vts;
                 setVotes(vts);
             });
 
@@ -202,6 +237,7 @@ export default function RouletteScreen({ route, navigation }) {
             if (unsubParticipants) unsubParticipants();
             if (unsubHostName) unsubHostName();
             if (unsubMenuItems) unsubMenuItems();
+            if (autoCloseTimer.current) clearTimeout(autoCloseTimer.current);
         };
     }, []);
 
@@ -831,7 +867,14 @@ export default function RouletteScreen({ route, navigation }) {
 
                         <View style={{ flexDirection: 'row', gap: 10, alignItems: 'center' }}>
                             {mode !== 'offline' && (
-                                <TouchableOpacity onPress={() => setShowUsersModal(true)} style={{ padding: 4 }}>
+                                <TouchableOpacity onPress={() => {
+                                    // Cancel auto-close timer when manually opened
+                                    if (autoCloseTimer.current) {
+                                        clearTimeout(autoCloseTimer.current);
+                                        autoCloseTimer.current = null;
+                                    }
+                                    setShowUsersModal(true);
+                                }} style={{ padding: 4 }}>
                                     <ListChecks color={Colors.success} size={24} />
                                 </TouchableOpacity>
                             )}
@@ -907,6 +950,17 @@ export default function RouletteScreen({ route, navigation }) {
                     <View style={styles.footer}>
                         {(votedItem && !spinning) ? (
                             <>
+                                {/* WAITING button */}
+                                <TouchableOpacity
+                                    disabled={true}
+                                    activeOpacity={1}
+                                    style={[styles.reselectButton, { opacity: 0.4, marginBottom: 18 }]}
+                                >
+                                    <RotateCw color={Colors.primary} size={20} strokeWidth={2.5} style={{ marginRight: 8 }} />
+                                    <Text style={styles.reselectText}>{getButtonText().toUpperCase()}</Text>
+                                </TouchableOpacity>
+
+                                {/* RE PICK button */}
                                 <TouchableOpacity
                                     onPress={async () => {
                                         const expectedVoterCount = Math.max(participantsState.length, onlineUsers.length);
@@ -924,10 +978,10 @@ export default function RouletteScreen({ route, navigation }) {
                                         });
                                     }}
                                     activeOpacity={0.8}
-                                    style={[styles.reselectButton, { marginBottom: 18 }]}
+                                    style={[styles.reselectButton, { marginBottom: role === 'owner' ? 18 : 0 }]}
                                 >
                                     <HandMetal color={Colors.primary} size={20} strokeWidth={2.5} style={{ marginRight: 8 }} />
-                                    <Text style={styles.reselectText}>RE PICK</Text>
+                                    <Text style={styles.reselectText}>{t('common.re_pick').toUpperCase()}</Text>
                                 </TouchableOpacity>
 
                                 {role === 'owner' && (
@@ -951,7 +1005,7 @@ export default function RouletteScreen({ route, navigation }) {
                                         style={[
                                             styles.spinButton,
                                             (spinning || votes.find(v => v.userId === syncService.myId)) && styles.disabledButton,
-                                            { marginBottom: role === 'owner' && votes.length > 0 ? 18 : 0 }
+                                            { marginBottom: (votes.find(v => v.userId === syncService.myId) && !spinning) || (role === 'owner' && votes.length > 0) ? 18 : 0 }
                                         ]}
                                     >
                                         <RotateCw color={spinning || votes.find(v => v.userId === syncService.myId) ? Colors.textSecondary : Colors.primary} size={24} style={{ marginRight: 12 }} />
@@ -959,6 +1013,32 @@ export default function RouletteScreen({ route, navigation }) {
                                             {getButtonText()}
                                         </NeonText>
                                     </TouchableOpacity>
+
+                                    {/* RE PICK button - shown when user has voted but votedItem not set */}
+                                    {votes.find(v => v.userId === syncService.myId) && !spinning && (
+                                        <TouchableOpacity
+                                            onPress={async () => {
+                                                const expectedVoterCount = Math.max(participantsState.length, onlineUsers.length);
+                                                const roomData = await syncService.getRoomData(roomId);
+                                                if (roomData?.final_results || (votes.length >= expectedVoterCount && expectedVoterCount > 0)) {
+                                                    Alert.alert(t('common.alert'), t('roulette.voting_already_finished'));
+                                                    return;
+                                                }
+                                                try { feedbackService.playClick(); } catch (e) { }
+                                                await syncService.removeMyVote();
+                                                navigation.navigate('NameInput', {
+                                                    roomId, role, category,
+                                                    resetSelection: true,
+                                                    initialTab: spinTarget
+                                                });
+                                            }}
+                                            activeOpacity={0.8}
+                                            style={[styles.reselectButton, { marginBottom: role === 'owner' && votes.length > 0 ? 18 : 0 }]}
+                                        >
+                                            <HandMetal color={Colors.primary} size={20} strokeWidth={2.5} style={{ marginRight: 8 }} />
+                                            <Text style={styles.reselectText}>{t('common.re_pick').toUpperCase()}</Text>
+                                        </TouchableOpacity>
+                                    )}
 
                                     {role === 'owner' && votes.length > 0 && votes.length < Math.max(participantsState.length, onlineUsers.length) && (
                                         <TouchableOpacity
@@ -1085,10 +1165,10 @@ export default function RouletteScreen({ route, navigation }) {
                                             <User size={14} color="#666" style={{ marginRight: 10 }} />
                                             <Text style={{ color: '#666', fontSize: 14 }}>{user.name || 'Anonymous'}</Text>
                                             <View style={{ marginLeft: 8, backgroundColor: '#333', paddingHorizontal: 5, borderRadius: 4 }}>
-                                                <Text style={{ color: '#999', fontSize: 9 }}>NOT IN LIST</Text>
+                                                <Text style={{ color: '#999', fontSize: 9 }}>{t('common.not_in_list').toUpperCase()}</Text>
                                             </View>
                                         </View>
-                                        <Text style={{ color: '#444', fontSize: 11 }}>GUEST</Text>
+                                        <Text style={{ color: '#444', fontSize: 11 }}>{t('common.guest').toUpperCase()}</Text>
                                     </View>
                                 ))}
 

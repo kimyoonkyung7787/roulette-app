@@ -47,6 +47,8 @@ export default function NameInputScreen({ route, navigation }) {
     const [editingParticipantName, setEditingParticipantName] = useState('');
     const [modalFocusedIndex, setModalFocusedIndex] = useState(null);
     const [pendingSelectedName, setPendingSelectedName] = useState(null);
+    const [backupParticipants, setBackupParticipants] = useState(null);
+    const [backupMySelectedName, setBackupMySelectedName] = useState(null);
     const participantRefs = useRef([]);
 
     const startEditingParticipant = (index, currentName) => {
@@ -79,7 +81,7 @@ export default function NameInputScreen({ route, navigation }) {
         }
 
         setParticipants(updated);
-        if (role === 'owner') await syncService.setParticipants(updated);
+        // Firebase sync deferred to modal confirm
         setEditingParticipantIndex(null);
         setEditingParticipantName('');
     };
@@ -128,14 +130,15 @@ export default function NameInputScreen({ route, navigation }) {
                     let savedParticipants = [];
                     if (existingParticipants && existingParticipants.length > 0) {
                         savedParticipants = existingParticipants;
-                    } else {
-                        savedParticipants = await participantService.getParticipants();
                     }
 
                     // Standardize and filter out completely empty entries if they somehow exist
                     let sanitizedParticipants = savedParticipants.filter(p => {
                         const n = typeof p === 'object' ? (p.name || p.text || '') : String(p);
                         return n.trim() !== '';
+                    }).map(p => {
+                        const name = typeof p === 'object' ? (p.name || p.text || '') : String(p);
+                        return { name: name.trim(), weight: 1 };
                     });
 
                     // Default to at least 2 participants if empty or all was blank
@@ -304,6 +307,11 @@ export default function NameInputScreen({ route, navigation }) {
     // Effect to identify the first available participant when the identity modal opens
     useEffect(() => {
         if (showIdentityModal) {
+            // Backup current state for cancel restoration
+            if (backupParticipants === null) {
+                setBackupParticipants(JSON.parse(JSON.stringify(participants)));
+                setBackupMySelectedName(mySelectedName);
+            }
             setPendingSelectedName(mySelectedName);
             // Guard: Wait for host to avoid focusing on host's slot during sync delay
             // This prevents the participant from auto-focusing on the host's name (usually index 0)
@@ -498,8 +506,8 @@ export default function NameInputScreen({ route, navigation }) {
     // Handle data restoration from history
     useEffect(() => {
         if (route.params?.restoredData && role === 'owner') {
-            const { type, list } = route.params.restoredData;
-            console.log(`NameInputScreen: Restoring ${type} from history...`);
+            const { type, list, participants: restoredParticipants } = route.params.restoredData;
+            console.log(`NameInputScreen: Restoring ${type} from history... (current mode: ${mode})`);
 
             if (type === 'people') {
                 // Normalize list: handle both {name} and {text} formats from history
@@ -509,15 +517,24 @@ export default function NameInputScreen({ route, navigation }) {
                 });
                 setParticipants(normalizedList);
                 syncService.setParticipants(normalizedList);
-                setActiveTab('people');
+                // Don't force tab switch - stay on current tab
+                // This allows "뭐 먹지?" mode to import participants from "누가 쏠까?" history
             } else {
+                // Restore menu items
                 const normalizedList = list.map(m => {
                     const itemName = typeof m === 'object' ? (m.name || m.text || m) : m;
                     return { name: itemName };
                 });
                 setMenuItems(normalizedList);
                 syncService.setMenuItems(normalizedList);
-                setActiveTab('menu');
+
+                // Also restore participants from the voting details (if available)
+                if (restoredParticipants && restoredParticipants.length > 0) {
+                    console.log(`NameInputScreen: Also restoring ${restoredParticipants.length} participants from menu history`);
+                    setParticipants(restoredParticipants);
+                    syncService.setParticipants(restoredParticipants);
+                }
+                // Don't force tab switch - stay on current tab
             }
 
             // Clear the param so it doesn't trigger again on re-focus
@@ -585,14 +602,13 @@ export default function NameInputScreen({ route, navigation }) {
     };
 
     // Dedicated function for Modal to ensure it always adds to PEOPLE list regardless of activeTab
-    const addParticipantFromModal = async () => {
+    const addParticipantFromModal = () => {
         const trimmedName = name.trim();
         if (!trimmedName) return;
 
-        // Force add to participants list
+        // Force add to participants list (local only, sync deferred to confirm)
         const updated = [...participants, { name: trimmedName, weight: 1 }];
         setParticipants(updated);
-        if (role === 'owner') await syncService.setParticipants(updated);
 
         setName('');
     };
@@ -612,14 +628,13 @@ export default function NameInputScreen({ route, navigation }) {
         }
     };
 
-    // Dedicated removal for Modal
-    const removeParticipantFromModal = async (index) => {
+    // Dedicated removal for Modal (local only, sync deferred to confirm)
+    const removeParticipantFromModal = (index) => {
         const removedItem = participants[index];
         if (removedItem && removedItem.name === mySelectedName) setMySelectedName(null);
 
         const updated = participants.filter((_, i) => i !== index);
         setParticipants(updated);
-        if (role === 'owner') await syncService.setParticipants(updated);
     };
 
     const startEditing = (index) => {
@@ -954,14 +969,66 @@ export default function NameInputScreen({ route, navigation }) {
 
     const handleShare = async () => {
         try {
-            const inviteUrl = `https://roulette-app.vercel.app/?roomId=${roomId}`;
-            const message = `[돌림판 게임 초대] 🎮\n\n${mySelectedName || 'Host'}님이 돌림판 게임에 초대했습니다!\n\n방 번호: ${roomId.toUpperCase()}\n\n아래 링크를 클릭해서 바로 참여하세요!\n${inviteUrl}`;
-
-            await Share.share({
-                message,
-                url: inviteUrl, // iOS supports this
-                title: '돌림판 게임 초대'
+            const inviteUrl = `https://roulette-app-two.vercel.app/?roomId=${roomId}`;
+            const displayName = mySelectedName || 'Host';
+            const message = t('common.invite_message', {
+                name: displayName,
+                roomId: roomId.toUpperCase(),
+                url: inviteUrl
             });
+            const title = t('common.invite_title');
+
+            // Try Web Share API (modern browsers, especially mobile)
+            if (Platform.OS === 'web' && navigator.share) {
+                try {
+                    // Try sharing with image file
+                    const imageUrl = '/roulette_game.png';
+                    const response = await fetch(imageUrl);
+                    const blob = await response.blob();
+                    const file = new File([blob], 'roulette_invite.png', { type: 'image/png' });
+
+                    if (navigator.canShare && navigator.canShare({ files: [file] })) {
+                        // Share with image (mobile browsers)
+                        await navigator.share({
+                            title,
+                            text: message,
+                            files: [file]
+                        });
+                        return;
+                    }
+                } catch (imgErr) {
+                    console.log('Image share not supported, falling back to text share');
+                }
+
+                // Fallback: text-only web share
+                try {
+                    await navigator.share({
+                        title,
+                        text: message,
+                        url: inviteUrl
+                    });
+                    return;
+                } catch (shareErr) {
+                    if (shareErr.name === 'AbortError') return; // User cancelled
+                    console.log('Web share failed, falling back to clipboard');
+                }
+            }
+
+            // Native Share (React Native / Expo)
+            if (Platform.OS !== 'web') {
+                await Share.share({
+                    message,
+                    url: inviteUrl,
+                    title
+                });
+                return;
+            }
+
+            // Final fallback: copy to clipboard
+            if (navigator.clipboard) {
+                await navigator.clipboard.writeText(message);
+                Alert.alert(t('common.info'), t('common.link_copied'));
+            }
         } catch (error) {
             console.error('Error sharing:', error);
         }
@@ -1001,7 +1068,7 @@ export default function NameInputScreen({ route, navigation }) {
                             <TouchableOpacity onPress={() => setShowUsersModal(true)} style={{ padding: 4 }}>
                                 <ListChecks color={Colors.success} size={24} />
                             </TouchableOpacity>
-                            <TouchableOpacity onPress={() => navigation.navigate('History', { role, roomId, mode, category: activeCategory })} style={{ padding: 4 }}>
+                            <TouchableOpacity onPress={() => navigation.navigate('History', { role, roomId, mode, category: activeCategory, activeTab })} style={{ padding: 4 }}>
                                 <History color={Colors.primary} size={24} />
                             </TouchableOpacity>
                             <TouchableOpacity
@@ -1033,11 +1100,11 @@ export default function NameInputScreen({ route, navigation }) {
                                     elevation: 3
                                 }}>
                                     <Crown color={Colors.accent} size={12} fill={`${Colors.accent}33`} style={{ marginRight: 4 }} />
-                                    <Text style={{ color: Colors.accent, fontSize: 10, fontWeight: '900' }}>HOST</Text>
+                                    <Text style={{ color: Colors.accent, fontSize: 10, fontWeight: '900' }}>{t('common.host').toUpperCase()}</Text>
                                 </View>
                             ) : (
                                 <View style={{ backgroundColor: 'rgba(255,255,255,0.05)', paddingHorizontal: 8, paddingVertical: 2, borderRadius: 4, borderWidth: 1, borderColor: 'rgba(255,255,255,0.4)', marginRight: 10 }}>
-                                    <Text style={{ color: Colors.textSecondary, fontSize: 10, fontWeight: 'bold' }}>PARTICIPANT</Text>
+                                    <Text style={{ color: Colors.textSecondary, fontSize: 10, fontWeight: 'bold' }}>{t('common.participant').toUpperCase()}</Text>
                                 </View>
                             )}
 
@@ -1379,100 +1446,111 @@ export default function NameInputScreen({ route, navigation }) {
                     {/* Bottom Action Button */}
                     <View style={{ paddingTop: 0 }}>
                         {activeTab === 'menu' ? (
-                            <View style={{ flexDirection: 'row', gap: 10 }}>
-                                <TouchableOpacity
-                                    onPress={handleDirectPick}
-                                    style={{
-                                        flex: 1,
-                                        backgroundColor: 'transparent',
-                                        paddingVertical: 14,
-                                        borderRadius: 16,
-                                        flexDirection: 'row',
-                                        alignItems: 'center',
-                                        justifyContent: 'center',
-                                        borderWidth: 1.5,
-                                        borderColor: activeMenuColor
-                                    }}
-                                >
-                                    <CheckCircle2 color={activeMenuColor} size={20} strokeWidth={2.5} />
-                                    <Text style={{
-                                        color: activeMenuColor,
-                                        fontSize: 16,
-                                        fontWeight: '900',
-                                        letterSpacing: 1,
-                                        marginLeft: 6
-                                    }}>{t('name_input.pick_now')}</Text>
-                                </TouchableOpacity>
+                            <View style={{ alignItems: 'center' }}>
+                                {selectedMenuIndex !== null ? (
+                                    <>
+                                        {/* Item selected → Main "Go with this" button */}
+                                        <TouchableOpacity
+                                            onPress={handleDirectPick}
+                                            style={{
+                                                width: '100%',
+                                                backgroundColor: `${activeMenuColor}15`,
+                                                paddingVertical: 16,
+                                                borderRadius: 16,
+                                                flexDirection: 'row',
+                                                alignItems: 'center',
+                                                justifyContent: 'center',
+                                                borderWidth: 1.5,
+                                                borderColor: activeMenuColor
+                                            }}
+                                        >
+                                            <CheckCircle2 color={activeMenuColor} size={22} strokeWidth={2.5} />
+                                            <Text style={{
+                                                color: activeMenuColor,
+                                                fontSize: 18,
+                                                fontWeight: '900',
+                                                letterSpacing: 1,
+                                                marginLeft: 8
+                                            }}>{t('name_input.go_with_this').toUpperCase()}</Text>
+                                        </TouchableOpacity>
 
-                                <TouchableOpacity
-                                    onPress={() => {
-                                        if (checkIdentityBeforeAction()) {
-                                            startRoulette('menu');
-                                        }
-                                    }}
-                                    style={{
-                                        flex: 1,
-                                        backgroundColor: 'transparent',
-                                        paddingVertical: 14,
-                                        borderRadius: 16,
-                                        flexDirection: 'row',
-                                        alignItems: 'center',
-                                        justifyContent: 'center',
-                                        borderWidth: 1.5,
-                                        borderColor: activeMenuColor
-                                    }}
-                                >
-                                    <RotateCw color={activeMenuColor} size={20} />
-                                    <Text style={{
-                                        color: activeMenuColor,
-                                        fontSize: 16,
-                                        fontWeight: '900',
-                                        letterSpacing: 1,
-                                        marginLeft: 6
-                                    }}>{t('name_input.what')}</Text>
-                                </TouchableOpacity>
+                                        {/* Secondary text link: "or spin the roulette" */}
+                                        <TouchableOpacity
+                                            onPress={() => {
+                                                setSelectedMenuIndex(null);
+                                                if (checkIdentityBeforeAction()) {
+                                                    startRoulette('menu');
+                                                }
+                                            }}
+                                            style={{ marginTop: 12, paddingVertical: 6, paddingHorizontal: 16 }}
+                                        >
+                                            <Text style={{
+                                                color: 'rgba(255,255,255,0.4)',
+                                                fontSize: 13,
+                                                fontWeight: '500',
+                                                textDecorationLine: 'underline'
+                                            }}>
+                                                🎲 {t('name_input.or_spin')}
+                                            </Text>
+                                        </TouchableOpacity>
+                                    </>
+                                ) : (
+                                    /* No item selected → Spin button only */
+                                    <TouchableOpacity
+                                        onPress={() => {
+                                            if (checkIdentityBeforeAction()) {
+                                                startRoulette('menu');
+                                            }
+                                        }}
+                                        style={{
+                                            width: '100%',
+                                            backgroundColor: 'transparent',
+                                            paddingVertical: 16,
+                                            borderRadius: 16,
+                                            flexDirection: 'row',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            borderWidth: 1.5,
+                                            borderColor: activeMenuColor
+                                        }}
+                                    >
+                                        <RotateCw color={activeMenuColor} size={22} />
+                                        <Text style={{
+                                            color: activeMenuColor,
+                                            fontSize: 18,
+                                            fontWeight: '900',
+                                            letterSpacing: 2,
+                                            marginLeft: 8
+                                        }}>{t('name_input.what').toUpperCase()}</Text>
+                                    </TouchableOpacity>
+                                )}
                             </View>
                         ) : (
                             <TouchableOpacity
                                 onPress={() => {
                                     if (checkIdentityBeforeAction()) {
-                                        activeTab === 'menu' ? handleDirectPick() : startRoulette(activeTab);
+                                        startRoulette(activeTab);
                                     }
                                 }}
                                 style={{
                                     backgroundColor: 'transparent',
-                                    paddingVertical: 14,
+                                    paddingVertical: 16,
                                     borderRadius: 16,
                                     flexDirection: 'row',
                                     alignItems: 'center',
                                     justifyContent: 'center',
                                     borderWidth: 1.5,
-                                    borderColor: activeTab === 'people' ? Colors.primary : activeMenuColor
+                                    borderColor: Colors.primary
                                 }}
                             >
-                                {activeTab === 'people' ? (
-                                    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                                        <RotateCw color={Colors.primary} size={24} />
-                                        <Text style={{
-                                            color: Colors.primary,
-                                            fontSize: 20,
-                                            fontWeight: '900',
-                                            letterSpacing: 2,
-                                            marginLeft: 8
-                                        }}>{t('name_input.what')}</Text>
-                                    </View>
-                                ) : (
-                                    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                                        <CheckCircle2 color={activeMenuColor} size={24} strokeWidth={2.5} />
-                                        <Text style={{
-                                            color: activeMenuColor,
-                                            fontSize: 20,
-                                            fontWeight: '900',
-                                            letterSpacing: 2,
-                                            marginLeft: 8
-                                        }}>{t('name_input.vote')}</Text>
-                                    </View>
-                                )}
+                                <RotateCw color={Colors.primary} size={24} />
+                                <Text style={{
+                                    color: Colors.primary,
+                                    fontSize: 20,
+                                    fontWeight: '900',
+                                    letterSpacing: 2,
+                                    marginLeft: 8
+                                }}>{t('name_input.what').toUpperCase()}</Text>
                             </TouchableOpacity>
                         )}
                     </View>
@@ -1522,7 +1600,7 @@ export default function NameInputScreen({ route, navigation }) {
                                             elevation: 3
                                         }}>
                                             <Crown color={Colors.accent} size={12} fill={`${Colors.accent}33`} style={{ marginRight: 4 }} />
-                                            <Text style={{ color: Colors.accent, fontSize: 10, fontWeight: '900' }}>HOST</Text>
+                                            <Text style={{ color: Colors.accent, fontSize: 10, fontWeight: '900' }}>{t('common.host').toUpperCase()}</Text>
                                         </View>
                                     ) : (
                                         <View style={{
@@ -1535,10 +1613,10 @@ export default function NameInputScreen({ route, navigation }) {
                                             borderWidth: 1,
                                             borderColor: '#444'
                                         }}>
-                                            <Text style={{ color: '#888', fontSize: 10, fontWeight: 'bold' }}>PARTICIPANT</Text>
+                                            <Text style={{ color: '#888', fontSize: 10, fontWeight: 'bold' }}>{t('common.participant').toUpperCase()}</Text>
                                         </View>
                                     )}
-                                    <NeonText style={{ fontSize: 24, color: Colors.primary }}>PARTICIPANTS</NeonText>
+                                    <NeonText style={{ fontSize: 24, color: Colors.primary }}>{t('name_input.participants').toUpperCase()}</NeonText>
                                     <View style={{ height: 2, width: 40, backgroundColor: Colors.primary, marginTop: 5, shadowColor: Colors.primary, shadowOpacity: 1, shadowRadius: 8 }} />
                                 </View>
 
@@ -1660,7 +1738,7 @@ export default function NameInputScreen({ route, navigation }) {
                                                         marginBottom: 4,
                                                         backgroundColor: '#0a0a0a',
                                                         borderWidth: 1,
-                                                        borderColor: isPendingMe ? Colors.primary : (index === modalFocusedIndex ? 'rgba(255, 255, 255, 0.4)' : '#222'),
+                                                        borderColor: isPendingMe ? Colors.primary : ((!isTaken || isMe) ? 'rgba(255, 255, 255, 0.4)' : '#222'),
                                                         borderStyle: 'solid',
                                                     }}
                                                 >
@@ -1739,7 +1817,16 @@ export default function NameInputScreen({ route, navigation }) {
 
                                 <View style={{ flexDirection: 'row', justifyContent: 'space-between', gap: 10, marginTop: 20 }}>
                                     <TouchableOpacity
-                                        onPress={() => setShowIdentityModal(false)}
+                                        onPress={() => {
+                                            // Cancel: restore backup
+                                            if (backupParticipants !== null) {
+                                                setParticipants(backupParticipants);
+                                                setMySelectedName(backupMySelectedName);
+                                                setBackupParticipants(null);
+                                                setBackupMySelectedName(null);
+                                            }
+                                            setShowIdentityModal(false);
+                                        }}
                                         style={{
                                             flex: 1,
                                             padding: 15,
@@ -1753,10 +1840,16 @@ export default function NameInputScreen({ route, navigation }) {
                                     </TouchableOpacity>
 
                                     <TouchableOpacity
-                                        onPress={() => {
+                                        onPress={async () => {
                                             if (pendingSelectedName !== mySelectedName) {
                                                 toggleMe(pendingSelectedName);
                                             }
+                                            // Confirm: sync changes to Firebase
+                                            if (role === 'owner') {
+                                                await syncService.setParticipants(participants);
+                                            }
+                                            setBackupParticipants(null);
+                                            setBackupMySelectedName(null);
                                             setShowIdentityModal(false);
                                         }}
                                         style={{
@@ -1851,6 +1944,7 @@ export default function NameInputScreen({ route, navigation }) {
                                                     }} />
                                                     <Text style={{ color: onlineUser ? 'white' : 'rgba(255,255,255,0.3)', fontSize: 16, fontWeight: '500' }}>
                                                         {pName} {isMe ? <Text style={{ fontSize: 11, color: Colors.primary }}> {t('common.me')}</Text> : ''}
+                                                        {onlineUser && !isMe && <Text style={{ color: Colors.textSecondary, fontSize: 11 }}> ({t('name_input.selected').toUpperCase()})</Text>}
                                                     </Text>
                                                     {(pName === hostName || onlineUser?.role === 'owner') && (
                                                         <View style={{
@@ -1906,10 +2000,10 @@ export default function NameInputScreen({ route, navigation }) {
                                                     <User size={14} color="#666" style={{ marginRight: 10 }} />
                                                     <Text style={{ color: '#666', fontSize: 14 }}>{user.name || 'Anonymous'}</Text>
                                                     <View style={{ marginLeft: 8, backgroundColor: '#333', paddingHorizontal: 5, borderRadius: 4 }}>
-                                                        <Text style={{ color: '#999', fontSize: 9 }}>NOT IN LIST</Text>
+                                                        <Text style={{ color: '#999', fontSize: 9 }}>{t('common.not_in_list').toUpperCase()}</Text>
                                                     </View>
                                                 </View>
-                                                <Text style={{ color: '#444', fontSize: 11 }}>GUEST</Text>
+                                                <Text style={{ color: '#444', fontSize: 11 }}>{t('common.guest').toUpperCase()}</Text>
                                             </View>
                                         );
                                     })}

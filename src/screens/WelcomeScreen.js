@@ -234,27 +234,34 @@ export default function WelcomeScreen({ route, navigation }) {
                                     {/* Inline Host Options */}
                                     {selectedRole === 'owner' && (
                                         <View style={styles.hostOptionsContainer}>
-                                            <NeonText className="text-sm mb-3 pl-2" style={{ color: 'white', fontWeight: 'bold' }}>
-                                                {t('entry.select_mode')}
-                                            </NeonText>
-                                            <View style={styles.hostButtonsRow}>
+                                            <View style={{ gap: 10 }}>
                                                 <TouchableOpacity
-                                                    style={[styles.hostOptionBtn, { backgroundColor: Colors.primary, borderColor: Colors.primary }]}
+                                                    style={[styles.hostOptionBtn, { backgroundColor: Colors.primary, borderColor: Colors.primary, flexDirection: 'column', alignItems: 'flex-start', paddingVertical: 14, paddingHorizontal: 18 }]}
                                                     onPress={() => handleHostStart('people')}
                                                 >
-                                                    <Users size={24} color="black" />
-                                                    <Text style={[styles.hostOptionText, { color: 'black' }]}>
-                                                        PEOPLE
+                                                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                                                        <Text style={{ fontSize: 20 }}>🎯</Text>
+                                                        <Text style={[styles.hostOptionText, { color: 'black', fontSize: 16 }]}>
+                                                            {t('welcome.who_pays')}
+                                                        </Text>
+                                                    </View>
+                                                    <Text style={{ color: 'rgba(0,0,0,0.55)', fontSize: 12, marginTop: 4, marginLeft: 32 }}>
+                                                        {t('welcome.who_pays_desc')}
                                                     </Text>
                                                 </TouchableOpacity>
 
                                                 <TouchableOpacity
-                                                    style={[styles.hostOptionBtn, { backgroundColor: Colors.primary, borderColor: Colors.primary }]}
+                                                    style={[styles.hostOptionBtn, { backgroundColor: Colors.primary, borderColor: Colors.primary, flexDirection: 'column', alignItems: 'flex-start', paddingVertical: 14, paddingHorizontal: 18 }]}
                                                     onPress={() => handleHostStart('menu')}
                                                 >
-                                                    <Utensils size={24} color="black" />
-                                                    <Text style={[styles.hostOptionText, { color: 'black' }]}>
-                                                        MENU
+                                                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                                                        <Text style={{ fontSize: 20 }}>🍔</Text>
+                                                        <Text style={[styles.hostOptionText, { color: 'black', fontSize: 16 }]}>
+                                                            {t('welcome.what_to_eat')}
+                                                        </Text>
+                                                    </View>
+                                                    <Text style={{ color: 'rgba(0,0,0,0.55)', fontSize: 12, marginTop: 4, marginLeft: 32 }}>
+                                                        {t('welcome.what_to_eat_desc')}
                                                     </Text>
                                                 </TouchableOpacity>
                                             </View>

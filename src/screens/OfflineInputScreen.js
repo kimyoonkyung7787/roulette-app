@@ -5,7 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { Colors } from '../theme/colors';
 import { CyberBackground } from '../components/CyberBackground';
 import { NeonText } from '../components/NeonText';
-import { Plus, Minus, ArrowRight, Home, Trash2, RotateCw } from 'lucide-react-native';
+import { Plus, Minus, ArrowRight, Home, Trash2, RotateCw, History } from 'lucide-react-native';
 import { feedbackService } from '../services/FeedbackService';
 
 const { width } = Dimensions.get('window');
@@ -83,6 +83,13 @@ export default function OfflineInputScreen({ route, navigation }) {
                         >
                             <Home color={Colors.primary} size={22} />
                         </TouchableOpacity>
+
+                        <TouchableOpacity
+                            onPress={() => navigation.navigate('History', { mode: 'offline' })}
+                            style={styles.iconButton}
+                        >
+                            <History color={Colors.primary} size={24} />
+                        </TouchableOpacity>
                     </View>
 
                     <ScrollView
@@ -158,6 +165,7 @@ const styles = StyleSheet.create({
     header: {
         flexDirection: 'row',
         alignItems: 'center',
+        justifyContent: 'space-between',
         paddingHorizontal: 25,
         paddingVertical: 15,
         maxWidth: 500,
@@ -173,6 +181,9 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         borderWidth: 1,
         borderColor: 'rgba(0, 255, 255, 0.2)',
+    },
+    iconButton: {
+        padding: 4,
     },
     scrollContent: {
         flexGrow: 1,

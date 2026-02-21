@@ -1,5 +1,6 @@
-import React, { useMemo } from 'react';
+import React from 'react';
 import { View, Modal, TouchableOpacity, StyleSheet, Text, Platform } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { Colors } from '../theme/colors';
 import { NeonText } from './NeonText';
 import { AlertTriangle, Info, CheckCircle2 } from 'lucide-react-native';
@@ -10,10 +11,14 @@ export const CyberAlert = ({
     message,
     onConfirm,
     onCancel,
-    confirmText = 'CONFIRM',
-    cancelText = 'CANCEL',
+    confirmText,
+    cancelText,
     type = 'info' // 'info' | 'error' | 'success'
 }) => {
+    const { t } = useTranslation();
+    const finalConfirmText = confirmText || t('common.confirm');
+    const finalCancelText = cancelText || t('common.cancel');
+    const finalTitle = title === 'ALERT' ? t('common.alert') : title;
     // Making it feel like a guidance/info window by default or using a softer warning color
     const themeColor = type === 'error' ? '#FFD700' : // Gold/Soft Yellow for warning instead of red
         type === 'success' ? Colors.success :
@@ -38,7 +43,7 @@ export const CyberAlert = ({
                     <View style={styles.header}>
                         <Icon color={themeColor} size={20} style={{ marginRight: 10, marginTop: 2 }} />
                         <View style={{ flex: 1 }}>
-                            <NeonText className="text-xl" style={{ color: themeColor }}>{title}</NeonText>
+                            <NeonText className="text-xl" style={{ color: themeColor }}>{finalTitle}</NeonText>
                         </View>
                     </View>
 
@@ -54,14 +59,14 @@ export const CyberAlert = ({
                                 onPress={onCancel}
                                 style={[styles.button, onCancel ? styles.sideButton : null, { backgroundColor: 'rgba(255,255,255,0.05)', borderColor: 'rgba(255,255,255,0.2)' }]}
                             >
-                                <Text style={[styles.buttonText, { color: 'rgba(255,255,255,0.6)' }]}>{cancelText}</Text>
+                                <Text style={[styles.buttonText, { color: 'rgba(255,255,255,0.6)' }]}>{finalCancelText}</Text>
                             </TouchableOpacity>
                         )}
                         <TouchableOpacity
                             onPress={onConfirm}
                             style={[styles.button, onCancel ? styles.sideButton : null, { backgroundColor: `${themeColor}15`, borderColor: themeColor }]}
                         >
-                            <Text style={[styles.buttonText, { color: themeColor }]}>{confirmText}</Text>
+                            <Text style={[styles.buttonText, { color: themeColor }]}>{finalConfirmText}</Text>
                         </TouchableOpacity>
                     </View>
                 </View>

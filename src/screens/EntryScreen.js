@@ -49,7 +49,7 @@ export default function EntryScreen({ navigation }) {
                         </View>
                         <View style={styles.titleWrapper}>
                             <NeonText className="text-4xl mt-6 tracking-[0.4em]">ROULETTE</NeonText>
-                            <Text style={styles.subTitle}>GAME CENTER</Text>
+                            <Text style={styles.subTitle}>{t('entry.game_center').toUpperCase()}</Text>
                         </View>
                         <View style={styles.underline} />
                     </View>

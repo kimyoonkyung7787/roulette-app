@@ -11,7 +11,7 @@ import { useTranslation } from 'react-i18next';
 export default function HistoryScreen({ route, navigation }) {
     const { t } = useTranslation();
     const [history, setHistory] = useState([]);
-    const { role, roomId, mode = 'online', category } = route.params || {};
+    const { role, roomId, mode = 'online', category, activeTab: currentTab } = route.params || {};
 
     useEffect(() => {
         loadHistory();
@@ -19,7 +19,13 @@ export default function HistoryScreen({ route, navigation }) {
 
     const loadHistory = async () => {
         const data = await historyService.getHistory();
-        setHistory(data);
+        if (mode === 'offline') {
+            setHistory(data.filter(item => item.roomId === 'offline'));
+        } else if (mode === 'online') {
+            setHistory(data.filter(item => item.roomId !== 'offline'));
+        } else {
+            setHistory(data);
+        }
     };
 
     const clearHistory = async () => {
@@ -49,15 +55,26 @@ export default function HistoryScreen({ route, navigation }) {
             return;
         }
 
+        // For menu type, also extract participants from voting details
+        let participantsList = null;
+        if (item.type === 'menu' && item.details && item.details.length > 0) {
+            participantsList = item.details.map(d => ({
+                name: d.name,
+                weight: 1
+            }));
+        }
+
         // Navigate back to NameInput with the restored data AND original session info
         navigation.navigate('NameInput', {
             roomId,
             role,
             mode,
             category: category || item.category || 'coffee',
+            initialTab: currentTab || (item.type === 'people' ? 'people' : 'menu'),
             restoredData: {
                 type: item.type,
                 list: item.originalList,
+                participants: participantsList,
                 timestamp: Date.now()
             }
         });
@@ -67,7 +84,7 @@ export default function HistoryScreen({ route, navigation }) {
         const date = new Date(item.timestamp);
         const dateString = date.toLocaleDateString();
         const timeString = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-        const canRestore = role === 'owner' && item.originalList && item.originalList.length > 0;
+        const canRestore = (role === 'owner' || mode === 'offline') && item.originalList && item.originalList.length > 0;
 
         return (
             <View style={[styles.historyItem, { borderLeftColor: item.type === 'menu' ? Colors.secondary : Colors.primary, flexDirection: 'column', alignItems: 'stretch' }]}>

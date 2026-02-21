@@ -251,7 +251,7 @@ export default function ResultScreen({ route, navigation }) {
 
                         return {
                             name: user.name,
-                            votedFor: vote ? vote.votedFor : 'NO VOTE',
+                            votedFor: vote ? vote.votedFor : t('common.no_vote').toUpperCase(),
                             isMe: user.id === syncService.myId,
                             isOwner: isUserOwner
                         };
@@ -490,7 +490,7 @@ export default function ResultScreen({ route, navigation }) {
                                             resizeMode="contain"
                                         />
                                     </View>
-                                    <Text style={styles.badgeText}>{t('result.winner_shout')}</Text>
+
                                     <View style={styles.badgeLine} />
                                 </View>
                             )}
@@ -552,36 +552,14 @@ export default function ResultScreen({ route, navigation }) {
 
                 {role === 'owner' || mode === 'offline' ? (
                     <View style={styles.footer}>
-                        {mode === 'online' && type === 'menu' ? (
-                            <>
-                                <TouchableOpacity
-                                    onPress={handleReset}
-                                    activeOpacity={0.7}
-                                    style={[styles.retryButton, { marginBottom: 18 }]}
-                                >
-                                    <HandMetal color={Colors.primary} size={20} strokeWidth={2.5} style={{ marginRight: 10 }} />
-                                    <Text style={styles.retryText}>RE PICK</Text>
-                                </TouchableOpacity>
-
-                                <TouchableOpacity
-                                    onPress={handleExit}
-                                    activeOpacity={0.7}
-                                    style={styles.forceResultButton}
-                                >
-                                    <Gavel color="#fff" size={20} style={{ marginRight: 10 }} />
-                                    <Text style={styles.forceResultText}>{t('common.force_exit').toUpperCase()}</Text>
-                                </TouchableOpacity>
-                            </>
-                        ) : (
-                            <TouchableOpacity
-                                onPress={handleReset}
-                                activeOpacity={0.7}
-                                style={styles.retryButton}
-                            >
-                                <RefreshCw color={Colors.primary} size={24} style={{ marginRight: 10 }} />
-                                <Text style={styles.retryText}>{t('result.retry').toUpperCase()}</Text>
-                            </TouchableOpacity>
-                        )}
+                        <TouchableOpacity
+                            onPress={handleReset}
+                            activeOpacity={0.7}
+                            style={styles.retryButton}
+                        >
+                            <RefreshCw color={Colors.primary} size={24} style={{ marginRight: 10 }} />
+                            <Text style={styles.retryText}>{t('result.retry').toUpperCase()}</Text>
+                        </TouchableOpacity>
                     </View>
                 ) : null}
 
