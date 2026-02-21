@@ -25,6 +25,48 @@
         "meal": "MAHLZEIT",
         "snack": "SNACK"
     },
+    "popular_items": {
+        "coffee": [
+            "Americano",
+            "Milchkaffee",
+            "Vanille Latte",
+            "Cappuccino",
+            "Ade",
+            "Matcha Latte",
+            "Smoothie",
+            "Espresso"
+        ],
+        "meal": [
+            "Kimchi-Eintopf",
+            "Bulgogi",
+            "Bibimbap",
+            "Tonkatsu",
+            "Ramen",
+            "Pasta",
+            "Sushi",
+            "Gebratener Reis"
+        ],
+        "snack": [
+            "Tteokbokki",
+            "Brathähnchen",
+            "Pizza",
+            "Sandwich",
+            "Salat",
+            "Hamburger",
+            "Gimbap",
+            "Tacos"
+        ],
+        "etc": [
+            "Schere Stein Papier",
+            "Kartenziehen",
+            "Würfel",
+            "Leiter",
+            "Lotterie",
+            "Niete",
+            "Noch einmal",
+            "Strafe"
+        ]
+    },
     "welcome": {
         "select_category": "KATEGORIE WÄHLEN",
         "choose_role": "ROLLE WÄHLEN",

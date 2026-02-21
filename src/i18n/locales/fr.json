@@ -25,6 +25,48 @@
         "meal": "REPAS",
         "snack": "GOÛTER"
     },
+    "popular_items": {
+        "coffee": [
+            "Café Allongé",
+            "Café Lait",
+            "Latte Vanille",
+            "Cappuccino",
+            "Ade",
+            "Latte Thé Vert",
+            "Batido",
+            "Espresso"
+        ],
+        "meal": [
+            "Ragoût de Kimchi",
+            "Bulgogi",
+            "Bibimbap",
+            "Tonkatsu",
+            "Ramen",
+            "Pâtes",
+            "Sushi",
+            "Riz Sauté"
+        ],
+        "snack": [
+            "Tteokbokki",
+            "Poulet Frit",
+            "Pizza",
+            "Sandwich",
+            "Salade",
+            "Hamburger",
+            "Gimbap",
+            "Tacos"
+        ],
+        "etc": [
+            "Pierre-Papier-Ciseaux",
+            "Tirage de Carte",
+            "Dés",
+            "Échelle",
+            "Loterie",
+            "Rien",
+            "Encore une fois",
+            "Pénalité"
+        ]
+    },
     "welcome": {
         "select_category": "SÉLECTIONNER CATÉGORIE",
         "choose_role": "CHOISIR RÔLE",

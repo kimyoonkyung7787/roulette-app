@@ -410,7 +410,7 @@ export default function RouletteScreen({ route, navigation }) {
                 role: 'owner',
                 category: category,
                 type: currentTarget,
-                finalVotes: [{ userId: 'local', userName: 'Local', votedFor: winner }],
+                finalVotes: [{ userId: 'local', userName: t('common.local'), votedFor: winner }],
                 participants: currentDataList,
                 menuItems: currentDataList,
                 originalItems: route.params?.originalItems // Preserve the original input items
@@ -827,7 +827,7 @@ export default function RouletteScreen({ route, navigation }) {
         return (
             <View style={styles.pickCardContainer}>
                 <View style={[styles.pickCard, { shadowColor: categoryColor }]}>
-                    <NeonText text="YOUR PICK" color={categoryColor} fontSize={16} />
+                    <NeonText text={t('roulette.your_pick').toUpperCase()} color={categoryColor} fontSize={16} />
                     <View style={[styles.pickItemBadge, { borderColor: categoryColor, backgroundColor: `${categoryColor}15` }]}>
                         <Text style={[styles.pickItemText, { color: categoryColor }]}>{myVote.votedFor.toUpperCase()}</Text>
                     </View>
@@ -876,6 +876,16 @@ export default function RouletteScreen({ route, navigation }) {
                                     setShowUsersModal(true);
                                 }} style={{ padding: 4 }}>
                                     <ListChecks color={Colors.success} size={24} />
+                                </TouchableOpacity>
+                            )}
+
+                            {role === 'owner' && mode === 'online' && !spinning && (
+                                <TouchableOpacity
+                                    onPress={() => processFinalResult(true)}
+                                    activeOpacity={0.7}
+                                    style={{ padding: 4 }}
+                                >
+                                    <Zap color={Colors.accent} size={24} fill={`${Colors.accent}33`} />
                                 </TouchableOpacity>
                             )}
 
@@ -984,16 +994,6 @@ export default function RouletteScreen({ route, navigation }) {
                                     <Text style={styles.reselectText}>{t('common.re_pick').toUpperCase()}</Text>
                                 </TouchableOpacity>
 
-                                {role === 'owner' && (
-                                    <TouchableOpacity
-                                        onPress={() => processFinalResult(true)}
-                                        activeOpacity={0.7}
-                                        style={styles.forceResultButton}
-                                    >
-                                        <Gavel color="#fff" size={20} style={{ marginRight: 10 }} />
-                                        <Text style={styles.forceResultText}>{t('roulette.force_result').toUpperCase()}</Text>
-                                    </TouchableOpacity>
-                                )}
                             </>
                         ) : (
                             !votedItem && (
@@ -1040,18 +1040,6 @@ export default function RouletteScreen({ route, navigation }) {
                                         </TouchableOpacity>
                                     )}
 
-                                    {role === 'owner' && votes.length > 0 && votes.length < Math.max(participantsState.length, onlineUsers.length) && (
-                                        <TouchableOpacity
-                                            onPress={() => processFinalResult(true)}
-                                            activeOpacity={0.7}
-                                            style={styles.forceResultButton}
-                                        >
-                                            <Gavel color="#fff" size={18} style={{ marginRight: 8 }} />
-                                            <Text style={styles.forceResultText}>
-                                                {t('roulette.force_result').toUpperCase()}
-                                            </Text>
-                                        </TouchableOpacity>
-                                    )}
                                 </>
                             )
                         )}

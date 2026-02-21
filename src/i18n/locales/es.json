@@ -25,6 +25,48 @@
         "meal": "COMIDA",
         "snack": "MERIENDA"
     },
+    "popular_items": {
+        "coffee": [
+            "Americano",
+            "Café Latte",
+            "Latte de Vainilla",
+            "Capuchino",
+            "Ade",
+            "Latte de Té Verde",
+            "Batido",
+            "Espresso"
+        ],
+        "meal": [
+            "Estofado de Kimchi",
+            "Bulgogi",
+            "Bibimbap",
+            "Tonkatsu",
+            "Ramen",
+            "Pasta",
+            "Sushi",
+            "Arroz Frito"
+        ],
+        "snack": [
+            "Tteokbokki",
+            "Pollo Frito",
+            "Pizza",
+            "Sándwich",
+            "Ensalada",
+            "Hamburguesa",
+            "Gimbap",
+            "Tacos"
+        ],
+        "etc": [
+            "Piedra Papel o Tijera",
+            "Elegir Carta",
+            "Dados",
+            "Escalera",
+            "Lotería",
+            "Vacío",
+            "Una Vez Más",
+            "Penalización"
+        ]
+    },
     "welcome": {
         "select_category": "SELECCIONAR CATEGORÍA",
         "choose_role": "ELEGIR ROL",

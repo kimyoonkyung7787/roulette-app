@@ -14,6 +14,7 @@
         "error": "ERROR",
         "success": "SUCCESS",
         "room": "ROOM",
+        "local": "LOCAL",
         "select_language": "SELECT LANGUAGE",
         "weight": "Weight",
         "exit_confirm": "Do you want to exit?",
@@ -34,7 +35,8 @@
     "categories": {
         "coffee": "COFFEE",
         "meal": "MEAL",
-        "snack": "SNACK"
+        "snack": "SNACK",
+        "etc": "ETC"
     },
     "popular_items": {
         "coffee": [
@@ -66,6 +68,16 @@
             "Hamburger",
             "Gimbap",
             "Tacos"
+        ],
+        "etc": [
+            "Rock Paper Scissors",
+            "Card Pick",
+            "Dice",
+            "Ladder Climb",
+            "Lottery",
+            "Blank",
+            "One More",
+            "Penalty"
         ]
     },
     "welcome": {
@@ -132,6 +144,7 @@
         "waiting_for_others": "WAITING...",
         "ready": "READY! SPIN NOW",
         "execute": "EXECUTE",
+        "your_pick": "YOUR PICK",
         "spinning_roulette": "SPINNING ROULETTE",
         "gourmet_selection": "SELECTION",
         "force_result": "FORCE RESULT",
