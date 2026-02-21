@@ -9,7 +9,7 @@ import { CyberAlert } from '../components/CyberAlert';
 import { feedbackService } from '../services/FeedbackService';
 import Svg, { Path, G, Text as SvgText, Circle, Defs, RadialGradient, Stop } from 'react-native-svg';
 import Animated, { useSharedValue, useAnimatedStyle, withTiming, Easing, runOnJS, useAnimatedReaction } from 'react-native-reanimated';
-import { RotateCw, Users, X, Power, LogOut, UserPlus, ListChecks, HandMetal, Gavel, Zap } from 'lucide-react-native';
+import { RotateCw, Users, X, Power, LogOut, UserPlus, ListChecks, HandMetal, Gavel, Zap, User, CheckCircle2, Crown } from 'lucide-react-native';
 import { Modal, ScrollView } from 'react-native';
 import { syncService } from '../services/SyncService';
 import { useTranslation } from 'react-i18next';
@@ -52,6 +52,7 @@ export default function RouletteScreen({ route, navigation }) {
     const [remoteSpinState, setRemoteSpinState] = useState(null);
     const [votes, setVotes] = useState([]);
     const isNavigating = useRef(false);
+    const [roomHostName, setRoomHostName] = useState(route.params?.hostName);
     const isFocused = useIsFocused();
     const lastTickIndex = useSharedValue(-1);
     const lastTickAngle = useSharedValue(0);
@@ -102,7 +103,7 @@ export default function RouletteScreen({ route, navigation }) {
     }, [votedItem, currentList, spinning]);
 
     useEffect(() => {
-        let unsubUsers, unsubSpin, unsubVotes, unsubFinal, unsubParticipants, unsubMenuItems;
+        let unsubUsers, unsubSpin, unsubVotes, unsubFinal, unsubParticipants, unsubMenuItems, unsubHostName;
 
         const initSync = async () => {
             if (mode === 'offline') {
@@ -136,6 +137,11 @@ export default function RouletteScreen({ route, navigation }) {
                 if (target) setSpinTarget(target);
             });
 
+            // Subscribe to host name
+            unsubHostName = syncService.subscribeToHostName(name => {
+                if (name) setRoomHostName(name);
+            });
+
             // Subscribe to spin state from others
             unsubSpin = syncService.subscribeToSpinState(state => {
                 setRemoteSpinState(state);
@@ -157,11 +163,14 @@ export default function RouletteScreen({ route, navigation }) {
                     if (!isNavigating.current && isFocused) {
                         console.log('RouletteScreen: Final results received, navigating...');
                         isNavigating.current = true;
+                        const hostName = roomHostName || onlineUsers.find(u => u.role === 'owner')?.name || (role === 'owner' ? mySelectedName : (roomId.length <= 8 ? roomId : null));
+
                         navigation.navigate('Result', {
                             ...finalData,
                             roomId,
                             role,
-                            category
+                            category,
+                            hostName
                         });
                     }
                 } else {
@@ -191,6 +200,7 @@ export default function RouletteScreen({ route, navigation }) {
             if (unsubVotes) unsubVotes();
             if (unsubFinal) unsubFinal();
             if (unsubParticipants) unsubParticipants();
+            if (unsubHostName) unsubHostName();
             if (unsubMenuItems) unsubMenuItems();
         };
     }, []);
@@ -298,11 +308,15 @@ export default function RouletteScreen({ route, navigation }) {
                     console.log('RouletteScreen: Owner finalize SUCCESS');
 
                     // Navigate owner immediately
+                    const hostUser = onlineUsers.find(u => u.role === 'owner');
+                    const hostName = hostUser ? hostUser.name : (role === 'owner' ? mySelectedName : (roomId.length <= 8 ? roomId : null));
+
                     navigation.navigate('Result', {
                         ...resultData,
                         roomId,
                         role,
-                        category
+                        category,
+                        hostName
                     });
                 } catch (err) {
                     console.error('RouletteScreen: Owner finalize FAILED:', err);
@@ -971,20 +985,26 @@ export default function RouletteScreen({ route, navigation }) {
                     animationType="fade"
                     onRequestClose={() => setShowUsersModal(false)}
                 >
-                    <View style={styles.modalOverlay}>
-                        <View style={styles.modalContent}>
-                            <View style={styles.modalHeader}>
-                                <Text style={styles.modalTitle}>{t('name_input.participant_status').toUpperCase()}</Text>
+                    <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.8)', justifyContent: 'center', alignItems: 'center', padding: 20 }}>
+                        <View style={{
+                            width: '100%',
+                            maxWidth: 400,
+                            backgroundColor: '#111',
+                            borderRadius: 20,
+                            padding: 24,
+                            borderWidth: 2,
+                            borderColor: Colors.primary,
+                            shadowColor: Colors.primary,
+                            shadowOffset: { width: 0, height: 0 },
+                            shadowOpacity: 0.5,
+                            shadowRadius: 15,
+                            elevation: 8
+                        }}>
+                            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+                                <NeonText style={{ fontSize: 20 }}>{t('name_input.participant_status')}</NeonText>
                                 <TouchableOpacity onPress={() => setShowUsersModal(false)}>
-                                    <X color={Colors.primary} size={24} />
+                                    <X color={Colors.text} size={24} />
                                 </TouchableOpacity>
-                            </View>
-                            <View style={styles.modalDivider} />
-
-                            {/* Column Headers */}
-                            <View style={styles.tableHeader}>
-                                <Text style={styles.tableHeaderText}>{t('name_input.voter').toUpperCase()}</Text>
-                                <Text style={styles.tableHeaderText}>{t('name_input.winner').toUpperCase()}</Text>
                             </View>
 
                             <ScrollView style={{ maxHeight: 400 }}>
@@ -997,36 +1017,62 @@ export default function RouletteScreen({ route, navigation }) {
                                     const isMe = mySelectedName === pName;
 
                                     return (
-                                        <View key={`part-${idx}`} style={styles.userItem}>
-                                            <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center' }}>
-                                                <View style={[
-                                                    styles.userStatusDot,
-                                                    { backgroundColor: onlineUser ? (userVote ? Colors.success : Colors.primary) : '#444' }
-                                                ]} />
-                                                <Text style={[
-                                                    styles.userName,
-                                                    { opacity: onlineUser ? 1 : 0.4 }
-                                                ]}>
+                                        <View key={`part-${idx}`} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.05)' }}>
+                                            <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
+                                                <View style={{
+                                                    width: 8,
+                                                    height: 8,
+                                                    borderRadius: 4,
+                                                    backgroundColor: onlineUser ? (userVote ? Colors.success : Colors.primary) : '#444',
+                                                    marginRight: 10,
+                                                    shadowColor: onlineUser ? (userVote ? Colors.success : Colors.primary) : '#000',
+                                                    shadowRadius: 4,
+                                                    shadowOpacity: 0.5
+                                                }} />
+                                                <Text style={{ color: onlineUser ? 'white' : 'rgba(255,255,255,0.3)', fontSize: 16, fontWeight: '500' }}>
                                                     {pName} {isMe ? <Text style={{ fontSize: 11, color: Colors.primary }}> {t('common.me')}</Text> : ''}
                                                 </Text>
+                                                {(pName === (roomHostName || route.params?.hostName) || onlineUser?.role === 'owner') && (
+                                                    <View style={{
+                                                        backgroundColor: `${Colors.accent}25`,
+                                                        borderColor: Colors.accent,
+                                                        borderWidth: 1.5,
+                                                        borderRadius: 6,
+                                                        paddingHorizontal: 6,
+                                                        paddingVertical: 1,
+                                                        marginLeft: 8,
+                                                        flexDirection: 'row',
+                                                        alignItems: 'center',
+                                                    }}>
+                                                        <Crown color={Colors.accent} size={10} fill={`${Colors.accent}33`} style={{ marginRight: 4 }} />
+                                                        <Text style={{ color: Colors.accent, fontSize: 10, fontWeight: '900' }}>{t('common.host').toUpperCase()}</Text>
+                                                    </View>
+                                                )}
                                             </View>
-                                            <View style={{
-                                                backgroundColor: onlineUser ? 'rgba(255,255,255,0.05)' : 'transparent',
-                                                paddingHorizontal: 10,
-                                                paddingVertical: 4,
-                                                borderRadius: 6,
-                                                borderWidth: 1,
-                                                borderColor: onlineUser ? (userVote ? 'rgba(57, 255, 20, 0.2)' : 'rgba(255,255,255,0.1)') : 'transparent'
-                                            }}>
-                                                <Text style={{
-                                                    color: onlineUser ? (userVote ? Colors.success : 'rgba(255,255,255,0.6)') : '#444',
-                                                    fontSize: 12,
-                                                    fontWeight: 'bold'
-                                                }}>
-                                                    {onlineUser
-                                                        ? (userVote ? userVote.votedFor : t('name_input.waiting').toUpperCase())
-                                                        : (t('common.not_connected') || 'OFFLINE').toUpperCase()}
-                                                </Text>
+                                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                                                {onlineUser ? (
+                                                    userVote ? (
+                                                        <View style={{
+                                                            backgroundColor: 'rgba(57, 255, 20, 0.1)',
+                                                            paddingHorizontal: 8,
+                                                            paddingVertical: 4,
+                                                            borderRadius: 4,
+                                                            borderWidth: 1,
+                                                            borderColor: 'rgba(57, 255, 20, 0.3)',
+                                                            flexDirection: 'row',
+                                                            alignItems: 'center'
+                                                        }}>
+                                                            <CheckCircle2 size={12} color={Colors.success} style={{ marginRight: 4 }} />
+                                                            <Text style={{ color: Colors.success, fontSize: 11, fontWeight: 'bold' }}>
+                                                                {userVote.votedFor ? userVote.votedFor.toUpperCase() : t('name_input.voter').toUpperCase()}
+                                                            </Text>
+                                                        </View>
+                                                    ) : (
+                                                        <Text style={{ color: Colors.primary, fontSize: 11, fontWeight: 'bold' }}>{t('name_input.waiting').toUpperCase()}</Text>
+                                                    )
+                                                ) : (
+                                                    <Text style={{ color: '#444', fontSize: 11, fontWeight: 'bold' }}>{(t('common.not_connected') || 'OFFLINE').toUpperCase()}</Text>
+                                                )}
                                             </View>
                                         </View>
                                     );
@@ -1034,15 +1080,15 @@ export default function RouletteScreen({ route, navigation }) {
 
                                 {/* Loose participants section */}
                                 {onlineUsers.filter(u => !participantsState.some(p => (typeof p === 'object' ? p.name : p) === u.name)).map((user, index) => (
-                                    <View key={`loose-${index}`} style={[styles.userItem, { opacity: 0.5 }]}>
-                                        <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center' }}>
-                                            <View style={[styles.userStatusDot, { backgroundColor: '#666' }]} />
-                                            <Text style={[styles.userName, { color: '#666' }]}>{user.name || 'Anonymous'}</Text>
-                                            <View style={{ marginLeft: 8, backgroundColor: '#222', paddingHorizontal: 4, borderRadius: 4 }}>
-                                                <Text style={{ color: '#444', fontSize: 9 }}>NOT IN LIST</Text>
+                                    <View key={`loose-${index}`} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.05)', opacity: 0.6 }}>
+                                        <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
+                                            <User size={14} color="#666" style={{ marginRight: 10 }} />
+                                            <Text style={{ color: '#666', fontSize: 14 }}>{user.name || 'Anonymous'}</Text>
+                                            <View style={{ marginLeft: 8, backgroundColor: '#333', paddingHorizontal: 5, borderRadius: 4 }}>
+                                                <Text style={{ color: '#999', fontSize: 9 }}>NOT IN LIST</Text>
                                             </View>
                                         </View>
-                                        <Text style={{ color: '#444', fontSize: 11, fontWeight: 'bold' }}>GUEST</Text>
+                                        <Text style={{ color: '#444', fontSize: 11 }}>GUEST</Text>
                                     </View>
                                 ))}
 
@@ -1052,7 +1098,6 @@ export default function RouletteScreen({ route, navigation }) {
                             </ScrollView>
                         </View>
                     </View>
-
                 </Modal>
 
                 <CyberAlert

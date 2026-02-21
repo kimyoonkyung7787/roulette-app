@@ -5,7 +5,7 @@ import { NeonText } from '../components/NeonText';
 import { Colors } from '../theme/colors';
 import { CyberBackground } from '../components/CyberBackground';
 import { historyService } from '../services/HistoryService';
-import { History as HistoryIcon, ArrowLeft, Trash2 } from 'lucide-react-native';
+import { History as HistoryIcon, ArrowLeft, Trash2, Crown } from 'lucide-react-native';
 import { useTranslation } from 'react-i18next';
 
 export default function HistoryScreen({ route, navigation }) {
@@ -83,7 +83,7 @@ export default function HistoryScreen({ route, navigation }) {
                             borderColor: item.roomId === 'offline' ? '#666666' : (item.type === 'menu' ? Colors.secondary : Colors.primary)
                         }}>
                             <Text style={{ color: item.roomId === 'offline' ? '#AAAAAA' : (item.type === 'menu' ? Colors.secondary : Colors.primary), fontSize: 8, fontWeight: 'bold' }}>
-                                {item.roomId === 'offline' ? t('entry.offline_title') : (item.type === 'menu' ? t('common.menu').toUpperCase() : t('common.people').toUpperCase())}
+                                {item.roomId === 'offline' ? t('entry.offline_title').toUpperCase() : (item.type === 'menu' ? t('common.menu').toUpperCase() : t('common.people').toUpperCase())}
                             </Text>
                         </View>
                         <NeonText className="text-xl" color={Colors.accent}>{item.name}</NeonText>
@@ -136,10 +136,28 @@ export default function HistoryScreen({ route, navigation }) {
                         <View style={{ marginTop: 15, paddingTop: 10, borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.05)' }}>
                             <Text style={{ color: 'rgba(255,255,255,0.4)', fontSize: 10, marginBottom: 5 }}>{t('result.votes').toUpperCase()}:</Text>
                             {item.details.map((detail, idx) => (
-                                <View key={idx} style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 2 }}>
-                                    <Text style={{ color: detail.isMe ? Colors.success : 'rgba(255,255,255,0.7)', fontSize: 11 }}>
-                                        {detail.name} {detail.isMe ? <Text style={{ fontSize: 8 }}> {t('common.me')}</Text> : ''}
-                                    </Text>
+                                <View key={idx} style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 2, alignItems: 'center' }}>
+                                    <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
+                                        <Text style={{ color: detail.isMe ? Colors.success : 'rgba(255,255,255,0.7)', fontSize: 11 }}>
+                                            {detail.name} {detail.isMe ? <Text style={{ fontSize: 8 }}> {t('common.me')}</Text> : ''}
+                                        </Text>
+                                        {detail.isOwner && (
+                                            <View style={{
+                                                backgroundColor: `${Colors.accent}20`,
+                                                borderColor: Colors.accent,
+                                                borderWidth: 1,
+                                                borderRadius: 4,
+                                                paddingHorizontal: 4,
+                                                paddingVertical: 0,
+                                                marginLeft: 6,
+                                                flexDirection: 'row',
+                                                alignItems: 'center',
+                                            }}>
+                                                <Crown color={Colors.accent} size={8} fill={`${Colors.accent}33`} style={{ marginRight: 2 }} />
+                                                <Text style={{ color: Colors.accent, fontSize: 8, fontWeight: 'bold' }}>{t('common.host').toUpperCase()}</Text>
+                                            </View>
+                                        )}
+                                    </View>
                                     <Text style={{ color: Colors.secondary, fontSize: 11, fontWeight: 'bold' }}>
                                         {detail.votedFor}
                                     </Text>

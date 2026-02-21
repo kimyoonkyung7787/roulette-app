@@ -46,6 +46,7 @@ export default function NameInputScreen({ route, navigation }) {
     const [editingParticipantIndex, setEditingParticipantIndex] = useState(null);
     const [editingParticipantName, setEditingParticipantName] = useState('');
     const [modalFocusedIndex, setModalFocusedIndex] = useState(null);
+    const [pendingSelectedName, setPendingSelectedName] = useState(null);
     const participantRefs = useRef([]);
 
     const startEditingParticipant = (index, currentName) => {
@@ -89,6 +90,7 @@ export default function NameInputScreen({ route, navigation }) {
     const [remoteSpinState, setRemoteSpinState] = useState(null);
     const [roomPhase, setRoomPhaseState] = useState('waiting');
     const [finalResults, setFinalResults] = useState(null);
+    const [hostName, setHostName] = useState(null);
     const isNavigatingRef = useRef(false);
     const inhibitedByResetRef = useRef(false);
     const isFocused = useIsFocused();
@@ -165,6 +167,7 @@ export default function NameInputScreen({ route, navigation }) {
                             if (firstGuestName) {
                                 setMySelectedName(firstGuestName);
                                 await syncService.setIdentity(firstGuestName);
+                                if (role === 'owner') await syncService.setHostName(firstGuestName);
                             }
                         }
                     }
@@ -278,6 +281,11 @@ export default function NameInputScreen({ route, navigation }) {
                 setFinalResults(results);
             }));
 
+            // Subscribe to room host name
+            unsubs.push(syncService.subscribeToHostName(name => {
+                if (name) setHostName(name);
+            }));
+
             setIsLoaded(true);
             return unsubs;
         };
@@ -296,26 +304,52 @@ export default function NameInputScreen({ route, navigation }) {
     // Effect to identify the first available participant when the identity modal opens
     useEffect(() => {
         if (showIdentityModal) {
-            // Priority: Find first one that is NOT taken and NOT me
+            setPendingSelectedName(mySelectedName);
+            // Guard: Wait for host to avoid focusing on host's slot during sync delay
+            // This prevents the participant from auto-focusing on the host's name (usually index 0)
+            const hostUser = onlineUsers.find(u => u.role === 'owner');
+            if (role === 'participant' && !hostUser && onlineUsers.length > 0) {
+                setModalFocusedIndex(null);
+                return;
+            }
+
+            // Priority: Find first one that is NOT taken, NOT me, and NOT a host
             let index = participants.findIndex(p => {
                 const pName = typeof p === 'object' ? (p.name || p.text || '') : String(p);
-                if (!pName.trim()) return false;
-                const isTaken = onlineUsers.some(u => u.name === pName && u.id !== syncService.myId);
-                const isMe = mySelectedName === pName;
-                return !isTaken && !isMe;
+                const pNameTrimmed = pName.trim();
+                if (!pNameTrimmed) return false;
+
+                // Check if taken by anyone else
+                const otherUserWithName = onlineUsers.find(u => u.name === pNameTrimmed && u.id !== syncService.myId);
+                const isTaken = !!otherUserWithName;
+                const isMe = mySelectedName === pNameTrimmed;
+
+                // Return true only if it's truly available and not the host
+                const isHostName = otherUserWithName?.role === 'owner';
+
+                return !isTaken && !isMe && !isHostName;
             });
 
             // Fallback: If no others available, maybe focus on myself
             if (index === -1) {
                 index = participants.findIndex(p => {
                     const pName = typeof p === 'object' ? (p.name || p.text || '') : String(p);
-                    return mySelectedName === pName;
+                    return mySelectedName === pName.trim();
                 });
             }
 
-            setModalFocusedIndex(index !== -1 ? index : null);
+            const finalIndex = index !== -1 ? index : null;
+            setModalFocusedIndex(finalIndex);
+
+            // If we have an auto-focus (and no selection yet), also set it as pending
+            if (!mySelectedName && finalIndex !== null) {
+                const autoP = participants[finalIndex];
+                const autoName = typeof autoP === 'object' ? (autoP.name || autoP.text || '') : String(autoP);
+                setPendingSelectedName(autoName.trim());
+            }
         } else {
             setModalFocusedIndex(null);
+            setPendingSelectedName(null);
         }
     }, [showIdentityModal, participants, onlineUsers, mySelectedName]);
 
@@ -390,17 +424,25 @@ export default function NameInputScreen({ route, navigation }) {
             return; // Already has a selection, so done
         }
 
-        // 2. AUTO-SELECT: If no selection, pick the first available slot
-        if (!mySelectedName && participants.length > 0) {
+        // 2. AUTO-SELECT: If no selection, pick the first available slot (excluding host)
+        // Guard: Wait for host information to avoid race conditions where onlineUsers is empty
+        const hostUser = onlineUsers.find(u => u.role === 'owner');
+        if (!mySelectedName && participants.length > 0 && (role !== 'participant' || hostUser)) {
             const firstAvailable = participants.find(p => {
-                const pName = typeof p === 'object' ? p.name : p;
+                const pName = typeof p === 'object' ? (p.name || p.text || '') : String(p);
+                const pNameTrimmed = pName.trim();
+                if (!pNameTrimmed) return false;
+
                 // Check if taken by anyone else (host or other participants)
-                const isTaken = onlineUsers.some(u => u.name === pName);
-                return !isTaken;
+                const otherUserWithName = onlineUsers.find(u => u.name === pNameTrimmed && u.id !== syncService.myId);
+                const isTaken = !!otherUserWithName;
+                const isHostName = otherUserWithName?.role === 'owner';
+
+                return !isTaken && !isHostName;
             });
 
             if (firstAvailable) {
-                const nameToSelect = typeof firstAvailable === 'object' ? firstAvailable.name : firstAvailable;
+                const nameToSelect = typeof firstAvailable === 'object' ? (firstAvailable.name || firstAvailable.text) : firstAvailable;
                 console.log(`NameInputScreen: Auto-selecting first available slot: ${nameToSelect}`);
                 // Use toggleMe to set state and sync to DB
                 toggleMe(nameToSelect);
@@ -627,19 +669,31 @@ export default function NameInputScreen({ route, navigation }) {
     };
 
     const toggleMe = async (participantName) => {
-        if (!participantName || participantName.trim() === '') return;
+        if (!participantName || participantName.toString().trim() === '') return;
+        const nameToUse = participantName.toString().trim();
 
-        // Check if taken by other
-        const isTaken = isPeopleTab && onlineUsers.some(u => u.name === participantName && u.id !== syncService.myId);
+        // Check if taken by other (Host or other participants)
+        // Note: Identity selection should be exclusive regardless of activeTab
+        const otherUserWithName = onlineUsers.find(u => u.name === nameToUse && u.id !== syncService.myId);
+        const isTaken = !!otherUserWithName;
 
-        if (mySelectedName === participantName) {
+        if (mySelectedName === nameToUse) {
             setMySelectedName(null);
             await syncService.setIdentity('');
         } else if (!isTaken) {
-            setMySelectedName(participantName);
-            await syncService.setIdentity(participantName);
+            setMySelectedName(nameToUse);
+            await syncService.setIdentity(nameToUse);
+            if (role === 'owner') {
+                await syncService.setHostName(nameToUse);
+                setHostName(nameToUse);
+            }
         } else {
-            Alert.alert(t('common.alert'), t('name_input.already_taken'));
+            // Check if it's specifically the host
+            const isHost = otherUserWithName?.role === 'owner';
+            Alert.alert(
+                t('common.alert'),
+                isHost ? t('name_input.host_selected') || 'Host has chosen this.' : t('name_input.already_taken')
+            );
         }
     };
 
@@ -704,6 +758,8 @@ export default function NameInputScreen({ route, navigation }) {
                     await syncService.submitVote(winner);
 
                     // Navigate to Roulette Screen to wait for others
+                    const finalHostName = hostName || onlineUsers.find(u => u.role === 'owner')?.name || (role === 'owner' ? mySelectedName : (roomId.length <= 8 ? roomId : null));
+
                     navigation.navigate('Roulette', {
                         participants,
                         menuItems,
@@ -713,7 +769,8 @@ export default function NameInputScreen({ route, navigation }) {
                         role,
                         category: activeCategory,
                         votedItem: winner,
-                        spinTarget: 'menu'
+                        spinTarget: 'menu',
+                        hostName: finalHostName
                     });
 
                 } catch (err) {
@@ -742,6 +799,8 @@ export default function NameInputScreen({ route, navigation }) {
                 await syncService.submitVote(winner);
             } catch (e) { console.error(e); }
 
+            const finalHostName = hostName || onlineUsers.find(u => u.role === 'owner')?.name || (role === 'owner' ? mySelectedName : (roomId.length <= 8 ? roomId : null));
+
             navigation.navigate('Roulette', {
                 participants,
                 menuItems,
@@ -751,7 +810,8 @@ export default function NameInputScreen({ route, navigation }) {
                 role,
                 category: activeCategory,
                 votedItem: winner,
-                spinTarget: 'menu'
+                spinTarget: 'menu',
+                hostName: finalHostName
             });
         }
     };
@@ -821,6 +881,8 @@ export default function NameInputScreen({ route, navigation }) {
                 console.error('NameInputScreen: Failed to initialize session:', e);
             }
 
+            const finalHostName = hostName || onlineUsers.find(u => u.role === 'owner')?.name || (role === 'owner' ? mySelectedName : (roomId.length <= 8 ? roomId : null));
+
             navigation.navigate('Roulette', {
                 participants,
                 menuItems,
@@ -830,7 +892,8 @@ export default function NameInputScreen({ route, navigation }) {
                 role,
                 category: activeCategory,
                 spinTarget: target, // Explicitly pass the target mode
-                autoStartSpin: true
+                autoStartSpin: true,
+                hostName: finalHostName
             });
         } else {
             // Participant handling for SPIN button
@@ -844,6 +907,8 @@ export default function NameInputScreen({ route, navigation }) {
                 return;
             }
 
+            const finalHostName = hostName || onlineUsers.find(u => u.role === 'owner')?.name || (role === 'owner' ? mySelectedName : (roomId.length <= 8 ? roomId : null));
+
             navigation.navigate('Roulette', {
                 participants,
                 menuItems,
@@ -853,7 +918,8 @@ export default function NameInputScreen({ route, navigation }) {
                 role,
                 category: activeCategory,
                 spinTarget: target,
-                autoStartSpin: true
+                autoStartSpin: true,
+                hostName: finalHostName
             });
         }
     };
@@ -1528,6 +1594,7 @@ export default function NameInputScreen({ route, navigation }) {
                                             const pName = typeof p === 'object' ? (p.name || p.text || '') : String(p);
                                             const isTaken = onlineUsers.some(u => u.name === pName && u.id !== syncService.myId);
                                             const isMe = mySelectedName === pName;
+                                            const isPendingMe = pendingSelectedName === pName;
                                             const isEditing = editingParticipantIndex === index;
 
                                             // Skip empty names
@@ -1552,7 +1619,7 @@ export default function NameInputScreen({ route, navigation }) {
                                                         <View style={{ padding: 8, marginRight: 5 }}>
                                                             <CheckCircle2
                                                                 size={20}
-                                                                color={isMe ? Colors.primary : '#444'}
+                                                                color={isPendingMe ? Colors.primary : '#444'}
                                                             />
                                                         </View>
                                                         <TextInput
@@ -1593,20 +1660,24 @@ export default function NameInputScreen({ route, navigation }) {
                                                         marginBottom: 4,
                                                         backgroundColor: '#0a0a0a',
                                                         borderWidth: 1,
-                                                        borderColor: isMe ? Colors.primary : (index === modalFocusedIndex ? 'rgba(255, 255, 255, 0.4)' : '#222'),
+                                                        borderColor: isPendingMe ? Colors.primary : (index === modalFocusedIndex ? 'rgba(255, 255, 255, 0.4)' : '#222'),
                                                         borderStyle: 'solid',
                                                     }}
                                                 >
                                                     <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
                                                         <TouchableOpacity
-                                                            onPress={() => toggleMe(pName)}
+                                                            onPress={() => {
+                                                                if (!isTaken || isMe) {
+                                                                    setPendingSelectedName(pName);
+                                                                }
+                                                            }}
                                                             disabled={(isTaken && !isMe)}
                                                             style={{ padding: 8, marginRight: 5 }}
                                                         >
                                                             <CheckCircle2
                                                                 size={20}
-                                                                color={isMe ? Colors.primary : (index === modalFocusedIndex ? 'rgba(255, 255, 255, 0.5)' : '#444')}
-                                                                style={{ opacity: isMe ? 1 : 0.6 }}
+                                                                color={isPendingMe ? Colors.primary : (index === modalFocusedIndex ? 'rgba(255, 255, 255, 0.5)' : '#444')}
+                                                                style={{ opacity: isPendingMe ? 1 : 0.6 }}
                                                             />
                                                         </TouchableOpacity>
 
@@ -1616,23 +1687,23 @@ export default function NameInputScreen({ route, navigation }) {
                                                                 if (role === 'owner') {
                                                                     startEditingParticipant(index, pName);
                                                                 } else if (!isTaken || isMe) {
-                                                                    toggleMe(pName);
+                                                                    setPendingSelectedName(pName);
                                                                 }
                                                             }}
                                                             disabled={role !== 'owner' && isTaken && !isMe}
                                                             style={{ flex: 1, paddingVertical: 8 }}
                                                         >
                                                             <Text style={{
-                                                                color: isMe ? 'white' : (isTaken ? '#666' : 'white'),
+                                                                color: isPendingMe ? 'white' : (isTaken && !isMe ? '#666' : 'white'),
                                                                 fontSize: 16,
-                                                                fontWeight: isMe ? 'bold' : 'normal',
+                                                                fontWeight: isPendingMe ? 'bold' : 'normal',
                                                                 flexDirection: 'row',
                                                                 alignItems: 'center'
                                                             }}>
                                                                 {pName}
-                                                                {isMe && <Text style={{ fontSize: 12, color: Colors.primary }}> (ME)</Text>}
+                                                                {isMe && <Text style={{ fontSize: 12, color: Colors.primary }}> {t('common.me')}</Text>}
                                                                 {isTaken && !isMe && <Text style={{ fontSize: 12, color: '#666' }}> ({t('name_input.selected')})</Text>}
-                                                                {onlineUsers.find(u => u.name === pName)?.role === 'owner' && (
+                                                                {(pName === hostName || onlineUsers.find(u => u.name === pName)?.role === 'owner') && (
                                                                     <View style={{
                                                                         backgroundColor: `${Colors.accent}15`,
                                                                         borderColor: Colors.accent,
@@ -1645,7 +1716,7 @@ export default function NameInputScreen({ route, navigation }) {
                                                                         transform: [{ translateY: 1 }]
                                                                     }}>
                                                                         <Crown color={Colors.accent} size={10} fill={`${Colors.accent}33`} style={{ marginRight: 2 }} />
-                                                                        <Text style={{ color: Colors.accent, fontSize: 9, fontWeight: '900' }}>HOST</Text>
+                                                                        <Text style={{ color: Colors.accent, fontSize: 9, fontWeight: '900' }}>{t('common.host').toUpperCase()}</Text>
                                                                     </View>
                                                                 )}
                                                             </Text>
@@ -1683,10 +1754,8 @@ export default function NameInputScreen({ route, navigation }) {
 
                                     <TouchableOpacity
                                         onPress={() => {
-                                            if (!mySelectedName && modalFocusedIndex !== null) {
-                                                const p = participants[modalFocusedIndex];
-                                                const pName = typeof p === 'object' ? (p.name || p.text || '') : String(p);
-                                                toggleMe(pName);
+                                            if (pendingSelectedName !== mySelectedName) {
+                                                toggleMe(pendingSelectedName);
                                             }
                                             setShowIdentityModal(false);
                                         }}
@@ -1783,7 +1852,7 @@ export default function NameInputScreen({ route, navigation }) {
                                                     <Text style={{ color: onlineUser ? 'white' : 'rgba(255,255,255,0.3)', fontSize: 16, fontWeight: '500' }}>
                                                         {pName} {isMe ? <Text style={{ fontSize: 11, color: Colors.primary }}> {t('common.me')}</Text> : ''}
                                                     </Text>
-                                                    {onlineUser?.role === 'owner' && (
+                                                    {(pName === hostName || onlineUser?.role === 'owner') && (
                                                         <View style={{
                                                             backgroundColor: `${Colors.accent}25`,
                                                             borderColor: Colors.accent,
@@ -1796,7 +1865,7 @@ export default function NameInputScreen({ route, navigation }) {
                                                             alignItems: 'center',
                                                         }}>
                                                             <Crown color={Colors.accent} size={10} fill={`${Colors.accent}33`} style={{ marginRight: 4 }} />
-                                                            <Text style={{ color: Colors.accent, fontSize: 10, fontWeight: '900' }}>HOST</Text>
+                                                            <Text style={{ color: Colors.accent, fontSize: 10, fontWeight: '900' }}>{t('common.host').toUpperCase()}</Text>
                                                         </View>
                                                     )}
                                                 </View>

@@ -109,7 +109,9 @@
         "select_menu_error": "Please click a menu item to select",
         "connection_error": "Failed to connect to room",
         "min_participants_error": "At least 2 participants are required",
-        "select_me": "ME SELECT"
+        "select_me": "ME SELECT",
+        "already_taken": "This name is already taken by another participant.",
+        "host_selected": "This name is reserved by the host."
     },
     "roulette": {
         "spin_center": "SPIN",

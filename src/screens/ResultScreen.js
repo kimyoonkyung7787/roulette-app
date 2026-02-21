@@ -9,7 +9,7 @@ import { feedbackService } from '../services/FeedbackService';
 import { historyService } from '../services/HistoryService';
 import { syncService } from '../services/SyncService';
 import { useTranslation } from 'react-i18next';
-import { Share2, ListChecks, History, LogOut, Trophy, Loader, RefreshCw, X, Home, Zap, Cpu, Radio, Activity, Drum, Sparkle, HandMetal, Gavel } from 'lucide-react-native';
+import { Share2, ListChecks, History, LogOut, Trophy, Loader, RefreshCw, X, Home, Zap, Cpu, Radio, Activity, Drum, Sparkle, HandMetal, Gavel, User, CheckCircle2, Crown } from 'lucide-react-native';
 import { Confetti } from '../components/Confetti';
 
 export default function ResultScreen({ route, navigation }) {
@@ -228,13 +228,32 @@ export default function ResultScreen({ route, navigation }) {
 
                 // Construct details: prefer onlineUsers for complete list, fallback to finalVotes
                 let details = [];
+                const hostNameFromParams = route.params?.hostName;
+
                 if (onlineUsers && onlineUsers.length > 0) {
                     details = onlineUsers.map(user => {
                         const vote = finalVotes.find(v => v.userId === user.id);
+                        // Case 1: Use hostName passed from previous screen (most reliable)
+                        let isUserOwner = hostNameFromParams ? (user.name === hostNameFromParams) : false;
+
+                        // Case 2: Use explicit role from Firebase presence
+                        if (!isUserOwner) isUserOwner = user.role === 'owner';
+
+                        // Case 3: If presence doesn't have role yet, check if it's "Me" and I am the owner
+                        if (!isUserOwner && user.id === syncService.myId && role === 'owner') {
+                            isUserOwner = true;
+                        }
+
+                        // Case 4: Fallback check by name (Host name matches Room ID in this app's logic)
+                        if (!isUserOwner && user.name === roomId) {
+                            isUserOwner = true;
+                        }
+
                         return {
                             name: user.name,
                             votedFor: vote ? vote.votedFor : 'NO VOTE',
-                            isMe: user.id === syncService.myId
+                            isMe: user.id === syncService.myId,
+                            isOwner: isUserOwner
                         };
                     });
                 } else {
@@ -242,7 +261,8 @@ export default function ResultScreen({ route, navigation }) {
                     details = finalVotes.map(v => ({
                         name: v.userName || 'Unknown',
                         votedFor: v.votedFor,
-                        isMe: v.userId === syncService.myId
+                        isMe: v.userId === syncService.myId,
+                        isOwner: (hostNameFromParams && v.userName === hostNameFromParams) || (v.userName === roomId) || (v.userId === syncService.myId && role === 'owner')
                     }));
                 }
 
@@ -480,7 +500,25 @@ export default function ResultScreen({ route, navigation }) {
                                 <View style={styles.tallyContainer}>
                                     {Object.entries(tally).map(([name, count]) => (
                                         <View key={name} style={styles.tallyItem}>
-                                            <Text style={styles.tallyName}>{name}</Text>
+                                            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                                                <Text style={styles.tallyName}>{name}</Text>
+                                                {name === (route.params?.hostName) && (
+                                                    <View style={{
+                                                        backgroundColor: `${Colors.accent}25`,
+                                                        borderColor: Colors.accent,
+                                                        borderWidth: 1.5,
+                                                        borderRadius: 6,
+                                                        paddingHorizontal: 6,
+                                                        paddingVertical: 1,
+                                                        marginLeft: 8,
+                                                        flexDirection: 'row',
+                                                        alignItems: 'center',
+                                                    }}>
+                                                        <Crown color={Colors.accent} size={8} fill={`${Colors.accent}33`} style={{ marginRight: 2 }} />
+                                                        <Text style={{ color: Colors.accent, fontSize: 8, fontWeight: 'bold' }}>{t('common.host').toUpperCase()}</Text>
+                                                    </View>
+                                                )}
+                                            </View>
                                             <View style={styles.tallyBarContainer}>
                                                 {[...Array(Math.max(totalParticipants, 5))].map((_, i) => (
                                                     <View
@@ -554,34 +592,82 @@ export default function ResultScreen({ route, navigation }) {
                     animationType="fade"
                     onRequestClose={() => setShowUsersModal(false)}
                 >
-                    <View style={styles.modalOverlay}>
-                        <View style={styles.modalContent}>
-                            <View style={styles.modalHeader}>
-                                <Text style={styles.modalTitle}>{t('name_input.participant_status').toUpperCase()}</Text>
+                    <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.8)', justifyContent: 'center', alignItems: 'center', padding: 20 }}>
+                        <View style={{
+                            width: '100%',
+                            maxWidth: 400,
+                            backgroundColor: '#111',
+                            borderRadius: 20,
+                            padding: 24,
+                            borderWidth: 2,
+                            borderColor: Colors.primary,
+                            shadowColor: Colors.primary,
+                            shadowOffset: { width: 0, height: 0 },
+                            shadowOpacity: 0.5,
+                            shadowRadius: 15,
+                            elevation: 8
+                        }}>
+                            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+                                <NeonText style={{ fontSize: 20 }}>{t('name_input.participant_status')}</NeonText>
                                 <TouchableOpacity onPress={() => setShowUsersModal(false)}>
-                                    <X color={Colors.primary} size={24} />
+                                    <X color={Colors.text} size={24} />
                                 </TouchableOpacity>
-                            </View>
-                            <View style={styles.tableHeader}>
-                                <Text style={styles.tableHeaderText}>{t('name_input.voter').toUpperCase()}</Text>
-                                <Text style={styles.tableHeaderText}>{t('name_input.winner').toUpperCase()}</Text>
                             </View>
 
                             <ScrollView style={{ maxHeight: 400 }}>
                                 {onlineUsers.map((user) => {
                                     const userVote = finalVotes.find(v => v.userId === user.id);
+                                    const isMe = user.id === syncService.myId;
+
                                     return (
-                                        <View key={user.id} style={styles.userItem}>
-                                            <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center' }}>
-                                                <View style={[styles.userStatusDot, { backgroundColor: userVote ? Colors.success : Colors.primary }]} />
-                                                <Text style={styles.userName}>
-                                                    {user.name} {user.id === syncService.myId ? <Text style={{ fontSize: 10 }}> {t('common.me')}</Text> : ''}
+                                        <View key={user.id} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.05)' }}>
+                                            <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
+                                                <View style={{
+                                                    width: 8,
+                                                    height: 8,
+                                                    borderRadius: 4,
+                                                    backgroundColor: userVote ? Colors.success : Colors.primary,
+                                                    marginRight: 10,
+                                                    shadowColor: userVote ? Colors.success : Colors.primary,
+                                                    shadowRadius: 4,
+                                                    shadowOpacity: 0.5
+                                                }} />
+                                                <Text style={{ color: 'white', fontSize: 16, fontWeight: '500' }}>
+                                                    {user.name} {isMe ? <Text style={{ fontSize: 11, color: Colors.primary }}> {t('common.me')}</Text> : ''}
                                                 </Text>
+                                                {(user.name === route.params?.hostName || user.role === 'owner') && (
+                                                    <View style={{
+                                                        backgroundColor: `${Colors.accent}25`,
+                                                        borderColor: Colors.accent,
+                                                        borderWidth: 1.5,
+                                                        borderRadius: 6,
+                                                        paddingHorizontal: 6,
+                                                        paddingVertical: 1,
+                                                        marginLeft: 8,
+                                                        flexDirection: 'row',
+                                                        alignItems: 'center',
+                                                    }}>
+                                                        <Crown color={Colors.accent} size={10} fill={`${Colors.accent}33`} style={{ marginRight: 4 }} />
+                                                        <Text style={{ color: Colors.accent, fontSize: 10, fontWeight: '900' }}>{t('common.host').toUpperCase()}</Text>
+                                                    </View>
+                                                )}
                                             </View>
-                                            <View style={{ backgroundColor: 'rgba(255,255,255,0.05)', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 6, borderWidth: 1, borderColor: userVote ? 'rgba(57, 255, 20, 0.2)' : 'rgba(255,255,255,0.1)' }}>
-                                                <Text style={{ color: userVote ? Colors.success : 'rgba(255,255,255,0.3)', fontSize: 12, fontWeight: 'bold' }}>
-                                                    {userVote ? userVote.votedFor : t('roulette.spinning')}
-                                                </Text>
+                                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                                                <View style={{
+                                                    backgroundColor: userVote ? 'rgba(57, 255, 20, 0.1)' : 'rgba(255, 255, 255, 0.05)',
+                                                    paddingHorizontal: 8,
+                                                    paddingVertical: 4,
+                                                    borderRadius: 4,
+                                                    borderWidth: 1,
+                                                    borderColor: userVote ? 'rgba(57, 255, 20, 0.3)' : 'rgba(255, 255, 255, 0.1)',
+                                                    flexDirection: 'row',
+                                                    alignItems: 'center'
+                                                }}>
+                                                    {userVote && <CheckCircle2 size={12} color={Colors.success} style={{ marginRight: 4 }} />}
+                                                    <Text style={{ color: userVote ? Colors.success : 'rgba(255,255,255,0.3)', fontSize: 11, fontWeight: 'bold' }}>
+                                                        {userVote ? userVote.votedFor.toUpperCase() : t('roulette.spinning').toUpperCase()}
+                                                    </Text>
+                                                </View>
                                             </View>
                                         </View>
                                     );
@@ -592,7 +678,6 @@ export default function ResultScreen({ route, navigation }) {
                             </ScrollView>
                         </View>
                     </View>
-
                 </Modal>
                 <CyberAlert
                     visible={showExitConfirm}

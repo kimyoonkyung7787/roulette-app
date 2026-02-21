@@ -141,11 +141,28 @@ class SyncService {
         }
     }
 
+    async setHostName(name) {
+        try {
+            await set(ref(db, `${this.roomPath}/hostName`), name);
+            console.log(`SyncService: Host name set to ${name} in room ${this.roomId}`);
+        } catch (e) {
+            console.error('Failed to set hostName:', e);
+        }
+    }
+
     subscribeToCategory(callback) {
         return onValue(ref(db, `${this.roomPath}/category`), (snapshot) => {
             const category = snapshot.val() || 'coffee';
             console.log(`SyncService: Category update received: ${category}`);
             callback(category);
+        });
+    }
+
+    subscribeToHostName(callback) {
+        return onValue(ref(db, `${this.roomPath}/hostName`), (snapshot) => {
+            const hostName = snapshot.val();
+            console.log(`SyncService: Host name update received: ${hostName}`);
+            callback(hostName);
         });
     }
 

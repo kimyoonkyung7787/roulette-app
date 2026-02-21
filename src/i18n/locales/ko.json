@@ -119,7 +119,9 @@
         "select_menu_error": "선택할 메뉴를 클릭해 주세요",
         "connection_error": "방 연결에 실패했습니다",
         "min_participants_error": "최소 2명의 참여자가 필요합니다",
-        "select_me": "ME 선택"
+        "select_me": "ME 선택",
+        "already_taken": "이 이름은 이미 다른 참가자가 사용 중입니다.",
+        "host_selected": "호스트가 선택한 이름입니다."
     },
     "roulette": {
         "spin_center": "회전",
