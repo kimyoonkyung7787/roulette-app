@@ -978,43 +978,24 @@ export default function NameInputScreen({ route, navigation }) {
             });
             const title = t('common.invite_title');
 
-            // Try Web Share API (modern browsers, especially mobile)
+            // 1. Web Share API (Mobile Browsers) - Focus on Text & URL
+            // We don't send the image as a 'file' because it often hides the text content
+            // Instead, the OG tags we set will show the image automatically in the link preview
             if (Platform.OS === 'web' && navigator.share) {
-                try {
-                    // Try sharing with image file
-                    const imageUrl = '/roulette_game.png';
-                    const response = await fetch(imageUrl);
-                    const blob = await response.blob();
-                    const file = new File([blob], 'roulette_invite.png', { type: 'image/png' });
-
-                    if (navigator.canShare && navigator.canShare({ files: [file] })) {
-                        // Share with image (mobile browsers)
-                        await navigator.share({
-                            title,
-                            text: message,
-                            files: [file]
-                        });
-                        return;
-                    }
-                } catch (imgErr) {
-                    console.log('Image share not supported, falling back to text share');
-                }
-
-                // Fallback: text-only web share
                 try {
                     await navigator.share({
                         title,
-                        text: message,
+                        text: `${message}`, // Keep full message
                         url: inviteUrl
                     });
                     return;
                 } catch (shareErr) {
-                    if (shareErr.name === 'AbortError') return; // User cancelled
+                    if (shareErr.name === 'AbortError') return;
                     console.log('Web share failed, falling back to clipboard');
                 }
             }
 
-            // Native Share (React Native / Expo)
+            // 2. Native Share (React Native / Expo)
             if (Platform.OS !== 'web') {
                 await Share.share({
                     message,
@@ -1024,7 +1005,7 @@ export default function NameInputScreen({ route, navigation }) {
                 return;
             }
 
-            // Final fallback: copy to clipboard
+            // 3. Final fallback: copy to clipboard
             if (navigator.clipboard) {
                 await navigator.clipboard.writeText(message);
                 Alert.alert(t('common.info'), t('common.link_copied'));
