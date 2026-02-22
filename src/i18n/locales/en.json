@@ -40,34 +40,31 @@
     },
     "popular_items": {
         "coffee": [
-            "Americano",
+            "Hot/Iced Americano",
             "Cafe Latte",
             "Vanilla Latte",
             "Cappuccino",
-            "Ade",
+            "Fruit Ade",
             "Green Tea Latte",
-            "Smoothie",
-            "Espresso"
+            "Smoothie"
         ],
         "meal": [
-            "Kimchi Stew",
-            "Bulgogi",
-            "Bibimbap",
-            "Tonkatsu",
-            "Ramen",
-            "Pasta",
+            "Pizza",
+            "Burger & Fries",
             "Sushi",
-            "Fried Rice"
+            "Pasta",
+            "Fried Chicken",
+            "Tacos",
+            "Steak"
         ],
         "snack": [
-            "Tteokbokki",
-            "Fried Chicken",
-            "Pizza",
-            "Sandwich",
-            "Salad",
-            "Hamburger",
-            "Gimbap",
-            "Tacos"
+            "Popcorn",
+            "Nachos",
+            "Ice Cream",
+            "Donuts",
+            "Cookies",
+            "Potato Chips",
+            "Pretzels"
         ],
         "etc": [
             "Rock Paper Scissors",
@@ -174,7 +171,13 @@
         "online_title": "ONLINE",
         "online_desc": "Remote gathering.\nEveryone spins to win!",
         "select_mode": "SELECT MODE",
-        "game_center": "GAME CENTER"
+        "game_center": "GAME CENTER",
+        "create_by_menu": "By Menu",
+        "who_pays": "Who pays?",
+        "who_pays_desc": "Spin to pick one from the group",
+        "what_to_eat": "What to eat?",
+        "what_to_eat_desc": "Add menus and decide together",
+        "winner_shout": "WINNER!"
     },
     "offline": {
         "title": "ROULETTE",

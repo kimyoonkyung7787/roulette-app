@@ -31,6 +31,7 @@ export default function NameInputScreen({ route, navigation }) {
     const [editingIndex, setEditingIndex] = useState(null);
     const [editingWeightIndex, setEditingWeightIndex] = useState(null);
     const [editingValue, setEditingValue] = useState('');
+    const [coffeeOption, setCoffeeOption] = useState('Hot');
     const [editingWeightValue, setEditingWeightValue] = useState('');
     const [mySelectedName, setMySelectedName] = useState(null);
     const [spinning, setSpinning] = useState(false);
@@ -594,11 +595,17 @@ export default function NameInputScreen({ route, navigation }) {
             setParticipants(updated);
             if (role === 'owner') await syncService.setParticipants(updated);
         } else {
-            const updated = [...menuItems, { name: trimmedName }];
+            let finalName = trimmedName;
+            if (activeCategory === 'coffee') {
+                finalName = `${trimmedName}(${coffeeOption})`;
+            }
+            const updated = [...menuItems, { name: finalName }];
             setMenuItems(updated);
             if (role === 'owner') await syncService.setMenuItems(updated);
         }
-        setName('');
+
+        setName(''); // Clear input
+        try { feedbackService.playClick(); } catch (e) { }
     };
 
     // Dedicated function for Modal to ensure it always adds to PEOPLE list regardless of activeTab
@@ -970,7 +977,7 @@ export default function NameInputScreen({ route, navigation }) {
     const handleShare = async () => {
         try {
             const inviteUrl = `https://roulette-app-two.vercel.app/?roomId=${roomId}`;
-            const displayName = mySelectedName || 'Host';
+            const displayName = mySelectedName || syncService.myName || t('common.host') || 'Host';
             const message = t('common.invite_message', {
                 name: displayName,
                 roomId: roomId.toUpperCase(),
@@ -1192,56 +1199,91 @@ export default function NameInputScreen({ route, navigation }) {
 
 
                     {role === 'owner' && (
-                        <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 25 }}>
-                            <View style={{ flex: 1, backgroundColor: 'rgba(255,255,255,0.12)', borderRadius: 12, borderWidth: 1, borderColor: 'rgba(255,255,255,0.15)', marginRight: 10, overflow: 'hidden' }}>
-                                <TextInput
-                                    style={{ color: 'white', padding: 16, fontSize: 16 }}
-                                    placeholder={activeTab === 'people' ? t('name_input.add_participant') : t('name_input.add_menu_item')}
-                                    placeholderTextColor="rgba(255,255,255,0.3)"
-                                    value={name}
-                                    onChangeText={setName}
-                                    onSubmitEditing={addParticipant}
-                                    maxLength={15}
-                                />
-                            </View>
-                            <TouchableOpacity
-                                onPress={addParticipant}
-                                style={{
-                                    backgroundColor: activeTab === 'people' ? Colors.primary : categoryColor,
-                                    padding: 16,
-                                    borderRadius: 12,
-                                    shadowColor: activeTab === 'people' ? Colors.primary : categoryColor,
-                                    shadowOpacity: 0.5,
-                                    shadowRadius: 15,
-                                    elevation: 8,
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    flexDirection: 'row'
-                                }}
-                            >
-                                <View style={{ position: 'relative' }}>
-                                    {(() => {
-                                        const iconProps = { color: "black", size: 24, strokeWidth: 2.5 };
-
-                                        if (activeTab === 'people') {
-                                            return <UserPlus {...iconProps} />;
-                                        }
-
-                                        switch (activeCategory) {
-                                            case 'coffee':
-                                                return <Coffee {...iconProps} />;
-                                            case 'meal':
-                                                return <Utensils {...iconProps} />;
-                                            case 'snack':
-                                                return <Cookie {...iconProps} />;
-                                            case 'etc':
-                                                return <Guitar {...iconProps} />;
-                                            default:
-                                                return <Utensils {...iconProps} />;
-                                        }
-                                    })()}
+                        <View style={{ flexDirection: 'column', marginBottom: 25 }}>
+                            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                                <View style={{ flex: 1, backgroundColor: 'rgba(255,255,255,0.12)', borderRadius: 12, borderWidth: 1, borderColor: 'rgba(255,255,255,0.15)', marginRight: 10, overflow: 'hidden' }}>
+                                    <TextInput
+                                        style={{ color: 'white', padding: 16, fontSize: 16 }}
+                                        placeholder={activeTab === 'people' ? t('name_input.add_participant') : t('name_input.add_menu_item')}
+                                        placeholderTextColor="rgba(255,255,255,0.3)"
+                                        value={name}
+                                        onChangeText={setName}
+                                        onSubmitEditing={addParticipant}
+                                        maxLength={15}
+                                    />
                                 </View>
-                            </TouchableOpacity>
+                                <TouchableOpacity
+                                    onPress={addParticipant}
+                                    style={{
+                                        backgroundColor: activeTab === 'people' ? Colors.primary : categoryColor,
+                                        padding: 16,
+                                        borderRadius: 12,
+                                        shadowColor: activeTab === 'people' ? Colors.primary : categoryColor,
+                                        shadowOpacity: 0.5,
+                                        shadowRadius: 15,
+                                        elevation: 8,
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        flexDirection: 'row'
+                                    }}
+                                >
+                                    <View style={{ position: 'relative' }}>
+                                        {(() => {
+                                            const iconProps = { color: "black", size: 24, strokeWidth: 2.5 };
+
+                                            if (activeTab === 'people') {
+                                                return <UserPlus {...iconProps} />;
+                                            }
+
+                                            switch (activeCategory) {
+                                                case 'coffee':
+                                                    return <Coffee {...iconProps} />;
+                                                case 'meal':
+                                                    return <Utensils {...iconProps} />;
+                                                case 'snack':
+                                                    return <Cookie {...iconProps} />;
+                                                case 'etc':
+                                                    return <Guitar {...iconProps} />;
+                                                default:
+                                                    return <Utensils {...iconProps} />;
+                                            }
+                                        })()}
+                                    </View>
+                                </TouchableOpacity>
+                            </View>
+
+                            {/* HOT/ICE RADIO BUTTONS FOR COFFEE */}
+                            {activeTab === 'menu' && activeCategory === 'coffee' && (
+                                <View style={{ flexDirection: 'row', marginTop: 15, justifyContent: 'center', gap: 24 }}>
+                                    <TouchableOpacity
+                                        onPress={() => {
+                                            if (coffeeOption !== 'Hot') setCoffeeOption('Hot');
+                                            try { feedbackService.playClick(); } catch (e) { }
+                                        }}
+                                        activeOpacity={0.8}
+                                        style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}
+                                    >
+                                        <View style={{ width: 22, height: 22, borderRadius: 11, borderWidth: 2, borderColor: coffeeOption === 'Hot' ? Colors.neonPink : '#666', justifyContent: 'center', alignItems: 'center' }}>
+                                            {coffeeOption === 'Hot' && <View style={{ width: 12, height: 12, borderRadius: 6, backgroundColor: Colors.neonPink }} />}
+                                        </View>
+                                        <Text style={{ color: coffeeOption === 'Hot' ? 'white' : '#888', fontSize: 16, fontWeight: 'bold' }}>Hot</Text>
+                                    </TouchableOpacity>
+
+                                    <TouchableOpacity
+                                        onPress={() => {
+                                            if (coffeeOption !== 'Ice') setCoffeeOption('Ice');
+                                            try { feedbackService.playClick(); } catch (e) { }
+                                        }}
+                                        activeOpacity={0.8}
+                                        style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}
+                                    >
+                                        <View style={{ width: 22, height: 22, borderRadius: 11, borderWidth: 2, borderColor: coffeeOption === 'Ice' ? Colors.neonBlue : '#666', justifyContent: 'center', alignItems: 'center' }}>
+                                            {coffeeOption === 'Ice' && <View style={{ width: 12, height: 12, borderRadius: 6, backgroundColor: Colors.neonBlue }} />}
+                                        </View>
+                                        <Text style={{ color: coffeeOption === 'Ice' ? 'white' : '#888', fontSize: 16, fontWeight: 'bold' }}>Ice</Text>
+                                    </TouchableOpacity>
+                                </View>
+                            )}
                         </View>
                     )}
 
@@ -1415,7 +1457,7 @@ export default function NameInputScreen({ route, navigation }) {
                             activeTab === 'people' && participants.length > 0 ? (
                                 <View style={{ flexDirection: 'row', justifyContent: 'flex-end', paddingVertical: 10, paddingRight: 10 }}>
                                     <Text style={{ color: Colors.textSecondary, fontSize: 14, fontWeight: '500' }}>
-                                        TOTAL WEIGHT: <Text style={{ color: Colors.textSecondary, fontSize: 16 }}>{totalParticipantsWeight}</Text>
+                                        {t('name_input.total_ratio').toUpperCase()}: <Text style={{ color: Colors.textSecondary, fontSize: 16 }}>{totalParticipantsWeight}</Text>
                                     </Text>
                                 </View>
                             ) : null

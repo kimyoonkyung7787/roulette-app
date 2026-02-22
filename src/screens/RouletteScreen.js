@@ -854,10 +854,7 @@ export default function RouletteScreen({ route, navigation }) {
                                 paddingVertical: 6,
                                 borderRadius: 12,
                                 borderWidth: 1,
-                                borderColor: Colors.primary,
-                                shadowColor: Colors.primary,
-                                shadowOpacity: 0.3,
-                                shadowRadius: 5
+                                borderColor: Colors.primary
                             }}>
                                 <Text style={{ color: Colors.primary, fontSize: 13, fontWeight: '900', letterSpacing: 1 }}>#{t('common.room_id')}: {(roomId || '').toUpperCase()}</Text>
                                 <Text style={{ color: Colors.secondary, fontSize: 10, fontWeight: 'bold', marginTop: 1, opacity: 0.8 }}>{t('common.player').toUpperCase()}: {(mySelectedName || (role === 'owner' ? t('common.host') : t(`common.${role}`)) || t('common.unknown')).toUpperCase()}</Text>
@@ -906,7 +903,7 @@ export default function RouletteScreen({ route, navigation }) {
                             <>
                                 <View style={styles.header}>
                                     <NeonText className="text-3xl tracking-widest">{spinTarget === 'people' ? t('roulette.spinning_roulette') : t('roulette.gourmet_selection')}</NeonText>
-                                    <View style={[styles.headerLine, { backgroundColor: spinTarget === 'people' ? Colors.primary : Colors.secondary, shadowColor: spinTarget === 'people' ? Colors.primary : Colors.secondary }]} />
+                                    <View style={[styles.headerLine, { backgroundColor: spinTarget === 'people' ? Colors.primary : Colors.secondary }]} />
                                 </View>
                                 <View style={styles.wheelWrapper}>
                                     <View style={[styles.wheelGlow, { backgroundColor: '#666666' }]} />
@@ -1294,11 +1291,6 @@ const styles = StyleSheet.create({
         padding: 24,
         borderWidth: 2,
         borderColor: Colors.primary,
-        shadowColor: Colors.primary,
-        shadowOffset: { width: 0, height: 0 },
-        shadowOpacity: 0.5,
-        shadowRadius: 15,
-        elevation: 8,
     },
     modalHeader: {
         flexDirection: 'row',
@@ -1398,9 +1390,6 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         borderWidth: 1,
         borderColor: 'rgba(255, 255, 255, 0.1)',
-        shadowColor: Colors.accent,
-        shadowOpacity: 0.2,
-        shadowRadius: 20,
     },
     pickItemBadge: {
         marginTop: 20,
@@ -1463,11 +1452,6 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'center',
         width: '100%',
-        elevation: 4,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.3,
-        shadowRadius: 4,
     },
     forceResultText: {
         color: '#fff',

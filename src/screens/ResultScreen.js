@@ -613,22 +613,6 @@ export default function ResultScreen({ route, navigation }) {
                                                 <Text style={{ color: 'white', fontSize: 16, fontWeight: '500' }}>
                                                     {user.name} {isMe ? <Text style={{ fontSize: 11, color: Colors.primary }}> {t('common.me')}</Text> : ''}
                                                 </Text>
-                                                {(user.name === route.params?.hostName || user.role === 'owner') && (
-                                                    <View style={{
-                                                        backgroundColor: `${Colors.accent}25`,
-                                                        borderColor: Colors.accent,
-                                                        borderWidth: 1.5,
-                                                        borderRadius: 6,
-                                                        paddingHorizontal: 6,
-                                                        paddingVertical: 1,
-                                                        marginLeft: 8,
-                                                        flexDirection: 'row',
-                                                        alignItems: 'center',
-                                                    }}>
-                                                        <Crown color={Colors.accent} size={10} fill={`${Colors.accent}33`} style={{ marginRight: 4 }} />
-                                                        <Text style={{ color: Colors.accent, fontSize: 10, fontWeight: '900' }}>{t('common.host').toUpperCase()}</Text>
-                                                    </View>
-                                                )}
                                             </View>
                                             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                                                 <View style={{

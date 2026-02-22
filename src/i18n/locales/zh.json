@@ -39,36 +39,33 @@
         "etc": "其他"
     },
     "popular_items": {
-        "coffee": {
-            "0": "美式咖啡",
-            "1": "拿铁",
-            "2": "香草拿铁",
-            "3": "卡布奇诺",
-            "4": "汽水",
-            "5": "抹茶拿铁",
-            "6": "奶昔",
-            "7": "浓缩咖啡"
-        },
-        "meal": {
-            "0": "泡菜汤",
-            "1": "烤肉",
-            "2": "拌饭",
-            "3": "炸猪排",
-            "4": "拉面",
-            "5": "意面",
-            "6": "寿司",
-            "7": "炒饭"
-        },
-        "snack": {
-            "0": "炒年糕",
-            "1": "炸鸡",
-            "2": "披萨",
-            "3": "三明治",
-            "4": "沙拉",
-            "5": "汉堡",
-            "6": "紫菜包饭",
-            "7": "塔可"
-        },
+        "coffee": [
+            "热/冰 美式咖啡",
+            "拿铁咖啡",
+            "香草拿铁",
+            "卡布奇诺",
+            "水果气泡水",
+            "抹茶拿铁",
+            "冰沙"
+        ],
+        "meal": [
+            "火锅",
+            "汉堡薯条",
+            "寿司",
+            "意大利面",
+            "炸鸡",
+            "烤肉",
+            "披萨"
+        ],
+        "snack": [
+            "爆米花",
+            "奶茶",
+            "冰淇淋",
+            "甜甜圈",
+            "饼干",
+            "薯片",
+            "小蛋糕"
+        ],
         "etc": {
             "0": "剪刀石头布",
             "1": "抽卡",
@@ -95,13 +92,13 @@
         "resume_confirm": "是，\n恢复",
         "resume_cancel": "否，\n重新开始",
         "host_desc": "创建房间并邀请朋友",
-        "participant_desc": "输入房间代码以加入",
+        "participant_desc": "输入房间号参与",
         "create_by_people": "按人员",
         "create_by_menu": "按菜单",
         "who_pays": "谁买单？",
-        "who_pays_desc": "Spin to pick one from the group",
+        "who_pays_desc": "通过轮盘从参与者中选出一人",
         "what_to_eat": "吃什么？",
-        "what_to_eat_desc": "Add menus and decide together"
+        "what_to_eat_desc": "添加菜单并一起决定"
     },
     "name_input": {
         "add_participant": "添加参与者...",
@@ -170,11 +167,13 @@
     },
     "entry": {
         "offline_title": "OFFLINE",
-        "offline_desc": "Gathered together.\nOne person spins to win!",
+        "offline_desc": "和聚在一起的朋友们\n一起转动并享受吧！",
         "online_title": "ONLINE",
-        "online_desc": "Remote gathering.\nEveryone spins to win!",
+        "online_desc": "即使和朋友相隔很远\n也能实时一起享受！",
         "select_mode": "SELECT GAME MODE",
-        "game_center": "游戏中心"
+        "game_center": "游戏中心",
+        "who_pays_desc": "通过轮盘从参与者中选出一人",
+        "what_to_eat_desc": "添加菜单并一起决定"
     },
     "offline": {
         "title": "ROULETTE",

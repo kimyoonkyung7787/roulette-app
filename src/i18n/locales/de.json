@@ -39,36 +39,33 @@
         "etc": "ETC"
     },
     "popular_items": {
-        "coffee": {
-            "0": "Americano",
-            "1": "Milchkaffee",
-            "2": "Vanille Latte",
-            "3": "Cappuccino",
-            "4": "Ade",
-            "5": "Matcha Latte",
-            "6": "Smoothie",
-            "7": "Espresso"
-        },
-        "meal": {
-            "0": "Kimchi-Eintopf",
-            "1": "Bulgogi",
-            "2": "Bibimbap",
-            "3": "Tonkatsu",
-            "4": "Ramen",
-            "5": "Pasta",
-            "6": "Sushi",
-            "7": "Gebratener Reis"
-        },
-        "snack": {
-            "0": "Tteokbokki",
-            "1": "Brathähnchen",
-            "2": "Pizza",
-            "3": "Sandwich",
-            "4": "Salat",
-            "5": "Hamburger",
-            "6": "Gimbap",
-            "7": "Tacos"
-        },
+        "coffee": [
+            "Heißer/Eis Americano",
+            "Caffè Latte",
+            "Vanilla Latte",
+            "Cappuccino",
+            "Fruchtlimonade",
+            "Matcha Latte",
+            "Smoothie"
+        ],
+        "meal": [
+            "Pizza",
+            "Burger & Pommes",
+            "Sushi",
+            "Pasta",
+            "Gebratenes Hähnchen",
+            "Schnitzel",
+            "Döner"
+        ],
+        "snack": [
+            "Popcorn",
+            "Nachos",
+            "Eiscreme",
+            "Donuts",
+            "Kekse",
+            "Kartoffelchips",
+            "Brezeln"
+        ],
         "etc": {
             "0": "Schere Stein Papier",
             "1": "Kartenziehen",
@@ -95,13 +92,13 @@
         "resume_confirm": "JA,\nFORTSETZEN",
         "resume_cancel": "NEIN,\nNEU",
         "host_desc": "Raum erstellen und Freunde einladen",
-        "participant_desc": "Raumcode eingeben zum Beitreten",
+        "participant_desc": "Raumcode eingeben, um beizutreten",
         "create_by_people": "NACH PERSONEN",
         "create_by_menu": "NACH MENÜ",
         "who_pays": "WER ZAHLT?",
-        "who_pays_desc": "Spin to pick one from the group",
+        "who_pays_desc": "Drehen, um jemanden aus der Gruppe auszuwählen",
         "what_to_eat": "WAS ESSEN WIR?",
-        "what_to_eat_desc": "Add menus and decide together"
+        "what_to_eat_desc": "Menüs hinzufügen und gemeinsam entscheiden"
     },
     "name_input": {
         "add_participant": "Teilnehmer hinzufügen...",
@@ -170,11 +167,13 @@
     },
     "entry": {
         "offline_title": "OFFLINE",
-        "offline_desc": "Gathered together.\nOne person spins to win!",
+        "offline_desc": "Zusammen versammelt.\nEine Person dreht, um zu gewinnen!",
         "online_title": "ONLINE",
-        "online_desc": "Remote gathering.\nEveryone spins to win!",
+        "online_desc": "Aus der Ferne versammelt.\nAlle drehen, um zu gewinnen!",
         "select_mode": "SELECT GAME MODE",
-        "game_center": "GAMECENTER"
+        "game_center": "GAMECENTER",
+        "who_pays_desc": "Drehen, um jemanden aus der Gruppe auszuwählen",
+        "what_to_eat_desc": "Menüs hinzufügen und gemeinsam entscheiden"
     },
     "offline": {
         "title": "ROULETTE",

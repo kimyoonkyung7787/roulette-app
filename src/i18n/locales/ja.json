@@ -39,36 +39,33 @@
         "etc": "その他"
     },
     "popular_items": {
-        "coffee": {
-            "0": "アメリカーノ",
-            "1": "カフェラテ",
-            "2": "バニララテ",
-            "3": "カプチーノ",
-            "4": "エイド",
-            "5": "抹茶ラテ",
-            "6": "スムージー",
-            "7": "エスプレッソ"
-        },
-        "meal": {
-            "0": "キムチチゲ",
-            "1": "プルコギ",
-            "2": "ビビンバ",
-            "3": "とんかつ",
-            "4": "ラーメン",
-            "5": "パスタ",
-            "6": "寿司",
-            "7": "チャーハン"
-        },
-        "snack": {
-            "0": "トッポギ",
-            "1": "フライドチキン",
-            "2": "ピザ",
-            "3": "サンドイッチ",
-            "4": "サラダ",
-            "5": "ハンバーガー",
-            "6": "キンパ",
-            "7": "タコス"
-        },
+        "coffee": [
+            "ホット/アイス アメリカーノ",
+            "カフェラテ",
+            "バニララテ",
+            "カプチーノ",
+            "フルーツエード",
+            "抹茶ラテ",
+            "スムージー"
+        ],
+        "meal": [
+            "ラーメン",
+            "寿司",
+            "とんかつ",
+            "焼肉",
+            "パスタ",
+            "ピザ",
+            "ハンバーガー"
+        ],
+        "snack": [
+            "たこ焼き",
+            "唐揚げ",
+            "アイスクリーム",
+            "ドーナツ",
+            "スナック菓子",
+            "ケーキ",
+            "ポテトチップス"
+        ],
         "etc": {
             "0": "ジャンケン",
             "1": "カード引き",
@@ -94,14 +91,14 @@
         "resume_message": "ルーム #{{roomId}} のホストセッションが見つかりました。復元しますか？",
         "resume_confirm": "はい、\n復元する",
         "resume_cancel": "いいえ、\n新しく作成",
-        "host_desc": "ルームを作成して友達を招待",
-        "participant_desc": "ルームコードを入力して参加",
+        "host_desc": "部屋を作成して友達を招待する",
+        "participant_desc": "ルームコードを入力して参加する",
         "create_by_people": "人で作成",
         "create_by_menu": "メニューで作成",
         "who_pays": "誰が支払う？",
-        "who_pays_desc": "Spin to pick one from the group",
+        "who_pays_desc": "参加者から1人をルーレットで選ぶ",
         "what_to_eat": "何を食べる？",
-        "what_to_eat_desc": "Add menus and decide together"
+        "what_to_eat_desc": "メニューを登録して皆で決める"
     },
     "name_input": {
         "add_participant": "参加者を追加...",
@@ -170,11 +167,13 @@
     },
     "entry": {
         "offline_title": "OFFLINE",
-        "offline_desc": "Gathered together.\nOne person spins to win!",
+        "offline_desc": "同じ場所に集まった友達と\n一緒に回して楽しもう！",
         "online_title": "ONLINE",
-        "online_desc": "Remote gathering.\nEveryone spins to win!",
+        "online_desc": "離れた場所にいる友達とも\nリアルタイムで一緒に楽しもう！",
         "select_mode": "SELECT GAME MODE",
-        "game_center": "ゲームセンター"
+        "game_center": "ゲームセンター",
+        "who_pays_desc": "参加者から1人をルーレットで選ぶ",
+        "what_to_eat_desc": "メニューを登録して皆で決める"
     },
     "offline": {
         "title": "ROULETTE",

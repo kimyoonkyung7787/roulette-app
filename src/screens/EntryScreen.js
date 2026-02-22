@@ -5,7 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { Colors } from '../theme/colors';
 import { CyberBackground } from '../components/CyberBackground';
 import { NeonText } from '../components/NeonText';
-import { Users, Globe, ArrowRight, Target, Zap } from 'lucide-react-native';
+import { UsersRound, Globe, ArrowRight, Target, Zap } from 'lucide-react-native';
 import { LanguageSelector } from '../components/LanguageSelector';
 import { feedbackService } from '../services/FeedbackService';
 
@@ -49,7 +49,7 @@ export default function EntryScreen({ navigation }) {
                         </View>
                         <View style={styles.titleWrapper}>
                             <NeonText className="text-4xl mt-6 tracking-[0.4em]">ROULETTE</NeonText>
-                            <Text style={styles.subTitle}>{t('entry.game_center').toUpperCase()}</Text>
+                            <Text style={styles.subTitle}>GAME CENTER</Text>
                         </View>
                         <View style={styles.underline} />
                     </View>
@@ -61,7 +61,7 @@ export default function EntryScreen({ navigation }) {
                             activeOpacity={0.8}
                         >
                             <View style={[styles.iconBox, { borderColor: Colors.primary, backgroundColor: 'rgba(0, 255, 255, 0.05)' }]}>
-                                <Users color={Colors.primary} size={28} />
+                                <UsersRound color={Colors.primary} size={28} />
                             </View>
                             <View style={styles.buttonTextContent}>
                                 <Text style={styles.modeTitle}>{t('entry.offline_title')}</Text>

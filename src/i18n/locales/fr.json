@@ -39,36 +39,33 @@
         "etc": "ETC"
     },
     "popular_items": {
-        "coffee": {
-            "0": "Café Allongé",
-            "1": "Café Lait",
-            "2": "Latte Vanille",
-            "3": "Cappuccino",
-            "4": "Ade",
-            "5": "Latte Thé Vert",
-            "6": "Batido",
-            "7": "Espresso"
-        },
-        "meal": {
-            "0": "Ragoût de Kimchi",
-            "1": "Bulgogi",
-            "2": "Bibimbap",
-            "3": "Tonkatsu",
-            "4": "Ramen",
-            "5": "Pâtes",
-            "6": "Sushi",
-            "7": "Riz Sauté"
-        },
-        "snack": {
-            "0": "Tteokbokki",
-            "1": "Poulet Frit",
-            "2": "Pizza",
-            "3": "Sandwich",
-            "4": "Salade",
-            "5": "Hamburger",
-            "6": "Gimbap",
-            "7": "Tacos"
-        },
+        "coffee": [
+            "Americano Chaud / Frappé",
+            "Café Latte",
+            "Latte Vanille",
+            "Cappuccino",
+            "Limonade",
+            "Matcha Latte",
+            "Smoothie"
+        ],
+        "meal": [
+            "Pizza",
+            "Burger Frites",
+            "Sushi",
+            "Pâtes",
+            "Poulet Frit",
+            "Tacos",
+            "Steak Frites"
+        ],
+        "snack": [
+            "Pop-corn",
+            "Nachos",
+            "Glace",
+            "Beignets",
+            "Biscuits",
+            "Chips",
+            "Crêpes"
+        ],
         "etc": {
             "0": "Pierre-Papier-Ciseaux",
             "1": "Tirage de Carte",
@@ -94,14 +91,14 @@
         "resume_message": "Session d'hôte active trouvée pour la salle #{{roomId}}. Voulez-vous la reprendre ?",
         "resume_confirm": "OUI,\nREPRENDRE",
         "resume_cancel": "NON,\nNOUVEAU",
-        "host_desc": "Créer une salle et inviter",
-        "participant_desc": "Entrez le code pour rejoindre",
+        "host_desc": "Créez un salon et invitez vos amis",
+        "participant_desc": "Entrez le code du salon pour rejoindre",
         "create_by_people": "PAR PERSONNES",
         "create_by_menu": "PAR MENU",
         "who_pays": "QUI PAIE ?",
-        "who_pays_desc": "Spin to pick one from the group",
+        "who_pays_desc": "Tournez pour choisir quelqu'un du groupe",
         "what_to_eat": "QUE MANGER ?",
-        "what_to_eat_desc": "Add menus and decide together"
+        "what_to_eat_desc": "Ajoutez des menus et décidez ensemble"
     },
     "name_input": {
         "add_participant": "Ajouter un participant...",
@@ -170,11 +167,13 @@
     },
     "entry": {
         "offline_title": "OFFLINE",
-        "offline_desc": "Gathered together.\nOne person spins to win!",
+        "offline_desc": "Rassemblés ensemble.\nUne personne tourne pour gagner !",
         "online_title": "ONLINE",
-        "online_desc": "Remote gathering.\nEveryone spins to win!",
+        "online_desc": "Rassemblement à distance.\nTout le monde tourne pour gagner !",
         "select_mode": "SELECT GAME MODE",
-        "game_center": "CENTRE DE JEUX"
+        "game_center": "CENTRE DE JEUX",
+        "who_pays_desc": "Tournez pour choisir quelqu'un du groupe",
+        "what_to_eat_desc": "Ajoutez des menus et décidez ensemble"
     },
     "offline": {
         "title": "ROULETTE",
