@@ -12,60 +12,73 @@
         "alert": "アラート",
         "info": "情報",
         "error": "エラー",
+        "success": "成功",
         "room": "ルーム",
+        "local": "ローカル",
         "select_language": "言語選択",
+        "weight": "Weight",
         "exit_confirm": "終了しますか？",
         "cancel": "キャンセル",
         "confirm": "確認",
         "item": "Item",
-        "weight": "Weight"
+        "join": "参加",
+        "not_connected": "未接続",
+        "not_in_list": "リストにありません",
+        "force_exit": "強制終了",
+        "guest": "ゲスト",
+        "re_pick": "もう一度選ぶ",
+        "no_vote": "未投票",
+        "invite_title": "",
+        "invite_message": "🎮 ルーレットゲームの招待 -\n{{name}} さんから招待されました。\n\n🆔 ルームID : {{roomId}}\n\n🚀 リンクをクリックして今すぐ参加！！！",
+        "link_copied": "リンクをコピーしました！"
     },
     "categories": {
         "coffee": "コーヒー",
         "meal": "食事",
-        "snack": "おやつ"
+        "snack": "おやつ",
+        "etc": "その他"
     },
     "popular_items": {
-        "coffee": [
-            "アメリカーノ",
-            "カフェラテ",
-            "バニララテ",
-            "カプチーノ",
-            "エイド",
-            "抹茶ラテ",
-            "スムージー",
-            "エスプレッソ"
-        ],
-        "meal": [
-            "キムチチゲ",
-            "プルコギ",
-            "ビビンバ",
-            "とんかつ",
-            "ラーメン",
-            "パスタ",
-            "寿司",
-            "チャーハン"
-        ],
-        "snack": [
-            "トッポギ",
-            "フライドチキン",
-            "ピザ",
-            "サンドイッチ",
-            "サラダ",
-            "ハンバーガー",
-            "キンパ",
-            "タコス"
-        ],
-        "etc": [
-            "ジャンケン",
-            "カード引き",
-            "サイコロ",
-            "あみだくじ",
-            "宝くじ",
-            "はずれ",
-            "もう一度",
-            "罰ゲーム"
-        ]
+        "coffee": {
+            "0": "アメリカーノ",
+            "1": "カフェラテ",
+            "2": "バニララテ",
+            "3": "カプチーノ",
+            "4": "エイド",
+            "5": "抹茶ラテ",
+            "6": "スムージー",
+            "7": "エスプレッソ"
+        },
+        "meal": {
+            "0": "キムチチゲ",
+            "1": "プルコギ",
+            "2": "ビビンバ",
+            "3": "とんかつ",
+            "4": "ラーメン",
+            "5": "パスタ",
+            "6": "寿司",
+            "7": "チャーハン"
+        },
+        "snack": {
+            "0": "トッポギ",
+            "1": "フライドチキン",
+            "2": "ピザ",
+            "3": "サンドイッチ",
+            "4": "サラダ",
+            "5": "ハンバーガー",
+            "6": "キンパ",
+            "7": "タコス"
+        },
+        "etc": {
+            "0": "ジャンケン",
+            "1": "カード引き",
+            "2": "サイコロ",
+            "3": "あみだくじ",
+            "4": "宝くじ",
+            "5": "はずれ",
+            "6": "もう一度",
+            "7": "罰ゲーム"
+        }
     },
     "welcome": {
         "select_category": "カテゴリを選択",
@@ -80,7 +93,15 @@
         "resume_session": "前回のセッションを復元しますか？",
         "resume_message": "ルーム #{{roomId}} のホストセッションが見つかりました。復元しますか？",
         "resume_confirm": "はい、\n復元する",
-        "resume_cancel": "いいえ、\n新しく作成"
+        "resume_cancel": "いいえ、\n新しく作成",
+        "host_desc": "ルームを作成して友達を招待",
+        "participant_desc": "ルームコードを入力して参加",
+        "create_by_people": "人で作成",
+        "create_by_menu": "メニューで作成",
+        "who_pays": "誰が支払う？",
+        "who_pays_desc": "Spin to pick one from the group",
+        "what_to_eat": "何を食べる？",
+        "what_to_eat_desc": "Add menus and decide together"
     },
     "name_input": {
         "add_participant": "参加者を追加...",
@@ -97,7 +118,10 @@
         "who": "誰が当たるかな",
         "what": "スピン",
         "pick_now": "マイピック",
-        "waiting_for_host": "ホストを待っています...",
+        "go_with_this": "これにする！",
+        "or_spin": "またはルーレットを回す",
+        "vote": "投票",
+        "waiting_for_host": "ホストを待機中...",
         "selected": "SELECTED",
         "please_select_name": "名前を選択してください",
         "game_in_progress": "ゲーム進行中...",
@@ -109,7 +133,9 @@
         "select_menu_error": "選択するメニューをクリックしてください",
         "connection_error": "ルームへの接続に失敗しました",
         "min_participants_error": "少なくとも2人の参加者が必要です",
-        "select_me": "ME 選択"
+        "select_me": "自分を選択",
+        "already_taken": "この名前は既に使用されています。",
+        "host_selected": "この名前はホストにより予約されています。"
     },
     "roulette": {
         "spin_center": "回転",
@@ -118,6 +144,7 @@
         "waiting_for_others": "待機中...",
         "ready": "準備完了！回転開始",
         "execute": "実行",
+        "your_pick": "あなたの選択",
         "spinning_roulette": "ルーレット回転中",
         "gourmet_selection": "選択",
         "force_result": "強制的に結果を確認",
@@ -138,14 +165,16 @@
         "votes": "票",
         "waiting_for_others": "他のプレイヤーを待っています...",
         "retry": "もう一度",
-        "winner_shout": "WINNER!"
+        "winner_shout": "WINNER!",
+        "copied_to_clipboard": "結果をクリップボードにコピーしました。"
     },
     "entry": {
         "offline_title": "OFFLINE",
         "offline_desc": "Gathered together.\nOne person spins to win!",
         "online_title": "ONLINE",
         "online_desc": "Remote gathering.\nEveryone spins to win!",
-        "select_mode": "SELECT GAME MODE"
+        "select_mode": "SELECT GAME MODE",
+        "game_center": "ゲームセンター"
     },
     "offline": {
         "title": "ROULETTE",

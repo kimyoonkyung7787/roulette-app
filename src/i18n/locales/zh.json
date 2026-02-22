@@ -3,7 +3,7 @@
         "roulette_game": "轮盘游戏",
         "room_id": "房间号",
         "player": "玩家",
-        "host": "主人",
+        "host": "主机",
         "participant": "参与者",
         "unknown": "未知",
         "me": "(我)",
@@ -12,60 +12,73 @@
         "alert": "提示",
         "info": "信息",
         "error": "错误",
+        "success": "成功",
         "room": "房间",
+        "local": "本地",
         "select_language": "选择语言",
+        "weight": "Weight",
         "exit_confirm": "要退出吗？",
         "cancel": "取消",
         "confirm": "确认",
         "item": "Item",
-        "weight": "Weight"
+        "join": "加入",
+        "not_connected": "未连接",
+        "not_in_list": "不在列表中",
+        "force_exit": "强制退出",
+        "guest": "访客",
+        "re_pick": "重新选择",
+        "no_vote": "未投票",
+        "invite_title": "",
+        "invite_message": "🎮 轮盘游戏邀请 -\n{{name}} 邀请你加入游戏。\n\n🆔 房间ID : {{roomId}}\n\n🚀 点击链接立即加入！！！",
+        "link_copied": "邀请链接已复制到剪贴板！"
     },
     "categories": {
         "coffee": "咖啡",
         "meal": "正餐",
-        "snack": "零食"
+        "snack": "零食",
+        "etc": "其他"
     },
     "popular_items": {
-        "coffee": [
-            "美式咖啡",
-            "拿铁",
-            "香草拿铁",
-            "卡布奇诺",
-            "汽水",
-            "抹茶拿铁",
-            "奶昔",
-            "浓缩咖啡"
-        ],
-        "meal": [
-            "泡菜汤",
-            "烤肉",
-            "拌饭",
-            "炸猪排",
-            "拉面",
-            "意面",
-            "寿司",
-            "炒饭"
-        ],
-        "snack": [
-            "炒年糕",
-            "炸鸡",
-            "披萨",
-            "三明治",
-            "沙拉",
-            "汉堡",
-            "紫菜包饭",
-            "塔可"
-        ],
-        "etc": [
-            "剪刀石头布",
-            "抽卡",
-            "骰子",
-            "爬梯子",
-            "彩票",
-            "没中",
-            "再来一次",
-            "惩罚"
-        ]
+        "coffee": {
+            "0": "美式咖啡",
+            "1": "拿铁",
+            "2": "香草拿铁",
+            "3": "卡布奇诺",
+            "4": "汽水",
+            "5": "抹茶拿铁",
+            "6": "奶昔",
+            "7": "浓缩咖啡"
+        },
+        "meal": {
+            "0": "泡菜汤",
+            "1": "烤肉",
+            "2": "拌饭",
+            "3": "炸猪排",
+            "4": "拉面",
+            "5": "意面",
+            "6": "寿司",
+            "7": "炒饭"
+        },
+        "snack": {
+            "0": "炒年糕",
+            "1": "炸鸡",
+            "2": "披萨",
+            "3": "三明治",
+            "4": "沙拉",
+            "5": "汉堡",
+            "6": "紫菜包饭",
+            "7": "塔可"
+        },
+        "etc": {
+            "0": "剪刀石头布",
+            "1": "抽卡",
+            "2": "骰子",
+            "3": "爬梯子",
+            "4": "彩票",
+            "5": "没中",
+            "6": "再来一次",
+            "7": "惩罚"
+        }
     },
     "welcome": {
         "select_category": "选择类别",
@@ -80,13 +93,21 @@
         "resume_session": "恢复之前的会话？",
         "resume_message": "找到了房间 #{{roomId}} 的活跃房主会话。是否要恢复？",
         "resume_confirm": "是，\n恢复",
-        "resume_cancel": "否，\n重新开始"
+        "resume_cancel": "否，\n重新开始",
+        "host_desc": "创建房间并邀请朋友",
+        "participant_desc": "输入房间代码以加入",
+        "create_by_people": "按人员",
+        "create_by_menu": "按菜单",
+        "who_pays": "谁买单？",
+        "who_pays_desc": "Spin to pick one from the group",
+        "what_to_eat": "吃什么？",
+        "what_to_eat_desc": "Add menus and decide together"
     },
     "name_input": {
         "add_participant": "添加参与者...",
         "add_menu_item": "添加菜单项...",
         "participant_status": "参与状态",
-        "voter": "投票者",
+        "voter": "投票人",
         "winner": "获奖者",
         "waiting": "等待中...",
         "participants": "参与者列表",
@@ -97,7 +118,10 @@
         "who": "谁会选中？",
         "what": "旋转",
         "pick_now": "我的选择",
-        "waiting_for_host": "等待房主...",
+        "go_with_this": "就这个！",
+        "or_spin": "或转动轮盘",
+        "vote": "投票",
+        "waiting_for_host": "等待主机...",
         "selected": "SELECTED",
         "please_select_name": "请选择您的姓名",
         "game_in_progress": "游戏进行中...",
@@ -109,7 +133,9 @@
         "select_menu_error": "请点击菜单项进行选择",
         "connection_error": "连接房间失败",
         "min_participants_error": "至少需要2名参与者",
-        "select_me": "ME 选择"
+        "select_me": "选我",
+        "already_taken": "此名称已被占用。",
+        "host_selected": "此名称已被主机保留。"
     },
     "roulette": {
         "spin_center": "旋转",
@@ -118,6 +144,7 @@
         "waiting_for_others": "等待中...",
         "ready": "准备就绪！现在旋转",
         "execute": "执行",
+        "your_pick": "您的选择",
         "spinning_roulette": "轮盘旋转中",
         "gourmet_selection": "选择",
         "force_result": "强制查看结果",
@@ -138,14 +165,16 @@
         "votes": "票",
         "waiting_for_others": "等待其他玩家...",
         "retry": "重试",
-        "winner_shout": "WINNER!"
+        "winner_shout": "WINNER!",
+        "copied_to_clipboard": "结果已复制到剪贴板。"
     },
     "entry": {
         "offline_title": "OFFLINE",
         "offline_desc": "Gathered together.\nOne person spins to win!",
         "online_title": "ONLINE",
         "online_desc": "Remote gathering.\nEveryone spins to win!",
-        "select_mode": "SELECT GAME MODE"
+        "select_mode": "SELECT GAME MODE",
+        "game_center": "游戏中心"
     },
     "offline": {
         "title": "ROULETTE",

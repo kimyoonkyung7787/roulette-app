@@ -2,9 +2,9 @@
     "common": {
         "roulette_game": "JUEGO DE RULETA",
         "room_id": "SALA",
-        "player": "JUGADOR",
-        "host": "ANFITRIÓN",
-        "participant": "PARTICIPANTE",
+        "player": "Jugador",
+        "host": "Anfitrión",
+        "participant": "Participante",
         "unknown": "DESCONOCIDO",
         "me": "(YO)",
         "menu": "MENÚ",
@@ -12,60 +12,73 @@
         "alert": "ALERTA",
         "info": "INFO",
         "error": "ERROR",
+        "success": "Éxito",
         "room": "SALA",
+        "local": "Local",
         "select_language": "SELECCIONAR IDIOMA",
+        "weight": "Weight",
         "exit_confirm": "¿Quieres salir?",
         "cancel": "Cancelar",
         "confirm": "Confirmar",
         "item": "Item",
-        "weight": "Weight"
+        "join": "Unirse",
+        "not_connected": "No conectado",
+        "not_in_list": "No en la lista",
+        "force_exit": "Salida forzada",
+        "guest": "Invitado",
+        "re_pick": "Elegir de nuevo",
+        "no_vote": "Sin voto",
+        "invite_title": "",
+        "invite_message": "🎮 Invitación a juego de ruleta -\n{{name}} te ha invitado a un juego.\n\n🆔 ID de la sala : {{roomId}}\n\n🚀 ¡Haz clic en el enlace para unirte ahora!",
+        "link_copied": "¡Enlace de invitación copiado!"
     },
     "categories": {
         "coffee": "CAFÉ",
         "meal": "COMIDA",
-        "snack": "MERIENDA"
+        "snack": "MERIENDA",
+        "etc": "ETC"
     },
     "popular_items": {
-        "coffee": [
-            "Americano",
-            "Café Latte",
-            "Latte de Vainilla",
-            "Capuchino",
-            "Ade",
-            "Latte de Té Verde",
-            "Batido",
-            "Espresso"
-        ],
-        "meal": [
-            "Estofado de Kimchi",
-            "Bulgogi",
-            "Bibimbap",
-            "Tonkatsu",
-            "Ramen",
-            "Pasta",
-            "Sushi",
-            "Arroz Frito"
-        ],
-        "snack": [
-            "Tteokbokki",
-            "Pollo Frito",
-            "Pizza",
-            "Sándwich",
-            "Ensalada",
-            "Hamburguesa",
-            "Gimbap",
-            "Tacos"
-        ],
-        "etc": [
-            "Piedra Papel o Tijera",
-            "Elegir Carta",
-            "Dados",
-            "Escalera",
-            "Lotería",
-            "Vacío",
-            "Una Vez Más",
-            "Penalización"
-        ]
+        "coffee": {
+            "0": "Americano",
+            "1": "Café Latte",
+            "2": "Latte de Vainilla",
+            "3": "Capuchino",
+            "4": "Ade",
+            "5": "Latte de Té Verde",
+            "6": "Batido",
+            "7": "Espresso"
+        },
+        "meal": {
+            "0": "Estofado de Kimchi",
+            "1": "Bulgogi",
+            "2": "Bibimbap",
+            "3": "Tonkatsu",
+            "4": "Ramen",
+            "5": "Pasta",
+            "6": "Sushi",
+            "7": "Arroz Frito"
+        },
+        "snack": {
+            "0": "Tteokbokki",
+            "1": "Pollo Frito",
+            "2": "Pizza",
+            "3": "Sándwich",
+            "4": "Ensalada",
+            "5": "Hamburguesa",
+            "6": "Gimbap",
+            "7": "Tacos"
+        },
+        "etc": {
+            "0": "Piedra Papel o Tijera",
+            "1": "Elegir Carta",
+            "2": "Dados",
+            "3": "Escalera",
+            "4": "Lotería",
+            "5": "Vacío",
+            "6": "Una Vez Más",
+            "7": "Penalización"
+        }
     },
     "welcome": {
         "select_category": "SELECCIONAR CATEGORÍA",
@@ -80,13 +93,21 @@
         "resume_session": "¿Reanudar sesión anterior?",
         "resume_message": "Se encontró una sesión de anfitrión activa para la sala #{{roomId}}. ¿Desea reanudarla?",
         "resume_confirm": "SÍ,\nREANUDAR",
-        "resume_cancel": "NO,\nNUEVA"
+        "resume_cancel": "NO,\nNUEVA",
+        "host_desc": "Crea una sala e invita a amigos",
+        "participant_desc": "Introduce el código para unirte",
+        "create_by_people": "POR PERSONAS",
+        "create_by_menu": "POR MENÚ",
+        "who_pays": "¿QUIÉN PAGA?",
+        "who_pays_desc": "Spin to pick one from the group",
+        "what_to_eat": "¿QUÉ COMER?",
+        "what_to_eat_desc": "Add menus and decide together"
     },
     "name_input": {
-        "add_participant": "Agregar participante...",
+        "add_participant": "Añadir participante...",
         "add_menu_item": "Agregar plato...",
         "participant_status": "ESTADO DE PARTICIPANTES",
-        "voter": "VOTANTE",
+        "voter": "Votante",
         "winner": "GANADOR",
         "waiting": "ESPERANDO...",
         "participants": "PARTICIPANTES",
@@ -97,6 +118,9 @@
         "who": "QUIÉN SERÁ ELEGIDO",
         "what": "GIRAR",
         "pick_now": "MI ELECCIÓN",
+        "go_with_this": "¡IR CON ESTO!",
+        "or_spin": "o girar la ruleta",
+        "vote": "VOTAR",
         "waiting_for_host": "Esperando al anfitrión...",
         "selected": "SELECTED",
         "please_select_name": "Por favor seleccione su nombre",
@@ -108,7 +132,10 @@
         "host_setting_up": "El anfitrión está configurando...",
         "select_menu_error": "Por favor haga clic en un plato para seleccionar",
         "connection_error": "Error al conectar con la sala",
-        "min_participants_error": "Se requieren al menos 2 participantes"
+        "min_participants_error": "Se requieren al menos 2 participantes",
+        "select_me": "SELECCIONARME",
+        "already_taken": "Este nombre ya está en uso.",
+        "host_selected": "Este nombre está reservado."
     },
     "roulette": {
         "spin_center": "GIRAR",
@@ -117,6 +144,7 @@
         "waiting_for_others": "ESPERANDO...",
         "ready": "¡LISTO! GIRA AHORA",
         "execute": "EJECUTAR",
+        "your_pick": "TU ELECCIÓN",
         "spinning_roulette": "GIRANDO RULETA",
         "gourmet_selection": "SELECCIÓN",
         "force_result": "FORZAR RESULTADO",
@@ -137,14 +165,16 @@
         "votes": "VOTOS",
         "waiting_for_others": "ESPERANDO A OTROS...",
         "retry": "REINTENTAR",
-        "winner_shout": "WINNER!"
+        "winner_shout": "WINNER!",
+        "copied_to_clipboard": "Resultado copiado al portapapeles."
     },
     "entry": {
         "offline_title": "OFFLINE",
         "offline_desc": "Gathered together.\nOne person spins to win!",
         "online_title": "ONLINE",
         "online_desc": "Remote gathering.\nEveryone spins to win!",
-        "select_mode": "SELECT GAME MODE"
+        "select_mode": "SELECT GAME MODE",
+        "game_center": "CENTRO DE JUEGOS"
     },
     "offline": {
         "title": "ROULETTE",
