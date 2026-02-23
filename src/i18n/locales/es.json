@@ -120,6 +120,7 @@
         "or_spin": "o girar la ruleta",
         "vote": "VOTAR",
         "waiting_for_host": "Esperando al anfitrión...",
+        "wait_for_host": "Por favor espere a que el anfitrión termine de configurar",
         "selected": "SELECTED",
         "please_select_name": "Por favor seleccione su nombre",
         "game_in_progress": "Juego en progreso...",

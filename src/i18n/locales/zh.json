@@ -120,6 +120,7 @@
         "or_spin": "或转动轮盘",
         "vote": "投票",
         "waiting_for_host": "等待主机...",
+        "wait_for_host": "请等待主机完成设置",
         "selected": "SELECTED",
         "please_select_name": "请选择您的姓名",
         "game_in_progress": "游戏进行中...",

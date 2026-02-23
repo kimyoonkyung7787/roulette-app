@@ -596,7 +596,7 @@ export default function RouletteScreen({ route, navigation }) {
     }));
 
     const renderSections = () => {
-        if (currentList.length === 0) return null;
+        if (!Array.isArray(currentList) || currentList.length === 0) return null;
 
         // Repeat the pattern for more dynamic visual
         const sections = [];
@@ -605,6 +605,7 @@ export default function RouletteScreen({ route, navigation }) {
             let cumulativeAngle = (360 / REPEAT_COUNT) * repeat; // Start angle for this repetition
 
             const totalWeight = currentList.reduce((sum, p) => sum + (spinTarget === 'people' ? (typeof p === 'object' ? (p.weight || 0) : 1) : 1), 0);
+            if (totalWeight <= 0) return null; // Prevent division by zero
             currentList.forEach((p, i) => {
                 const name = typeof p === 'object' ? p.name : p;
                 const weight = spinTarget === 'people' ? (typeof p === 'object' ? (p.weight || 0) : 1) : 1;

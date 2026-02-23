@@ -120,6 +120,7 @@
         "or_spin": "ou faire tourner la roulette",
         "vote": "VOTER",
         "waiting_for_host": "En attente de l'hôte...",
+        "wait_for_host": "Veuillez attendre que l'hôte ait fini de configurer",
         "selected": "SELECTED",
         "please_select_name": "Veuillez sélectionner votre nom",
         "game_in_progress": "Jeu en cours...",
