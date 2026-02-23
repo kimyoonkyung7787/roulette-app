@@ -463,6 +463,22 @@ export default function ResultScreen({ route, navigation }) {
                                 >
                                     {winner}
                                 </NeonText>
+                                {winner === route.params?.hostName && (
+                                    <View style={{
+                                        backgroundColor: `${Colors.accent}25`,
+                                        borderColor: Colors.accent,
+                                        borderWidth: 1.5,
+                                        borderRadius: 8,
+                                        paddingHorizontal: 8,
+                                        paddingVertical: 2,
+                                        marginLeft: 10,
+                                        flexDirection: 'row',
+                                        alignItems: 'center',
+                                    }}>
+                                        <Crown color={Colors.accent} size={12} fill={`${Colors.accent}33`} style={{ marginRight: 3 }} />
+                                        <Text style={{ color: Colors.accent, fontSize: 11, fontWeight: 'bold' }}>{t('common.host').toUpperCase()}</Text>
+                                    </View>
+                                )}
                             </View>
                             {allVoted && isTie && <Text style={styles.tieSubText}>{t('result.tie_subtext')}</Text>}
 
@@ -498,29 +514,22 @@ export default function ResultScreen({ route, navigation }) {
                             {/* Tally Chart - Hide in offline mode */}
                             {mode !== 'offline' && (
                                 <View style={styles.tallyContainer}>
-                                    {Object.entries(tally).map(([name, count]) => (
+                                    {Object.entries(tally).map(([name, count]) => {
+                                        const isHost = name === (route.params?.hostName);
+                                        const cellCount = Math.max(type === 'menu' ? (originalItems?.length || 1) : totalParticipants, 1);
+                                        return (
                                         <View key={name} style={styles.tallyItem}>
-                                            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                                                <Text style={styles.tallyName}>{name}</Text>
-                                                {name === (route.params?.hostName) && (
-                                                    <View style={{
-                                                        backgroundColor: `${Colors.accent}25`,
-                                                        borderColor: Colors.accent,
-                                                        borderWidth: 1.5,
-                                                        borderRadius: 6,
-                                                        paddingHorizontal: 6,
-                                                        paddingVertical: 1,
-                                                        marginLeft: 8,
-                                                        flexDirection: 'row',
-                                                        alignItems: 'center',
-                                                    }}>
+                                            <View style={styles.tallyNameRow}>
+                                                <Text style={styles.tallyName} numberOfLines={1}>{name}</Text>
+                                                {isHost && (
+                                                    <View style={styles.tallyHostBadge}>
                                                         <Crown color={Colors.accent} size={8} fill={`${Colors.accent}33`} style={{ marginRight: 2 }} />
-                                                        <Text style={{ color: Colors.accent, fontSize: 8, fontWeight: 'bold' }}>{t('common.host').toUpperCase()}</Text>
+                                                        <Text style={styles.tallyHostBadgeText}>{t('common.host').toUpperCase()}</Text>
                                                     </View>
                                                 )}
                                             </View>
                                             <View style={styles.tallyBarContainer}>
-                                                {[...Array(Math.max(totalParticipants, 5))].map((_, i) => (
+                                                {[...Array(cellCount)].map((_, i) => (
                                                     <View
                                                         key={i}
                                                         style={[
@@ -535,7 +544,8 @@ export default function ResultScreen({ route, navigation }) {
                                                 <Text style={styles.tallyCountLabel}>{count === 1 ? t('result.vote') : t('result.votes')}</Text>
                                             </View>
                                         </View>
-                                    ))}
+                                        );
+                                    })}
                                 </View>
                             )}
 
@@ -748,6 +758,10 @@ const styles = StyleSheet.create({
     },
     winnerNameContainer: {
         marginVertical: 10,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        flexWrap: 'wrap',
     },
     subText: {
         color: 'rgba(255, 255, 255, 0.4)',
@@ -773,10 +787,32 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         marginVertical: 4,
     },
+    tallyNameRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        width: 120,
+        flexShrink: 0,
+    },
     tallyName: {
         color: 'white',
-        width: 80,
         fontSize: 12,
+        flexShrink: 1,
+    },
+    tallyHostBadge: {
+        backgroundColor: `${Colors.accent}25`,
+        borderColor: Colors.accent,
+        borderWidth: 1.5,
+        borderRadius: 6,
+        paddingHorizontal: 5,
+        paddingVertical: 1,
+        marginLeft: 4,
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
+    tallyHostBadgeText: {
+        color: Colors.accent,
+        fontSize: 8,
+        fontWeight: 'bold',
     },
     tallyBarContainer: {
         flex: 1,

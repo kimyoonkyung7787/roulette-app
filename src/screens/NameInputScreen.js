@@ -425,7 +425,9 @@ export default function NameInputScreen({ route, navigation }) {
 
         // 1. RECOVERY: Check if I already have a selected name in the room (e.g. from Retry)
         const meInRoom = onlineUsers.find(u => u.id === syncService.myId);
-        if (meInRoom && meInRoom.name) {
+        // Do not recover when presence with myId is the host (same device, different tab): treat as new participant and auto-select
+        const isRecoveryValid = meInRoom && meInRoom.name && !(role === 'participant' && meInRoom.role === 'owner');
+        if (isRecoveryValid) {
             if (mySelectedName !== meInRoom.name) {
                 console.log(`NameInputScreen: Recovering previous selection: ${meInRoom.name}`);
                 setMySelectedName(meInRoom.name);
@@ -436,26 +438,30 @@ export default function NameInputScreen({ route, navigation }) {
         // 2. AUTO-SELECT: If no selection, pick the first available slot (excluding host)
         // Guard: Wait for host information to avoid race conditions where onlineUsers is empty
         const hostUser = onlineUsers.find(u => u.role === 'owner');
-        if (!mySelectedName && participants.length > 0 && (role !== 'participant' || hostUser)) {
-            const firstAvailable = participants.find(p => {
-                const pName = typeof p === 'object' ? (p.name || p.text || '') : String(p);
-                const pNameTrimmed = pName.trim();
-                if (!pNameTrimmed) return false;
+        const guardOk = !mySelectedName && participants.length > 0 && (role !== 'participant' || hostUser);
+        if (!guardOk) return;
 
-                // Check if taken by anyone else (host or other participants)
-                const otherUserWithName = onlineUsers.find(u => u.name === pNameTrimmed && u.id !== syncService.myId);
-                const isTaken = !!otherUserWithName;
-                const isHostName = otherUserWithName?.role === 'owner';
+        const sameIdEntry = onlineUsers.find(u => u.id === syncService.myId);
+        const firstAvailable = participants.find(p => {
+            const pName = typeof p === 'object' ? (p.name || p.text || '') : String(p);
+            const pNameTrimmed = pName.trim();
+            if (!pNameTrimmed) return false;
 
-                return !isTaken && !isHostName;
-            });
+            // Taken by another user (different id)
+            const otherUserWithName = onlineUsers.find(u => u.name === pNameTrimmed && u.id !== syncService.myId);
+            // Same myId but host (other tab on same device): treat slot as taken so we don't pick host's name
+            const isTakenByOtherTab = sameIdEntry?.role === 'owner' && sameIdEntry?.name === pNameTrimmed;
+            const isTaken = !!otherUserWithName || !!isTakenByOtherTab;
+            const isHostName = otherUserWithName?.role === 'owner' || (sameIdEntry?.role === 'owner' && sameIdEntry?.name === pNameTrimmed);
 
-            if (firstAvailable) {
-                const nameToSelect = typeof firstAvailable === 'object' ? (firstAvailable.name || firstAvailable.text) : firstAvailable;
-                console.log(`NameInputScreen: Auto-selecting first available slot: ${nameToSelect}`);
-                // Use toggleMe to set state and sync to DB
-                toggleMe(nameToSelect);
-            }
+            return !isTaken && !isHostName;
+        });
+
+        if (firstAvailable) {
+            const nameToSelect = typeof firstAvailable === 'object' ? (firstAvailable.name || firstAvailable.text) : firstAvailable;
+            console.log(`NameInputScreen: Auto-selecting first available slot: ${nameToSelect}`);
+            // Use toggleMe to set state and sync to DB
+            toggleMe(nameToSelect);
         }
     }, [isLoaded, role, participants, onlineUsers, mySelectedName]);
 
