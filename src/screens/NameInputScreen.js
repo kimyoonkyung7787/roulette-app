@@ -11,6 +11,7 @@ import { syncService } from '../services/SyncService';
 import { participantService } from '../services/ParticipantService';
 import { CyberAlert } from '../components/CyberAlert';
 import { useTranslation } from 'react-i18next';
+import i18n from '../i18n';
 import { feedbackService } from '../services/FeedbackService';
 
 // Enable LayoutAnimation for Android
@@ -1244,54 +1245,84 @@ export default function NameInputScreen({ route, navigation }) {
                     </View>
 
                     <View style={{ marginBottom: 5 }}>
-                        <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 5 }}>
-                            {role === 'owner' ? (
-                                <View style={{
-                                    backgroundColor: `${Colors.accent}25`,
-                                    borderColor: Colors.accent,
-                                    borderWidth: 1.5,
-                                    borderRadius: 6,
-                                    paddingHorizontal: 8,
-                                    paddingVertical: 2,
-                                    flexDirection: 'row',
-                                    alignItems: 'center',
-                                    marginRight: 10,
-                                    shadowColor: Colors.accent,
-                                    shadowOffset: { width: 0, height: 0 },
-                                    shadowOpacity: 0.8,
-                                    shadowRadius: 6,
-                                    elevation: 3
-                                }}>
-                                    <Crown color={Colors.accent} size={12} fill={`${Colors.accent}33`} style={{ marginRight: 4 }} />
-                                    <Text style={{ color: Colors.accent, fontSize: 10, fontWeight: '900' }}>{t('common.host').toUpperCase()}</Text>
-                                </View>
-                            ) : (
-                                <View style={{ backgroundColor: 'rgba(255,255,255,0.05)', paddingHorizontal: 8, paddingVertical: 2, borderRadius: 4, borderWidth: 1, borderColor: 'rgba(255,255,255,0.4)', marginRight: 10 }}>
-                                    <Text style={{ color: Colors.textSecondary, fontSize: 10, fontWeight: 'bold' }}>{t('common.participant').toUpperCase()}</Text>
-                                </View>
-                            )}
-
-                            {activeTab !== 'people' && (() => {
-                                const cat = activeCategory || 'coffee';
-                                const catColor = cat === 'coffee' ? Colors.neonPink :
-                                    cat === 'meal' ? Colors.success :
-                                        cat === 'snack' ? Colors.accent :
-                                            Colors.textSecondary;
-                                return (
+                        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 5 }}>
+                            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                                {role === 'owner' ? (
                                     <View style={{
-                                        backgroundColor: `${catColor}20`,
+                                        backgroundColor: `${Colors.accent}25`,
+                                        borderColor: Colors.accent,
+                                        borderWidth: 1.5,
+                                        borderRadius: 6,
                                         paddingHorizontal: 8,
                                         paddingVertical: 2,
-                                        borderRadius: 4,
-                                        borderWidth: 1,
-                                        borderColor: catColor
+                                        flexDirection: 'row',
+                                        alignItems: 'center',
+                                        marginRight: 10,
+                                        shadowColor: Colors.accent,
+                                        shadowOffset: { width: 0, height: 0 },
+                                        shadowOpacity: 0.8,
+                                        shadowRadius: 6,
+                                        elevation: 3
                                     }}>
-                                        <Text style={{ color: catColor, fontSize: 10, fontWeight: 'bold' }}>
-                                            {cat.toUpperCase()}
-                                        </Text>
+                                        <Crown color={Colors.accent} size={12} fill={`${Colors.accent}33`} style={{ marginRight: 4 }} />
+                                        <Text style={{ color: Colors.accent, fontSize: 10, fontWeight: '900' }}>{t('common.host').toUpperCase()}</Text>
                                     </View>
-                                );
-                            })()}
+                                ) : (
+                                    <View style={{ backgroundColor: 'rgba(255,255,255,0.05)', paddingHorizontal: 8, paddingVertical: 2, borderRadius: 4, borderWidth: 1, borderColor: 'rgba(255,255,255,0.4)', marginRight: 10 }}>
+                                        <Text style={{ color: Colors.textSecondary, fontSize: 10, fontWeight: 'bold' }}>{t('common.participant').toUpperCase()}</Text>
+                                    </View>
+                                )}
+
+                                {activeTab !== 'people' && (() => {
+                                    const cat = activeCategory || 'coffee';
+                                    const catColor = cat === 'coffee' ? Colors.neonPink :
+                                        cat === 'meal' ? Colors.success :
+                                            cat === 'snack' ? Colors.accent :
+                                                Colors.textSecondary;
+                                    return (
+                                        <View style={{
+                                            backgroundColor: `${catColor}20`,
+                                            paddingHorizontal: 8,
+                                            paddingVertical: 2,
+                                            borderRadius: 4,
+                                            borderWidth: 1,
+                                            borderColor: catColor
+                                        }}>
+                                            <Text style={{ color: catColor, fontSize: 10, fontWeight: 'bold' }}>
+                                                {cat.toUpperCase()}
+                                            </Text>
+                                        </View>
+                                    );
+                                })()}
+                            </View>
+
+                            {activeTab === 'menu' && role === 'owner' && (activeCategory === 'meal' || activeCategory === 'snack') && i18n.language === 'ko' && (
+                                <TouchableOpacity
+                                    onPress={() => {
+                                        setShowRestaurantSearch(true);
+                                        setSearchQuery('');
+                                        setSearchResults([]);
+                                        setSelectedRestaurant(null);
+                                        setGeneratedMenus(null);
+                                    }}
+                                    activeOpacity={0.7}
+                                    style={{
+                                        flexDirection: 'row',
+                                        alignItems: 'center',
+                                        backgroundColor: `${Colors.primary}15`,
+                                        borderWidth: 1.5,
+                                        borderColor: Colors.primary,
+                                        borderRadius: 6,
+                                        paddingVertical: 3,
+                                        paddingHorizontal: 10,
+                                    }}
+                                >
+                                    <Store color={Colors.primary} size={12} style={{ marginRight: 5 }} />
+                                    <Text style={{ color: Colors.primary, fontSize: 10, fontWeight: '900' }}>
+                                        AI 메뉴
+                                    </Text>
+                                </TouchableOpacity>
+                            )}
                         </View>
                     </View>
 
@@ -1332,75 +1363,46 @@ export default function NameInputScreen({ route, navigation }) {
 
 
                     {activeTab === 'menu' && role === 'owner' && (
-                        <View style={{ flexDirection: 'row', marginBottom: 20, flexWrap: 'wrap' }}>
-                            {['coffee', 'meal', 'snack', 'etc'].map((cat) => {
-                                const isSelected = activeCategory === cat;
-                                const catColor = cat === 'coffee' ? Colors.neonPink :
-                                    cat === 'meal' ? Colors.success :
-                                        cat === 'snack' ? Colors.accent :
-                                            Colors.textSecondary;
+                        <View style={{ flexDirection: 'row', marginBottom: 20, alignItems: 'center' }}>
+                            <View style={{ flexDirection: 'row', flexWrap: 'wrap', flex: 1 }}>
+                                {['coffee', 'meal', 'snack', 'etc'].map((cat) => {
+                                    const isSelected = activeCategory === cat;
+                                    const catColor = cat === 'coffee' ? Colors.neonPink :
+                                        cat === 'meal' ? Colors.success :
+                                            cat === 'snack' ? Colors.accent :
+                                                Colors.textSecondary;
 
-                                return (
-                                    <TouchableOpacity
-                                        key={cat}
-                                        onPress={() => handleCategoryChange(cat)}
-                                        hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                                        style={{
-                                            paddingHorizontal: 16,
-                                            paddingVertical: 8,
-                                            borderRadius: 8,
-                                            borderWidth: 1.5,
-                                            borderColor: isSelected ? catColor : 'rgba(255,255,255,0.1)',
-                                            backgroundColor: isSelected ? `${catColor}15` : 'rgba(255,255,255,0.03)',
-                                            minWidth: 70,
-                                            alignItems: 'center',
-                                            marginRight: 8,
-                                            marginBottom: 8
-                                        }}
-                                    >
-                                        <Text style={{
-                                            color: isSelected ? catColor : 'rgba(255,255,255,0.4)',
-                                            fontSize: 12,
-                                            fontWeight: '900',
-                                            letterSpacing: 1
-                                        }}>
-                                            {cat.toUpperCase()}
-                                        </Text>
-                                    </TouchableOpacity>
-                                );
-                            })}
+                                    return (
+                                        <TouchableOpacity
+                                            key={cat}
+                                            onPress={() => handleCategoryChange(cat)}
+                                            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                                            style={{
+                                                paddingHorizontal: 16,
+                                                paddingVertical: 8,
+                                                borderRadius: 8,
+                                                borderWidth: 1.5,
+                                                borderColor: isSelected ? catColor : 'rgba(255,255,255,0.1)',
+                                                backgroundColor: isSelected ? `${catColor}15` : 'rgba(255,255,255,0.03)',
+                                                minWidth: 70,
+                                                alignItems: 'center',
+                                                marginRight: 8,
+                                                marginBottom: 8
+                                            }}
+                                        >
+                                            <Text style={{
+                                                color: isSelected ? catColor : 'rgba(255,255,255,0.4)',
+                                                fontSize: 12,
+                                                fontWeight: '900',
+                                                letterSpacing: 1
+                                            }}>
+                                                {cat.toUpperCase()}
+                                            </Text>
+                                        </TouchableOpacity>
+                                    );
+                                })}
+                            </View>
                         </View>
-                    )}
-
-                    {activeTab === 'menu' && role === 'owner' && (
-                        <TouchableOpacity
-                            onPress={() => {
-                                setShowRestaurantSearch(true);
-                                setSearchQuery('');
-                                setSearchResults([]);
-                                setSelectedRestaurant(null);
-                                setGeneratedMenus(null);
-                            }}
-                            activeOpacity={0.7}
-                            style={{
-                                flexDirection: 'row',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                backgroundColor: 'rgba(0, 255, 255, 0.06)',
-                                borderWidth: 1,
-                                borderColor: 'rgba(0, 255, 255, 0.2)',
-                                borderRadius: 12,
-                                paddingVertical: 10,
-                                paddingHorizontal: 16,
-                                marginBottom: 16,
-                                borderStyle: 'dashed',
-                            }}
-                        >
-                            <Store color={Colors.primary} size={18} style={{ marginRight: 8 }} />
-                            <Text style={{ color: Colors.primary, fontSize: 13, fontWeight: '900', letterSpacing: 1 }}>
-                                {t('name_input.search_restaurant')}
-                            </Text>
-                        </TouchableOpacity>
                     )}
 
                     {role === 'owner' && (
