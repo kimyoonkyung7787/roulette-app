@@ -190,7 +190,11 @@ export default function ResultScreen({ route, navigation }) {
 
     useEffect(() => {
         // Check if all participants have voted OR it was forced by owner
-        const totalVotes = Object.values(tally).reduce((sum, count) => sum + count, 0);
+        let totalVotes = 0;
+        const voteCounts = Object.values(tally || {});
+        for (let i = 0; i < voteCounts.length; i++) {
+            totalVotes += (voteCounts[i] || 0);
+        }
         const votingComplete = isForced || (totalVotes >= totalParticipants && totalParticipants > 0);
         setAllVoted(votingComplete);
 
@@ -455,11 +459,15 @@ export default function ResultScreen({ route, navigation }) {
                             <View style={styles.winnerNameContainer}>
                                 <NeonText
                                     style={{
-                                        fontSize: winner.length > 20 ? 28 : (winner.length > 10 ? 36 : 56),
+                                        fontSize: winner.length > 50 ? 14 : winner.length > 40 ? 16 : winner.length > 30 ? 20 : winner.length > 20 ? 24 : winner.length > 10 ? 36 : 56,
                                         textAlign: 'center',
-                                        lineHeight: winner.length > 20 ? 34 : (winner.length > 10 ? 42 : 64),
-                                        color: Colors.primary
+                                        lineHeight: winner.length > 50 ? 20 : winner.length > 40 ? 22 : winner.length > 30 ? 26 : winner.length > 20 ? 30 : winner.length > 10 ? 42 : 64,
+                                        color: Colors.primary,
+                                        ...(Platform.OS === 'web' ? { wordBreak: 'break-word', overflowWrap: 'break-word' } : {}),
                                     }}
+                                    numberOfLines={4}
+                                    adjustsFontSizeToFit={true}
+                                    minimumFontScale={0.4}
                                 >
                                     {winner}
                                 </NeonText>
@@ -471,7 +479,7 @@ export default function ResultScreen({ route, navigation }) {
                                         borderRadius: 8,
                                         paddingHorizontal: 8,
                                         paddingVertical: 2,
-                                        marginLeft: 10,
+                                        marginTop: 8,
                                         flexDirection: 'row',
                                         alignItems: 'center',
                                     }}>
@@ -759,10 +767,9 @@ const styles = StyleSheet.create({
     },
     winnerNameContainer: {
         marginVertical: 10,
-        flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',
-        flexWrap: 'wrap',
+        width: '100%',
     },
     subText: {
         color: 'rgba(255, 255, 255, 0.4)',

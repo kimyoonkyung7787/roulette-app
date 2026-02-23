@@ -136,7 +136,18 @@
         "min_participants_error": "최소 2명의 참여자가 필요합니다",
         "select_me": "ME 선택",
         "already_taken": "이 이름은 이미 다른 참여자가 사용 중입니다.",
-        "host_selected": "호스트가 선택한 이름입니다."
+        "host_selected": "호스트가 선택한 이름입니다.",
+        "search_restaurant": "가게에서 메뉴 가져오기",
+        "search_placeholder": "가게 이름을 검색하세요",
+        "search_button": "검색",
+        "searching": "검색 중...",
+        "no_results": "검색 결과가 없습니다",
+        "generating_menu": "AI가 메뉴를 생성 중...",
+        "ai_recommended": "AI 추천 메뉴",
+        "apply_menu": "이 메뉴로 채우기",
+        "search_error": "검색 중 오류가 발생했습니다",
+        "menu_gen_error": "메뉴 생성에 실패했습니다",
+        "min_menu_error": "메뉴가 2개 이상 필요합니다"
     },
     "roulette": {
         "spin_center": "회전",

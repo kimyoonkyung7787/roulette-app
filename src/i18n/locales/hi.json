@@ -135,7 +135,18 @@
         "min_participants_error": "कम से कम 2 प्रतिभागी आवश्यक हैं",
         "select_me": "मुझे चुनें",
         "already_taken": "यह नाम पहले ही लिया जा चुका है।",
-        "host_selected": "यह नाम होस्ट द्वारा आरक्षित है।"
+        "host_selected": "यह नाम होस्ट द्वारा आरक्षित है।",
+        "search_restaurant": "दुकान से मेनू प्राप्त करें",
+        "search_placeholder": "रेस्तरां का नाम खोजें",
+        "search_button": "खोजें",
+        "searching": "खोज रहा है...",
+        "no_results": "कोई परिणाम नहीं",
+        "generating_menu": "AI मेनू बना रहा है...",
+        "ai_recommended": "AI अनुशंसित मेनू",
+        "apply_menu": "यह मेनू लागू करें",
+        "search_error": "खोज में त्रुटि",
+        "menu_gen_error": "मेनू बनाने में विफल",
+        "min_menu_error": "कम से कम 2 मेनू आइटम आवश्यक हैं"
     },
     "roulette": {
         "spin_center": "घुमाएं",

@@ -134,7 +134,18 @@
         "min_participants_error": "At least 2 participants are required",
         "select_me": "ME SELECT",
         "already_taken": "This name is already taken by another participant.",
-        "host_selected": "This name is reserved by the host."
+        "host_selected": "This name is reserved by the host.",
+        "search_restaurant": "Get menu from store",
+        "search_placeholder": "Search restaurant name",
+        "search_button": "Search",
+        "searching": "Searching...",
+        "no_results": "No results found",
+        "generating_menu": "AI is generating menu...",
+        "ai_recommended": "AI Recommended Menu",
+        "apply_menu": "Apply this menu",
+        "search_error": "An error occurred during search",
+        "menu_gen_error": "Failed to generate menu",
+        "min_menu_error": "At least 2 menu items are required"
     },
     "roulette": {
         "spin_center": "SPIN",

@@ -134,7 +134,18 @@
         "min_participants_error": "少なくとも2人の参加者が必要です",
         "select_me": "自分を選択",
         "already_taken": "この名前は既に使用されています。",
-        "host_selected": "この名前はホストにより予約されています。"
+        "host_selected": "この名前はホストにより予約されています。",
+        "search_restaurant": "お店からメニューを取得",
+        "search_placeholder": "お店の名前を検索",
+        "search_button": "検索",
+        "searching": "検索中...",
+        "no_results": "検索結果がありません",
+        "generating_menu": "AIがメニューを生成中...",
+        "ai_recommended": "AIおすすめメニュー",
+        "apply_menu": "このメニューを適用",
+        "search_error": "検索中にエラーが発生しました",
+        "menu_gen_error": "メニュー生成に失敗しました",
+        "min_menu_error": "メニューは2つ以上必要です"
     },
     "roulette": {
         "spin_center": "回転",

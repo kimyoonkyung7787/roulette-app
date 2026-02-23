@@ -134,7 +134,18 @@
         "min_participants_error": "مطلوب مشاركين اثنين على الأقل",
         "select_me": "اختياري",
         "already_taken": "هذا الاسم مستخدم بالفعل.",
-        "host_selected": "هذا الاسم محجوز للمضيف."
+        "host_selected": "هذا الاسم محجوز للمضيف.",
+        "search_restaurant": "الحصول على القائمة من المتجر",
+        "search_placeholder": "ابحث عن اسم المطعم",
+        "search_button": "بحث",
+        "searching": "جارٍ البحث...",
+        "no_results": "لا توجد نتائج",
+        "generating_menu": "الذكاء الاصطناعي يولد القائمة...",
+        "ai_recommended": "قائمة موصى بها من AI",
+        "apply_menu": "تطبيق هذه القائمة",
+        "search_error": "حدث خطأ أثناء البحث",
+        "menu_gen_error": "فشل في إنشاء القائمة",
+        "min_menu_error": "مطلوب عنصران على الأقل"
     },
     "roulette": {
         "spin_center": "تدوير",

@@ -134,7 +134,18 @@
         "min_participants_error": "至少需要2名参与者",
         "select_me": "选我",
         "already_taken": "此名称已被占用。",
-        "host_selected": "此名称已被主机保留。"
+        "host_selected": "此名称已被主机保留。",
+        "search_restaurant": "从店铺获取菜单",
+        "search_placeholder": "搜索店铺名称",
+        "search_button": "搜索",
+        "searching": "搜索中...",
+        "no_results": "未找到结果",
+        "generating_menu": "AI正在生成菜单...",
+        "ai_recommended": "AI推荐菜单",
+        "apply_menu": "使用此菜单",
+        "search_error": "搜索时出错",
+        "menu_gen_error": "菜单生成失败",
+        "min_menu_error": "至少需要2个菜单项"
     },
     "roulette": {
         "spin_center": "旋转",

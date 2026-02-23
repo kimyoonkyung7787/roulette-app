@@ -134,7 +134,18 @@
         "min_participants_error": "Au moins 2 participants sont requis",
         "select_me": "ME SÉLECTIONNER",
         "already_taken": "Ce nom est déjà pris.",
-        "host_selected": "Ce nom est réservé par l'hôte."
+        "host_selected": "Ce nom est réservé par l'hôte.",
+        "search_restaurant": "Obtenir le menu du magasin",
+        "search_placeholder": "Rechercher un restaurant",
+        "search_button": "Rechercher",
+        "searching": "Recherche en cours...",
+        "no_results": "Aucun résultat",
+        "generating_menu": "L'IA génère le menu...",
+        "ai_recommended": "Menu recommandé par IA",
+        "apply_menu": "Appliquer ce menu",
+        "search_error": "Erreur lors de la recherche",
+        "menu_gen_error": "Échec de la génération du menu",
+        "min_menu_error": "Au moins 2 éléments requis"
     },
     "roulette": {
         "spin_center": "TOURNER",

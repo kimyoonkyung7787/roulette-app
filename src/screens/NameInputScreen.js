@@ -6,7 +6,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Colors } from '../theme/colors';
 import { CyberBackground } from '../components/CyberBackground';
 import { NeonText } from '../components/NeonText';
-import { UserPlus, Trash2, Play, History, CheckCircle2, ListChecks, Users, X, Loader, LogOut, Crown, Utensils, Coffee, Cookie, User, HelpCircle, Circle, Zap, Target, Home, RotateCw, Guitar, Pencil, Check, Share2 } from 'lucide-react-native';
+import { UserPlus, Trash2, Play, History, CheckCircle2, ListChecks, Users, X, Loader, LogOut, Crown, Utensils, Coffee, Cookie, User, HelpCircle, Circle, Zap, Target, Home, RotateCw, Guitar, Pencil, Check, Share2, Search, MapPin, Store, Sparkles } from 'lucide-react-native';
 import { syncService } from '../services/SyncService';
 import { participantService } from '../services/ParticipantService';
 import { CyberAlert } from '../components/CyberAlert';
@@ -63,6 +63,92 @@ export default function NameInputScreen({ route, navigation }) {
     const [backupMySelectedName, setBackupMySelectedName] = useState(null);
     const participantRefs = useRef([]);
     const modalScrollRef = useRef(null);
+
+    const [showRestaurantSearch, setShowRestaurantSearch] = useState(false);
+    const [searchQuery, setSearchQuery] = useState('');
+    const [searchResults, setSearchResults] = useState([]);
+    const [isSearching, setIsSearching] = useState(false);
+    const [isGeneratingMenu, setIsGeneratingMenu] = useState(false);
+    const [generatedMenus, setGeneratedMenus] = useState(null);
+    const [selectedRestaurant, setSelectedRestaurant] = useState(null);
+
+    const getApiBaseUrl = () => {
+        if (Platform.OS === 'web') {
+            return window.location.origin;
+        }
+        return '';
+    };
+
+    const searchRestaurant = async () => {
+        const q = searchQuery.trim();
+        if (!q) return;
+        setIsSearching(true);
+        setSearchResults([]);
+        setSelectedRestaurant(null);
+        setGeneratedMenus(null);
+        try {
+            const resp = await fetch(`${getApiBaseUrl()}/api/search-restaurant`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ query: q }),
+            });
+            const data = await resp.json();
+            if (resp.ok && data.items) {
+                setSearchResults(data.items);
+            } else {
+                setAlertConfig({ visible: true, title: t('common.error'), message: t('name_input.search_error') });
+            }
+        } catch (err) {
+            console.error('searchRestaurant error:', err);
+            setAlertConfig({ visible: true, title: t('common.error'), message: t('name_input.search_error') });
+        } finally {
+            setIsSearching(false);
+        }
+    };
+
+    const generateMenuForRestaurant = async (restaurant) => {
+        setSelectedRestaurant(restaurant);
+        setIsGeneratingMenu(true);
+        setGeneratedMenus(null);
+        try {
+            const resp = await fetch(`${getApiBaseUrl()}/api/generate-menu`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    restaurantName: restaurant.title,
+                    category: activeCategory,
+                    address: restaurant.roadAddress || restaurant.address,
+                }),
+            });
+            const data = await resp.json();
+            if (resp.ok && data.menus) {
+                setGeneratedMenus(data.menus);
+            } else {
+                setAlertConfig({ visible: true, title: t('common.error'), message: t('name_input.menu_gen_error') });
+            }
+        } catch (err) {
+            console.error('generateMenu error:', err);
+            setAlertConfig({ visible: true, title: t('common.error'), message: t('name_input.menu_gen_error') });
+        } finally {
+            setIsGeneratingMenu(false);
+        }
+    };
+
+    const applyGeneratedMenus = async () => {
+        if (!generatedMenus || generatedMenus.length === 0) return;
+        const newItems = generatedMenus.map(name => ({ name }));
+        setMenuItems(newItems);
+        if (role === 'owner') {
+            await syncService.setMenuByCategory(activeCategory, newItems);
+            await syncService.setMenuItems(newItems);
+        }
+        setShowRestaurantSearch(false);
+        setSearchQuery('');
+        setSearchResults([]);
+        setSelectedRestaurant(null);
+        setGeneratedMenus(null);
+        try { feedbackService.playClick(); } catch (e) { }
+    };
 
     const startEditingParticipant = (index, currentName) => {
         setEditingParticipantIndex(index);
@@ -940,7 +1026,10 @@ export default function NameInputScreen({ route, navigation }) {
                 return;
             }
             // Validate total weight is positive
-            const totalWeight = participants.reduce((sum, p) => sum + (p.weight || 0), 0);
+            let totalWeight = 0;
+            for (let i = 0; i < participants.length; i++) {
+                totalWeight += (participants[i].weight || 0);
+            }
             if (totalWeight <= 0) {
                 setAlertConfig({
                     visible: true,
@@ -1105,7 +1194,10 @@ export default function NameInputScreen({ route, navigation }) {
         }
     };
 
-    const totalParticipantsWeight = participants.reduce((sum, p) => sum + (p.weight || 0), 0);
+    let totalParticipantsWeight = 0;
+    for (let i = 0; i < participants.length; i++) {
+        totalParticipantsWeight += (participants[i].weight || 0);
+    }
 
     return (
         <CyberBackground>
@@ -1280,6 +1372,36 @@ export default function NameInputScreen({ route, navigation }) {
                         </View>
                     )}
 
+                    {activeTab === 'menu' && role === 'owner' && (
+                        <TouchableOpacity
+                            onPress={() => {
+                                setShowRestaurantSearch(true);
+                                setSearchQuery('');
+                                setSearchResults([]);
+                                setSelectedRestaurant(null);
+                                setGeneratedMenus(null);
+                            }}
+                            activeOpacity={0.7}
+                            style={{
+                                flexDirection: 'row',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                backgroundColor: 'rgba(0, 255, 255, 0.06)',
+                                borderWidth: 1,
+                                borderColor: 'rgba(0, 255, 255, 0.2)',
+                                borderRadius: 12,
+                                paddingVertical: 10,
+                                paddingHorizontal: 16,
+                                marginBottom: 16,
+                                borderStyle: 'dashed',
+                            }}
+                        >
+                            <Store color={Colors.primary} size={18} style={{ marginRight: 8 }} />
+                            <Text style={{ color: Colors.primary, fontSize: 13, fontWeight: '900', letterSpacing: 1 }}>
+                                {t('name_input.search_restaurant')}
+                            </Text>
+                        </TouchableOpacity>
+                    )}
 
                     {role === 'owner' && (
                         <View style={{ flexDirection: 'column', marginBottom: 25 }}>
@@ -1358,7 +1480,10 @@ export default function NameInputScreen({ route, navigation }) {
                             let displayWeight = '1';
 
                             if (isPeopleTab) {
-                                const totalWeightSum = participants.reduce((sum, p) => sum + (p.weight || 0), 0);
+                                let totalWeightSum = 0;
+                                for (let i = 0; i < participants.length; i++) {
+                                    totalWeightSum += (participants[i].weight || 0);
+                                }
                                 totalWeight = Math.max(1, totalWeightSum);
                                 const weightValue = item.weight || 0;
                                 const percentageValue = (weightValue / totalWeight) * 100;
@@ -1951,6 +2076,205 @@ export default function NameInputScreen({ route, navigation }) {
                                         <Text style={{ color: 'black', fontWeight: 'bold' }}>{t('common.confirm')}</Text>
                                     </TouchableOpacity>
                                 </View>
+                            </View>
+                        </View>
+                    </Modal>
+
+                    {/* Restaurant Search Modal */}
+                    <Modal
+                        visible={showRestaurantSearch}
+                        transparent={true}
+                        animationType="fade"
+                        onRequestClose={() => setShowRestaurantSearch(false)}
+                    >
+                        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.85)', justifyContent: 'center', alignItems: 'center', padding: 20 }}>
+                            <View style={{
+                                width: '100%',
+                                maxWidth: 420,
+                                maxHeight: '85%',
+                                backgroundColor: '#111',
+                                borderRadius: 20,
+                                padding: 24,
+                                borderWidth: 2,
+                                borderColor: Colors.primary,
+                                shadowColor: Colors.primary,
+                                shadowOffset: { width: 0, height: 0 },
+                                shadowOpacity: 0.5,
+                                shadowRadius: 15,
+                                elevation: 8
+                            }}>
+                                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+                                    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                                        <Store color={Colors.primary} size={20} style={{ marginRight: 8 }} />
+                                        <NeonText style={{ fontSize: 18 }}>{t('name_input.search_restaurant')}</NeonText>
+                                    </View>
+                                    <TouchableOpacity onPress={() => setShowRestaurantSearch(false)}>
+                                        <X color={Colors.text} size={24} />
+                                    </TouchableOpacity>
+                                </View>
+
+                                <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 16 }}>
+                                    <View style={{ flex: 1, backgroundColor: 'rgba(255,255,255,0.08)', borderRadius: 12, borderWidth: 1, borderColor: 'rgba(255,255,255,0.15)', marginRight: 10, overflow: 'hidden' }}>
+                                        <TextInput
+                                            style={{ color: 'white', padding: 14, fontSize: 15 }}
+                                            placeholder={t('name_input.search_placeholder')}
+                                            placeholderTextColor="rgba(255,255,255,0.3)"
+                                            value={searchQuery}
+                                            onChangeText={setSearchQuery}
+                                            onSubmitEditing={searchRestaurant}
+                                            autoFocus={true}
+                                        />
+                                    </View>
+                                    <TouchableOpacity
+                                        onPress={searchRestaurant}
+                                        disabled={isSearching || !searchQuery.trim()}
+                                        style={{
+                                            backgroundColor: isSearching || !searchQuery.trim() ? 'rgba(255,255,255,0.1)' : Colors.primary,
+                                            padding: 14,
+                                            borderRadius: 12,
+                                            opacity: isSearching || !searchQuery.trim() ? 0.4 : 1,
+                                        }}
+                                    >
+                                        <Search color={isSearching || !searchQuery.trim() ? Colors.textSecondary : 'black'} size={22} />
+                                    </TouchableOpacity>
+                                </View>
+
+                                <ScrollView style={{ maxHeight: 420 }} showsVerticalScrollIndicator={false}>
+                                    {isSearching && (
+                                        <View style={{ alignItems: 'center', paddingVertical: 30 }}>
+                                            <Loader color={Colors.primary} size={24} />
+                                            <Text style={{ color: Colors.textSecondary, marginTop: 10, fontSize: 13 }}>{t('name_input.searching')}</Text>
+                                        </View>
+                                    )}
+
+                                    {!isSearching && searchResults.length > 0 && !selectedRestaurant && (
+                                        <View style={{ gap: 8 }}>
+                                            {searchResults.map((item, idx) => (
+                                                <TouchableOpacity
+                                                    key={idx}
+                                                    onPress={() => generateMenuForRestaurant(item)}
+                                                    activeOpacity={0.7}
+                                                    style={{
+                                                        backgroundColor: 'rgba(255,255,255,0.04)',
+                                                        borderRadius: 14,
+                                                        padding: 14,
+                                                        borderWidth: 1,
+                                                        borderColor: 'rgba(255,255,255,0.08)',
+                                                    }}
+                                                >
+                                                    <Text style={{ color: 'white', fontSize: 16, fontWeight: '700', marginBottom: 4 }}>{item.title}</Text>
+                                                    <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 3 }}>
+                                                        <MapPin color={Colors.textSecondary} size={12} style={{ marginRight: 4 }} />
+                                                        <Text style={{ color: Colors.textSecondary, fontSize: 12 }} numberOfLines={1}>
+                                                            {item.roadAddress || item.address}
+                                                        </Text>
+                                                    </View>
+                                                    {item.category && (
+                                                        <Text style={{ color: 'rgba(255,255,255,0.35)', fontSize: 11 }}>{item.category}</Text>
+                                                    )}
+                                                </TouchableOpacity>
+                                            ))}
+                                        </View>
+                                    )}
+
+                                    {!isSearching && searchResults.length === 0 && searchQuery.trim().length > 0 && !isGeneratingMenu && (
+                                        <View style={{ alignItems: 'center', paddingVertical: 30 }}>
+                                            <Text style={{ color: Colors.textSecondary, fontSize: 13 }}>{t('name_input.no_results')}</Text>
+                                        </View>
+                                    )}
+
+                                    {selectedRestaurant && (
+                                        <View>
+                                            <View style={{
+                                                backgroundColor: `${Colors.primary}10`,
+                                                borderRadius: 14,
+                                                padding: 14,
+                                                borderWidth: 1,
+                                                borderColor: `${Colors.primary}30`,
+                                                marginBottom: 16,
+                                            }}>
+                                                <Text style={{ color: Colors.primary, fontSize: 15, fontWeight: '900' }}>{selectedRestaurant.title}</Text>
+                                                <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 4 }}>
+                                                    <MapPin color={Colors.textSecondary} size={12} style={{ marginRight: 4 }} />
+                                                    <Text style={{ color: Colors.textSecondary, fontSize: 12 }} numberOfLines={1}>
+                                                        {selectedRestaurant.roadAddress || selectedRestaurant.address}
+                                                    </Text>
+                                                </View>
+                                                <TouchableOpacity
+                                                    onPress={() => { setSelectedRestaurant(null); setGeneratedMenus(null); }}
+                                                    style={{ position: 'absolute', top: 10, right: 10 }}
+                                                >
+                                                    <X color={Colors.textSecondary} size={16} />
+                                                </TouchableOpacity>
+                                            </View>
+
+                                            {isGeneratingMenu && (
+                                                <View style={{ alignItems: 'center', paddingVertical: 24 }}>
+                                                    <Sparkles color={Colors.accent} size={28} />
+                                                    <Text style={{ color: Colors.accent, marginTop: 10, fontSize: 14, fontWeight: '700' }}>
+                                                        {t('name_input.generating_menu')}
+                                                    </Text>
+                                                </View>
+                                            )}
+
+                                            {generatedMenus && generatedMenus.length > 0 && (
+                                                <View>
+                                                    <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 12 }}>
+                                                        <Sparkles color={Colors.accent} size={14} style={{ marginRight: 6 }} />
+                                                        <Text style={{ color: Colors.accent, fontSize: 12, fontWeight: '900', letterSpacing: 1 }}>
+                                                            {t('name_input.ai_recommended')}
+                                                        </Text>
+                                                    </View>
+                                                    <View style={{ gap: 6, marginBottom: 20 }}>
+                                                        {generatedMenus.map((menu, idx) => (
+                                                            <View
+                                                                key={idx}
+                                                                style={{
+                                                                    flexDirection: 'row',
+                                                                    alignItems: 'center',
+                                                                    backgroundColor: 'rgba(255,255,255,0.04)',
+                                                                    borderRadius: 10,
+                                                                    paddingHorizontal: 14,
+                                                                    paddingVertical: 10,
+                                                                    borderWidth: 1,
+                                                                    borderColor: 'rgba(255,255,255,0.06)',
+                                                                }}
+                                                            >
+                                                                <View style={{
+                                                                    width: 24, height: 24, borderRadius: 12,
+                                                                    backgroundColor: `${Colors.primary}20`,
+                                                                    justifyContent: 'center', alignItems: 'center',
+                                                                    marginRight: 12,
+                                                                }}>
+                                                                    <Text style={{ color: Colors.primary, fontSize: 11, fontWeight: '900' }}>{idx + 1}</Text>
+                                                                </View>
+                                                                <Text style={{ color: 'white', fontSize: 15, fontWeight: '600' }}>{menu}</Text>
+                                                            </View>
+                                                        ))}
+                                                    </View>
+
+                                                    <TouchableOpacity
+                                                        onPress={applyGeneratedMenus}
+                                                        activeOpacity={0.8}
+                                                        style={{
+                                                            backgroundColor: Colors.primary,
+                                                            paddingVertical: 12,
+                                                            borderRadius: 14,
+                                                            alignItems: 'center',
+                                                            justifyContent: 'center',
+                                                            flexDirection: 'row',
+                                                        }}
+                                                    >
+                                                        <CheckCircle2 color="black" size={20} style={{ marginRight: 8 }} />
+                                                        <Text style={{ color: 'black', fontSize: 15, fontWeight: '900', letterSpacing: 1 }}>
+                                                            {t('name_input.apply_menu')}
+                                                        </Text>
+                                                    </TouchableOpacity>
+                                                </View>
+                                            )}
+                                        </View>
+                                    )}
+                                </ScrollView>
                             </View>
                         </View>
                     </Modal>

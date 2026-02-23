@@ -134,7 +134,18 @@
         "min_participants_error": "Se requieren al menos 2 participantes",
         "select_me": "SELECCIONARME",
         "already_taken": "Este nombre ya está en uso.",
-        "host_selected": "Este nombre está reservado."
+        "host_selected": "Este nombre está reservado.",
+        "search_restaurant": "Obtener menú de tienda",
+        "search_placeholder": "Buscar nombre del restaurante",
+        "search_button": "Buscar",
+        "searching": "Buscando...",
+        "no_results": "Sin resultados",
+        "generating_menu": "AI generando menú...",
+        "ai_recommended": "Menú recomendado por AI",
+        "apply_menu": "Aplicar este menú",
+        "search_error": "Error durante la búsqueda",
+        "menu_gen_error": "Error al generar el menú",
+        "min_menu_error": "Se necesitan al menos 2 elementos"
     },
     "roulette": {
         "spin_center": "GIRAR",

@@ -1,7 +1,11 @@
 {
     "rewrites": [
         {
-            "source": "/((?!_expo/|assets/|favicon.ico|metadata.json).*)",
+            "source": "/api/:path*",
+            "destination": "/api/:path*"
+        },
+        {
+            "source": "/((?!_expo/|assets/|favicon.ico|metadata.json|api/).*)",
             "destination": "/index.html"
         }
     ],
