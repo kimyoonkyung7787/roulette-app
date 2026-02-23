@@ -40,7 +40,7 @@
     },
     "popular_items": {
         "coffee": [
-            "Heißer/Eis Americano",
+            "Americano",
             "Caffè Latte",
             "Vanilla Latte",
             "Cappuccino",
@@ -102,6 +102,7 @@
     },
     "name_input": {
         "add_participant": "Teilnehmer hinzufügen...",
+        "select_option": "OPTION WÄHLEN",
         "add_menu_item": "Menüpunkt hinzufügen...",
         "participant_status": "TEILNEHMERSTATUS",
         "voter": "Wähler",

@@ -40,7 +40,7 @@
     },
     "popular_items": {
         "coffee": [
-            "ホット/アイス アメリカーノ",
+            "アメリカーノ",
             "カフェラテ",
             "バニララテ",
             "カプチーノ",
@@ -102,6 +102,7 @@
     },
     "name_input": {
         "add_participant": "参加者を追加...",
+        "select_option": "オプションを選択",
         "add_menu_item": "メニュー項目を追加...",
         "participant_status": "参加ステータス",
         "voter": "投票者",

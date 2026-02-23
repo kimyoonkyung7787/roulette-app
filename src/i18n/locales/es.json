@@ -40,7 +40,7 @@
     },
     "popular_items": {
         "coffee": [
-            "Americano (Caliente/Frío)",
+            "Americano",
             "Café Latte",
             "Latte de Vainilla",
             "Capuchino",
@@ -102,6 +102,7 @@
     },
     "name_input": {
         "add_participant": "Añadir participante...",
+        "select_option": "SELECCIONAR OPCIÓN",
         "add_menu_item": "Agregar plato...",
         "participant_status": "ESTADO DE PARTICIPANTES",
         "voter": "Votante",

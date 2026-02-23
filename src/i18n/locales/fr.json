@@ -40,7 +40,7 @@
     },
     "popular_items": {
         "coffee": [
-            "Americano Chaud / Frappé",
+            "Americano",
             "Café Latte",
             "Latte Vanille",
             "Cappuccino",
@@ -102,6 +102,7 @@
     },
     "name_input": {
         "add_participant": "Ajouter un participant...",
+        "select_option": "SÉLECTIONNER L'OPTION",
         "add_menu_item": "Ajouter un plat...",
         "participant_status": "ÉTAT DES PARTICIPANTS",
         "voter": "Électeur",

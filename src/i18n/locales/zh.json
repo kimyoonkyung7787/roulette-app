@@ -40,7 +40,7 @@
     },
     "popular_items": {
         "coffee": [
-            "热/冰 美式咖啡",
+            "美式咖啡",
             "拿铁咖啡",
             "香草拿铁",
             "卡布奇诺",
@@ -102,6 +102,7 @@
     },
     "name_input": {
         "add_participant": "添加参与者...",
+        "select_option": "选择选项",
         "add_menu_item": "添加菜单项...",
         "participant_status": "参与状态",
         "voter": "投票人",

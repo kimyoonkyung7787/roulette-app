@@ -516,7 +516,8 @@ export default function ResultScreen({ route, navigation }) {
                                 <View style={styles.tallyContainer}>
                                     {Object.entries(tally).map(([name, count]) => {
                                         const isHost = name === (route.params?.hostName);
-                                        const cellCount = Math.max(type === 'menu' ? (originalItems?.length || 1) : totalParticipants, 1);
+                                        const menuCount = route.params?.menuItems?.length || originalItems?.length || 0;
+                                        const cellCount = Math.max(type === 'menu' ? menuCount : totalParticipants, 1);
                                         return (
                                         <View key={name} style={styles.tallyItem}>
                                             <View style={styles.tallyNameRow}>

@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useRef } from 'react';
-import { View, TextInput, TouchableOpacity, FlatList, Text, Modal, ScrollView, Platform, Alert, StyleSheet, LayoutAnimation, UIManager, Share } from 'react-native';
+import { View, TextInput, TouchableOpacity, FlatList, Text, Modal, ScrollView, Platform, Alert, StyleSheet, LayoutAnimation, UIManager, Share, Animated } from 'react-native';
 import { useIsFocused } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Colors } from '../theme/colors';
@@ -20,6 +20,16 @@ if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental
 
 
 
+const CATEGORY_OPTIONS = {
+    coffee: {
+        key: 'temperature',
+        options: [
+            { label: 'Hot', color: '#ff8c00', icon: '☕' },
+            { label: 'Ice', color: '#00bfff', icon: '🧊' },
+        ]
+    },
+};
+
 export default function NameInputScreen({ route, navigation }) {
     const { category = 'coffee', role = 'owner', roomId = 'default', mode = 'online', initialTab } = route.params || {};
     const { t } = useTranslation();
@@ -31,7 +41,8 @@ export default function NameInputScreen({ route, navigation }) {
     const [editingIndex, setEditingIndex] = useState(null);
     const [editingWeightIndex, setEditingWeightIndex] = useState(null);
     const [editingValue, setEditingValue] = useState('');
-    const [coffeeOption, setCoffeeOption] = useState('Hot');
+    const [showOptionSheet, setShowOptionSheet] = useState(false);
+    const [pendingMenuIndex, setPendingMenuIndex] = useState(null);
     const [editingWeightValue, setEditingWeightValue] = useState('');
     const [mySelectedName, setMySelectedName] = useState(null);
     const [spinning, setSpinning] = useState(false);
@@ -601,11 +612,7 @@ export default function NameInputScreen({ route, navigation }) {
             setParticipants(updated);
             if (role === 'owner') await syncService.setParticipants(updated);
         } else {
-            let finalName = trimmedName;
-            if (activeCategory === 'coffee') {
-                finalName = `${trimmedName}(${coffeeOption})`;
-            }
-            const updated = [...menuItems, { name: finalName }];
+            const updated = [...menuItems, { name: trimmedName }];
             setMenuItems(updated);
             if (role === 'owner') await syncService.setMenuItems(updated);
         }
@@ -723,6 +730,65 @@ export default function NameInputScreen({ route, navigation }) {
                 isHost ? t('name_input.host_selected') || 'Host has chosen this.' : t('name_input.already_taken')
             );
         }
+    };
+
+    const handleOptionSelect = (optionLabel) => {
+        if (pendingMenuIndex === null) return;
+        const menuItem = menuItems[pendingMenuIndex];
+        const baseName = typeof menuItem === 'object' ? (menuItem.name || '') : String(menuItem);
+        const voteName = `${baseName}(${optionLabel})`;
+
+        setSelectedMenuIndex(pendingMenuIndex);
+        setShowOptionSheet(false);
+        setPendingMenuIndex(null);
+
+        if (!mySelectedName) {
+            setAlertConfig({
+                visible: true,
+                title: t('common.alert'),
+                message: t('name_input.please_select_name')
+            });
+            return;
+        }
+
+        const submitWithOption = async () => {
+            if (role === 'owner') {
+                const isGameAlreadyActive = roomPhase === 'roulette' || (votes && votes.length > 0);
+                if (isGameAlreadyActive) {
+                    await syncService.submitVote(voteName);
+                    navigation.navigate('Roulette', {
+                        participants, menuItems, mySelectedName, roomId, mode, role,
+                        category: activeCategory, votedItem: voteName, spinTarget: 'menu'
+                    });
+                } else {
+                    await syncService.setSpinTarget('menu');
+                    await syncService.setRoomPhase('roulette');
+                    await syncService.clearVotes();
+                    await syncService.clearSpinState();
+                    await syncService.clearFinalResults();
+                    await syncService.submitVote(voteName);
+                    const finalHostName = hostName || onlineUsers.find(u => u.role === 'owner')?.name || (role === 'owner' ? mySelectedName : null);
+                    navigation.navigate('Roulette', {
+                        participants, menuItems, mySelectedName, roomId, mode, role,
+                        category: activeCategory, votedItem: voteName, spinTarget: 'menu', hostName: finalHostName
+                    });
+                }
+            } else {
+                const isGameActive = roomPhase === 'roulette' || votes.length > 0 || remoteSpinState?.isSpinning;
+                if (!isGameActive) {
+                    setAlertConfig({ visible: true, title: t('common.alert'), message: t('name_input.wait_for_host') });
+                    return;
+                }
+                await syncService.submitVote(voteName);
+                const finalHostName = hostName || onlineUsers.find(u => u.role === 'owner')?.name || null;
+                navigation.navigate('Roulette', {
+                    participants, menuItems, mySelectedName, roomId, mode, role,
+                    category: activeCategory, votedItem: voteName, spinTarget: 'menu', hostName: finalHostName
+                });
+            }
+        };
+
+        submitWithOption().catch(e => console.error('Option vote failed:', e));
     };
 
     const handleDirectPick = async () => {
@@ -1258,38 +1324,8 @@ export default function NameInputScreen({ route, navigation }) {
                                 </TouchableOpacity>
                             </View>
 
-                            {/* HOT/ICE RADIO BUTTONS FOR COFFEE */}
-                            {activeTab === 'menu' && activeCategory === 'coffee' && (
-                                <View style={{ flexDirection: 'row', marginTop: 15, justifyContent: 'center', gap: 24 }}>
-                                    <TouchableOpacity
-                                        onPress={() => {
-                                            if (coffeeOption !== 'Hot') setCoffeeOption('Hot');
-                                            try { feedbackService.playClick(); } catch (e) { }
-                                        }}
-                                        activeOpacity={0.8}
-                                        style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}
-                                    >
-                                        <View style={{ width: 22, height: 22, borderRadius: 11, borderWidth: 2, borderColor: coffeeOption === 'Hot' ? Colors.neonPink : '#666', justifyContent: 'center', alignItems: 'center' }}>
-                                            {coffeeOption === 'Hot' && <View style={{ width: 12, height: 12, borderRadius: 6, backgroundColor: Colors.neonPink }} />}
-                                        </View>
-                                        <Text style={{ color: coffeeOption === 'Hot' ? 'white' : '#888', fontSize: 16, fontWeight: 'bold' }}>Hot</Text>
-                                    </TouchableOpacity>
 
-                                    <TouchableOpacity
-                                        onPress={() => {
-                                            if (coffeeOption !== 'Ice') setCoffeeOption('Ice');
-                                            try { feedbackService.playClick(); } catch (e) { }
-                                        }}
-                                        activeOpacity={0.8}
-                                        style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}
-                                    >
-                                        <View style={{ width: 22, height: 22, borderRadius: 11, borderWidth: 2, borderColor: coffeeOption === 'Ice' ? Colors.neonBlue : '#666', justifyContent: 'center', alignItems: 'center' }}>
-                                            {coffeeOption === 'Ice' && <View style={{ width: 12, height: 12, borderRadius: 6, backgroundColor: Colors.neonBlue }} />}
-                                        </View>
-                                        <Text style={{ color: coffeeOption === 'Ice' ? 'white' : '#888', fontSize: 16, fontWeight: 'bold' }}>Ice</Text>
-                                    </TouchableOpacity>
-                                </View>
-                            )}
+
                         </View>
                     )}
 
@@ -1347,8 +1383,16 @@ export default function NameInputScreen({ route, navigation }) {
                                             </TouchableOpacity>
                                         ) : (
                                             <TouchableOpacity
-                                                // Allow everyone to select locally to indicate their preference (even if just for "Pick Now" voting)
-                                                onPress={() => setSelectedMenuIndex(index)}
+                                                onPress={() => {
+                                                    const catOpts = CATEGORY_OPTIONS[activeCategory];
+                                                    if (catOpts) {
+                                                        setPendingMenuIndex(index);
+                                                        setShowOptionSheet(true);
+                                                        try { feedbackService.playClick(); } catch (e) { }
+                                                    } else {
+                                                        setSelectedMenuIndex(index);
+                                                    }
+                                                }}
                                                 style={{ marginRight: 12 }}
                                             >
                                                 {selectedMenuIndex === index ? (
@@ -1920,6 +1964,72 @@ export default function NameInputScreen({ route, navigation }) {
                         }}
                         onCancel={() => setShowExitConfirm(false)}
                     />
+
+                    {/* Option Selection Bottom Sheet */}
+                    <Modal
+                        visible={showOptionSheet}
+                        transparent={true}
+                        animationType="slide"
+                        onRequestClose={() => { setShowOptionSheet(false); setPendingMenuIndex(null); }}
+                    >
+                        <TouchableOpacity
+                            activeOpacity={1}
+                            onPress={() => { setShowOptionSheet(false); setPendingMenuIndex(null); }}
+                            style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'flex-end' }}
+                        >
+                            <TouchableOpacity activeOpacity={1} onPress={() => {}} style={{
+                                backgroundColor: Colors.surface,
+                                borderTopLeftRadius: 20,
+                                borderTopRightRadius: 20,
+                                paddingHorizontal: 24,
+                                paddingTop: 20,
+                                paddingBottom: 36,
+                                borderTopWidth: 1,
+                                borderColor: Colors.glassBorder,
+                            }}>
+                                <View style={{ width: 40, height: 4, borderRadius: 2, backgroundColor: '#555', alignSelf: 'center', marginBottom: 16 }} />
+
+                                <Text style={{ color: Colors.textSecondary, fontSize: 12, fontWeight: '600', letterSpacing: 1, marginBottom: 4 }}>
+                                    {t('name_input.select_option') || 'SELECT OPTION'}
+                                </Text>
+                                <Text style={{ color: 'white', fontSize: 20, fontWeight: '900', marginBottom: 20 }}>
+                                    {pendingMenuIndex !== null && menuItems[pendingMenuIndex]
+                                        ? (typeof menuItems[pendingMenuIndex] === 'object' ? menuItems[pendingMenuIndex].name : menuItems[pendingMenuIndex])
+                                        : ''}
+                                </Text>
+
+                                {CATEGORY_OPTIONS[activeCategory] && (
+                                    <View style={{ flexDirection: 'row', gap: 12 }}>
+                                        {CATEGORY_OPTIONS[activeCategory].options.map((opt) => (
+                                            <TouchableOpacity
+                                                key={opt.label}
+                                                onPress={() => {
+                                                    try { feedbackService.playClick(); } catch (e) { }
+                                                    handleOptionSelect(opt.label);
+                                                }}
+                                                activeOpacity={0.7}
+                                                style={{
+                                                    flex: 1,
+                                                    paddingVertical: 14,
+                                                    borderRadius: 12,
+                                                    borderWidth: 2,
+                                                    borderColor: opt.color,
+                                                    backgroundColor: `${opt.color}15`,
+                                                    flexDirection: 'row',
+                                                    alignItems: 'center',
+                                                    justifyContent: 'center',
+                                                    gap: 8,
+                                                }}
+                                            >
+                                                <Text style={{ fontSize: 22 }}>{opt.icon}</Text>
+                                                <Text style={{ color: opt.color, fontSize: 18, fontWeight: '900', letterSpacing: 1 }}>{opt.label}</Text>
+                                            </TouchableOpacity>
+                                        ))}
+                                    </View>
+                                )}
+                            </TouchableOpacity>
+                        </TouchableOpacity>
+                    </Modal>
 
                     {/* Participant Status Modal */}
                     <Modal
