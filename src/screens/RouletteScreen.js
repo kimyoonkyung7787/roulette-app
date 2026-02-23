@@ -34,11 +34,32 @@ const hexToRgba = (hex, opacity) => {
 
 export default function RouletteScreen({ route, navigation }) {
     const { t } = useTranslation();
-    const { participants = [], menuItems = [], mySelectedName, roomId = 'default', mode = 'online', role = 'participant', category = 'coffee', votedItem = null, originalItems = [] } = route.params || {};
+    const normalizeData = (data) => {
+        if (!data) return [];
+        // Use Array.from to guarantee a true Array with all prototype methods (fixes Chrome-specific issues)
+        if (Array.isArray(data)) return Array.from(data);
+        if (typeof data === 'object') {
+            return Object.keys(data)
+                .sort((a, b) => {
+                    const na = parseInt(a);
+                    const nb = parseInt(b);
+                    if (isNaN(na) || isNaN(nb)) return a.localeCompare(b);
+                    return na - nb;
+                })
+                .map(key => data[key]);
+        }
+        return [];
+    };
+
+    const { mySelectedName, roomId = 'default', mode = 'online', role = 'participant', category = 'coffee', votedItem = null, originalItems = [] } = route.params || {};
+    const participants = normalizeData(route.params?.participants);
+    const menuItems = normalizeData(route.params?.menuItems);
+    
     const [participantsState, setParticipantsState] = useState(participants);
     const [menuItemsState, setMenuItemsState] = useState(menuItems);
     const [spinTarget, setSpinTarget] = useState(route.params?.spinTarget || 'people'); // Initialize from params
-    const currentList = spinTarget === 'people' ? participantsState : menuItemsState;
+    const rawData = spinTarget === 'people' ? participantsState : menuItemsState;
+    const currentList = normalizeData(rawData);
 
     // Simplified wheel display: 1x repeat for both online and offline
     const REPEAT_COUNT = 1;
@@ -73,6 +94,17 @@ export default function RouletteScreen({ route, navigation }) {
     useEffect(() => { participantsRef.current = participantsState; }, [participantsState]);
     useEffect(() => { menuItemsRef.current = menuItemsState; }, [menuItemsState]);
 
+    const calculateTotalWeight = (list, target) => {
+        if (!Array.isArray(list)) return 0;
+        let total = 0;
+        for (let i = 0; i < list.length; i++) {
+            const item = list[i];
+            const weight = target === 'people' ? (typeof item === 'object' ? (item.weight || 0) : 1) : 1;
+            total += weight;
+        }
+        return total;
+    };
+
     // Initial Rotation Effect for Voted Item
     useEffect(() => {
         if (votedItem && currentList.length > 0 && !spinning) {
@@ -81,12 +113,14 @@ export default function RouletteScreen({ route, navigation }) {
             const index = currentList.findIndex(item => (typeof item === 'object' ? item.name : item) === votedItem);
 
             if (index !== -1) {
-                const totalWeight = currentList.reduce((sum, p) => sum + (spinTarget === 'people' ? (p.weight || 0) : 1), 0);
+                const totalWeight = calculateTotalWeight(currentList, spinTarget);
+                if (totalWeight <= 0) return;
+
                 // Calculate target angle using PATTERN_ANGLE
                 let winnerStartAngleInPattern = 0;
                 for (let i = 0; i < index; i++) {
                     const p = currentList[i];
-                    const weight = spinTarget === 'people' ? (p.weight || 0) : 1;
+                    const weight = spinTarget === 'people' ? (typeof p === 'object' ? (p.weight || 0) : 1) : 1;
                     winnerStartAngleInPattern += (weight / totalWeight) * PATTERN_ANGLE;
                 }
 
@@ -376,9 +410,13 @@ export default function RouletteScreen({ route, navigation }) {
 
         // Use refs for the final calculation to avoid closure staleness
         const currentTarget = spinTargetRef.current;
-        const currentDataList = currentTarget === 'people' ? participantsRef.current : menuItemsRef.current;
+        const currentDataList = normalizeData(currentTarget === 'people' ? participantsRef.current : menuItemsRef.current);
 
-        const totalWeight = currentDataList.reduce((sum, p) => sum + (currentTarget === 'people' ? (typeof p === 'object' ? (p.weight || 0) : 1) : 1), 0);
+        const totalWeight = calculateTotalWeight(currentDataList, currentTarget);
+        if (totalWeight <= 0) {
+            setSpinning(false);
+            return;
+        }
         let cumulativeAngle = 0;
         let winningIndex = 0;
 
@@ -439,10 +477,16 @@ export default function RouletteScreen({ route, navigation }) {
             const pointerAngle = (360 - normalizedRotation) % 360;
             const pointerAngleInPattern = pointerAngle % PATTERN_ANGLE;
 
-            const totalWeight = currentList.reduce((sum, p) => sum + (spinTarget === 'people' ? (typeof p === 'object' ? (p.weight || 0) : 1) : 1), 0);
+            let totalWeight = 0;
+            if (Array.isArray(currentList)) {
+                for (let i = 0; i < currentList.length; i++) {
+                    const item = currentList[i];
+                    totalWeight += (spinTarget === 'people' ? (typeof item === 'object' ? (item.weight || 0) : 1) : 1);
+                }
+            }
 
             // Avoid division by zero
-            if (totalWeight === 0) return;
+            if (totalWeight <= 0) return;
 
             let cumulativeAngle = 0;
             let currentIndex = 0;
@@ -486,7 +530,7 @@ export default function RouletteScreen({ route, navigation }) {
         const normalizedRotation = (rotation.value % 360 + 360) % 360;
         const pointerAngle = (360 - normalizedRotation) % 360;
         const pointerAngleInPattern = pointerAngle % PATTERN_ANGLE;
-        const totalWeight = currentList.reduce((sum, p) => sum + (spinTarget === 'people' ? (typeof p === 'object' ? (p.weight || 0) : 1) : 1), 0);
+        const totalWeight = calculateTotalWeight(currentList, spinTarget);
 
         let initialIdx = 0;
         if (totalWeight > 0) {
@@ -604,7 +648,7 @@ export default function RouletteScreen({ route, navigation }) {
         for (let repeat = 0; repeat < REPEAT_COUNT; repeat++) {
             let cumulativeAngle = (360 / REPEAT_COUNT) * repeat; // Start angle for this repetition
 
-            const totalWeight = currentList.reduce((sum, p) => sum + (spinTarget === 'people' ? (typeof p === 'object' ? (p.weight || 0) : 1) : 1), 0);
+            const totalWeight = calculateTotalWeight(currentList, spinTarget);
             if (totalWeight <= 0) return null; // Prevent division by zero
             currentList.forEach((p, i) => {
                 const name = typeof p === 'object' ? p.name : p;
@@ -799,13 +843,13 @@ export default function RouletteScreen({ route, navigation }) {
 
         if (mode === 'offline') return t('roulette.go_shout');
 
-        const myVote = votes.find(v => v.userId === syncService.myId);
+        const myVote = (votes || []).find(v => v.userId === syncService.myId);
 
         // If I have voted, show appropriate status
         if (myVote) return t('roulette.waiting_for_others');
 
-        const expectedVoterCount = Math.max(participantsState.length, onlineUsers.length);
-        const allVoted = votes.length >= expectedVoterCount && expectedVoterCount > 0;
+        const expectedVoterCount = Math.max((participantsState || []).length, (onlineUsers || []).length);
+        const allVoted = (votes || []).length >= expectedVoterCount && expectedVoterCount > 0;
         if (allVoted) return t('roulette.ready');
 
         return t('roulette.execute');

@@ -192,6 +192,23 @@ class SyncService {
         });
     }
 
+    _normalizeArray(data) {
+        if (!data) return [];
+        // Use Array.from to guarantee a true Array with all prototype methods (fixes Chrome-specific issues)
+        if (Array.isArray(data)) return Array.from(data);
+        if (typeof data === 'object') {
+            return Object.keys(data)
+                .sort((a, b) => {
+                    const na = parseInt(a);
+                    const nb = parseInt(b);
+                    if (isNaN(na) || isNaN(nb)) return a.localeCompare(b);
+                    return na - nb;
+                })
+                .map(key => data[key]);
+        }
+        return [];
+    }
+
     async setParticipants(participants) {
         try {
             await set(ref(db, `${this.roomPath}/participants`), participants);
@@ -203,7 +220,7 @@ class SyncService {
 
     subscribeToParticipants(callback) {
         return onValue(ref(db, `${this.roomPath}/participants`), (snapshot) => {
-            const participants = snapshot.val() || [];
+            const participants = this._normalizeArray(snapshot.val());
             console.log(`SyncService: Participants update received (${participants.length} items)`);
             callback(participants);
         });
@@ -231,7 +248,7 @@ class SyncService {
 
     subscribeToMenuItems(callback) {
         return onValue(ref(db, `${this.roomPath}/menu_items`), (snapshot) => {
-            const menuItems = snapshot.val() || [];
+            const menuItems = this._normalizeArray(snapshot.val());
             console.log(`SyncService: Menu items update received (${menuItems.length} items)`);
             callback(menuItems);
         });
@@ -240,7 +257,7 @@ class SyncService {
     async getParticipants() {
         try {
             const snapshot = await get(ref(db, `${this.roomPath}/participants`));
-            return snapshot.val() || [];
+            return this._normalizeArray(snapshot.val());
         } catch (e) {
             console.error('SyncService: Failed to get participants:', e);
             return [];
@@ -250,7 +267,7 @@ class SyncService {
     async getMenuItems() {
         try {
             const snapshot = await get(ref(db, `${this.roomPath}/menu_items`));
-            return snapshot.val() || [];
+            return this._normalizeArray(snapshot.val());
         } catch (e) {
             console.error('SyncService: Failed to get menu items:', e);
             return [];
