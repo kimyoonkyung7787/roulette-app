@@ -1296,33 +1296,36 @@ export default function NameInputScreen({ route, navigation }) {
                                 })()}
                             </View>
 
-                            {activeTab === 'menu' && role === 'owner' && (activeCategory === 'meal' || activeCategory === 'snack') && i18n.language === 'ko' && (
-                                <TouchableOpacity
-                                    onPress={() => {
-                                        setShowRestaurantSearch(true);
-                                        setSearchQuery('');
-                                        setSearchResults([]);
-                                        setSelectedRestaurant(null);
-                                        setGeneratedMenus(null);
-                                    }}
-                                    activeOpacity={0.7}
-                                    style={{
-                                        flexDirection: 'row',
-                                        alignItems: 'center',
-                                        backgroundColor: `${Colors.primary}15`,
-                                        borderWidth: 1.5,
-                                        borderColor: Colors.primary,
-                                        borderRadius: 6,
-                                        paddingVertical: 3,
-                                        paddingHorizontal: 10,
-                                    }}
-                                >
-                                    <Store color={Colors.primary} size={12} style={{ marginRight: 5 }} />
-                                    <Text style={{ color: Colors.primary, fontSize: 10, fontWeight: '900' }}>
-                                        AI 메뉴
-                                    </Text>
-                                </TouchableOpacity>
-                            )}
+                            {activeTab === 'menu' && role === 'owner' && (activeCategory === 'meal' || activeCategory === 'snack') && i18n.language === 'ko' && (() => {
+                                const aiBtnColor = activeCategory === 'meal' ? Colors.success : Colors.accent;
+                                return (
+                                    <TouchableOpacity
+                                        onPress={() => {
+                                            setShowRestaurantSearch(true);
+                                            setSearchQuery('');
+                                            setSearchResults([]);
+                                            setSelectedRestaurant(null);
+                                            setGeneratedMenus(null);
+                                        }}
+                                        activeOpacity={0.7}
+                                        style={{
+                                            flexDirection: 'row',
+                                            alignItems: 'center',
+                                            backgroundColor: `${aiBtnColor}15`,
+                                            borderWidth: 1.5,
+                                            borderColor: aiBtnColor,
+                                            borderRadius: 6,
+                                            paddingVertical: 3,
+                                            paddingHorizontal: 10,
+                                        }}
+                                    >
+                                        <Store color={aiBtnColor} size={12} style={{ marginRight: 5 }} />
+                                        <Text style={{ color: aiBtnColor, fontSize: 10, fontWeight: '900' }}>
+                                            AI 메뉴
+                                        </Text>
+                                    </TouchableOpacity>
+                                );
+                            })()}
                         </View>
                     </View>
 
