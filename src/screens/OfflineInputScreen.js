@@ -145,16 +145,27 @@ export default function OfflineInputScreen({ route, navigation }) {
                                     </View>
                                 ))}
                             </View>
-
-                            <TouchableOpacity
-                                style={styles.startButton}
-                                onPress={handleStart}
-                            >
-                                <RotateCw color={Colors.primary} size={20} style={{ marginRight: 10 }} />
-                                <Text style={styles.startButtonText}>{t('roulette.ready_shout')}</Text>
-                            </TouchableOpacity>
                         </View>
                     </ScrollView>
+
+                    {/* Bottom Action Button (CTA) */}
+                    <View style={{
+                        paddingHorizontal: 24,
+                        paddingBottom: 20,
+                        paddingTop: 10,
+                        backgroundColor: 'transparent',
+                        width: '100%',
+                        maxWidth: 500,
+                        alignSelf: 'center'
+                    }}>
+                        <TouchableOpacity
+                            style={styles.startButton}
+                            onPress={handleStart}
+                        >
+                            <RotateCw color={Colors.primary} size={22} style={{ marginRight: 8 }} />
+                            <Text style={styles.startButtonText}>{t('roulette.ready_shout')}</Text>
+                        </TouchableOpacity>
+                    </View>
                 </KeyboardAvoidingView>
             </SafeAreaView>
         </CyberBackground>
@@ -276,18 +287,17 @@ const styles = StyleSheet.create({
     },
     startButton: {
         backgroundColor: 'transparent',
-        paddingVertical: 14,
+        paddingVertical: 10,
         borderRadius: 16,
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',
-        marginTop: 10,
         borderWidth: 1.5,
         borderColor: Colors.primary,
     },
     startButtonText: {
         color: Colors.primary,
-        fontSize: 20,
+        fontSize: 18,
         fontWeight: '900',
         letterSpacing: 2,
     }

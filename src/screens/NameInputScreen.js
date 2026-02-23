@@ -62,6 +62,7 @@ export default function NameInputScreen({ route, navigation }) {
     const [backupParticipants, setBackupParticipants] = useState(null);
     const [backupMySelectedName, setBackupMySelectedName] = useState(null);
     const participantRefs = useRef([]);
+    const modalScrollRef = useRef(null);
 
     const startEditingParticipant = (index, currentName) => {
         setEditingParticipantIndex(index);
@@ -334,39 +335,48 @@ export default function NameInputScreen({ route, navigation }) {
                 return;
             }
 
-            // Priority: Find first one that is NOT taken, NOT me, and NOT a host
-            let index = participants.findIndex(p => {
-                const pName = typeof p === 'object' ? (p.name || p.text || '') : String(p);
-                const pNameTrimmed = pName.trim();
-                if (!pNameTrimmed) return false;
-
-                // Check if taken by anyone else
-                const otherUserWithName = onlineUsers.find(u => u.name === pNameTrimmed && u.id !== syncService.myId);
-                const isTaken = !!otherUserWithName;
-                const isMe = mySelectedName === pNameTrimmed;
-
-                // Return true only if it's truly available and not the host
-                const isHostName = otherUserWithName?.role === 'owner';
-
-                return !isTaken && !isMe && !isHostName;
-            });
-
-            // Fallback: If no others available, maybe focus on myself
-            if (index === -1) {
+            // Priority 1: Find MY currently selected participant
+            let index = -1;
+            if (mySelectedName) {
                 index = participants.findIndex(p => {
                     const pName = typeof p === 'object' ? (p.name || p.text || '') : String(p);
                     return mySelectedName === pName.trim();
                 });
             }
 
+            // Priority 2: Find first NOT taken participant
+            if (index === -1) {
+                index = participants.findIndex(p => {
+                    const pName = typeof p === 'object' ? (p.name || p.text || '') : String(p);
+                    const pNameTrimmed = pName.trim();
+                    if (!pNameTrimmed) return false;
+                    const otherUserWithName = onlineUsers.find(u => u.name === pNameTrimmed && u.id !== syncService.myId);
+                    const isTaken = !!otherUserWithName;
+                    return !isTaken;
+                });
+            }
+
             const finalIndex = index !== -1 ? index : null;
             setModalFocusedIndex(finalIndex);
 
-            // If we have an auto-focus (and no selection yet), also set it as pending
+            // Auto-select pending if no current selection
             if (!mySelectedName && finalIndex !== null) {
                 const autoP = participants[finalIndex];
                 const autoName = typeof autoP === 'object' ? (autoP.name || autoP.text || '') : String(autoP);
                 setPendingSelectedName(autoName.trim());
+            }
+
+            // Scroll to focused item after render
+            if (finalIndex !== null) {
+                setTimeout(() => {
+                    participantRefs.current[finalIndex]?.measureLayout?.(
+                        modalScrollRef.current,
+                        (x, y) => {
+                            modalScrollRef.current?.scrollTo?.({ y: Math.max(0, y - 20), animated: true });
+                        },
+                        () => {}
+                    );
+                }, 300);
             }
         } else {
             setModalFocusedIndex(null);
@@ -1737,7 +1747,7 @@ export default function NameInputScreen({ route, navigation }) {
                                     </View>
                                 )}
 
-                                <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={false}>
+                                <ScrollView ref={modalScrollRef} style={{ flex: 1 }} showsVerticalScrollIndicator={false}>
                                     {participants.length === 0 ? (
                                         <Text style={{ color: '#666', textAlign: 'center', marginTop: 20 }}>
                                             {t('name_input.please_add_participants')}
