@@ -150,7 +150,8 @@ export default function NameInputScreen({ route, navigation }) {
                         return n.trim() !== '';
                     }).map(p => {
                         const name = typeof p === 'object' ? (p.name || p.text || '') : String(p);
-                        return { name: name.trim(), weight: 1 };
+                        const weight = typeof p === 'object' ? (p.weight || 1) : 1;
+                        return { name: name.trim(), weight };
                     });
 
                     // Default to at least 2 participants if empty or all was blank
@@ -1361,9 +1362,10 @@ export default function NameInputScreen({ route, navigation }) {
                                     alignItems: 'center',
                                     justifyContent: 'space-between',
                                     backgroundColor: isMe ? `${Colors.primary}15` : (isTakenByOther ? 'rgba(255,255,255,0.01)' : 'rgba(255,255,255,0.03)'),
-                                    padding: 8,
+                                    paddingHorizontal: 8,
+                                    paddingVertical: 4,
                                     borderRadius: 12,
-                                    marginBottom: 6,
+                                    marginBottom: 4,
                                     borderWidth: 1,
                                     borderColor: isMe ? Colors.primary : (isTakenByOther ? 'rgba(255,255,255,0.05)' : 'rgba(255,255,255,0.08)'),
                                     opacity: isTakenByOther && !isMe ? 0.5 : 1
@@ -1422,11 +1424,11 @@ export default function NameInputScreen({ route, navigation }) {
                                                         toggleMe(nameToCheck);
                                                     }
                                                 }}
-                                                style={{ flex: 1, flexDirection: 'row', alignItems: 'center', paddingVertical: 8 }}
+                                                style={{ flex: 1, flexDirection: 'row', alignItems: 'center', paddingVertical: 4 }}
                                             >
                                                 <Text style={{
                                                     color: !hasName ? 'rgba(255,255,255,0.2)' : ((isTakenByOther && !isMe) ? Colors.textSecondary : 'white'),
-                                                    fontSize: 18,
+                                                    fontSize: 16,
                                                     fontWeight: '500',
                                                     fontStyle: !hasName ? 'italic' : 'normal'
                                                 }}>
@@ -1460,7 +1462,7 @@ export default function NameInputScreen({ route, navigation }) {
                                                 style={{
                                                     backgroundColor: 'rgba(0,0,0,0.3)',
                                                     width: 40,
-                                                    height: 44,
+                                                    height: 36,
                                                     borderRadius: 6,
                                                     marginRight: 10,
                                                     borderWidth: 1,
@@ -1526,15 +1528,15 @@ export default function NameInputScreen({ route, navigation }) {
                                         <TouchableOpacity
                                             onPress={handleDirectPick}
                                             style={{
-                                                width: '100%',
-                                                backgroundColor: `${activeMenuColor}15`,
-                                                paddingVertical: 16,
-                                                borderRadius: 16,
-                                                flexDirection: 'row',
-                                                alignItems: 'center',
-                                                justifyContent: 'center',
-                                                borderWidth: 1.5,
-                                                borderColor: activeMenuColor
+                                            width: '100%',
+                                            backgroundColor: `${activeMenuColor}15`,
+                                            paddingVertical: 10,
+                                            borderRadius: 16,
+                                            flexDirection: 'row',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            borderWidth: 1.5,
+                                            borderColor: activeMenuColor
                                             }}
                                         >
                                             <CheckCircle2 color={activeMenuColor} size={22} strokeWidth={2.5} />
@@ -1578,7 +1580,7 @@ export default function NameInputScreen({ route, navigation }) {
                                         style={{
                                             width: '100%',
                                             backgroundColor: 'transparent',
-                                            paddingVertical: 16,
+                                            paddingVertical: 10,
                                             borderRadius: 16,
                                             flexDirection: 'row',
                                             alignItems: 'center',
@@ -1607,7 +1609,7 @@ export default function NameInputScreen({ route, navigation }) {
                                 }}
                                 style={{
                                     backgroundColor: 'transparent',
-                                    paddingVertical: 16,
+                                    paddingVertical: 10,
                                     borderRadius: 16,
                                     flexDirection: 'row',
                                     alignItems: 'center',
@@ -1616,10 +1618,10 @@ export default function NameInputScreen({ route, navigation }) {
                                     borderColor: Colors.primary
                                 }}
                             >
-                                <RotateCw color={Colors.primary} size={24} />
+                                <RotateCw color={Colors.primary} size={22} />
                                 <Text style={{
                                     color: Colors.primary,
-                                    fontSize: 20,
+                                    fontSize: 18,
                                     fontWeight: '900',
                                     letterSpacing: 2,
                                     marginLeft: 8
@@ -1759,17 +1761,18 @@ export default function NameInputScreen({ route, navigation }) {
                                                             flexDirection: 'row',
                                                             alignItems: 'center',
                                                             justifyContent: 'space-between',
-                                                            padding: 8,
+                                                            paddingHorizontal: 8,
+                                                            paddingVertical: 4,
                                                             borderRadius: 12,
-                                                            marginBottom: 6,
+                                                            marginBottom: 3,
                                                             backgroundColor: '#222',
                                                             borderWidth: 1,
                                                             borderColor: Colors.primary,
                                                         }}
                                                     >
-                                                        <View style={{ padding: 8, marginRight: 5 }}>
+                                                        <View style={{ padding: 4, marginRight: 5 }}>
                                                             <CheckCircle2
-                                                                size={20}
+                                                                size={18}
                                                                 color={isPendingMe ? Colors.primary : '#444'}
                                                             />
                                                         </View>
@@ -1805,10 +1808,10 @@ export default function NameInputScreen({ route, navigation }) {
                                                         flexDirection: 'row',
                                                         alignItems: 'center',
                                                         justifyContent: 'space-between',
-                                                        paddingHorizontal: 16,
-                                                        paddingVertical: 10,
+                                                        paddingHorizontal: 12,
+                                                        paddingVertical: 6,
                                                         borderRadius: 12,
-                                                        marginBottom: 4,
+                                                        marginBottom: 3,
                                                         backgroundColor: '#0a0a0a',
                                                         borderWidth: 1,
                                                         borderColor: isPendingMe ? Colors.primary : ((!isTaken || isMe) ? 'rgba(255, 255, 255, 0.4)' : '#222'),
@@ -1823,10 +1826,10 @@ export default function NameInputScreen({ route, navigation }) {
                                                                 }
                                                             }}
                                                             disabled={(isTaken && !isMe)}
-                                                            style={{ padding: 8, marginRight: 5 }}
+                                                            style={{ padding: 4, marginRight: 5 }}
                                                         >
                                                             <CheckCircle2
-                                                                size={20}
+                                                                size={18}
                                                                 color={isPendingMe ? Colors.primary : (index === modalFocusedIndex ? 'rgba(255, 255, 255, 0.5)' : '#444')}
                                                                 style={{ opacity: isPendingMe ? 1 : 0.6 }}
                                                             />
@@ -1842,11 +1845,11 @@ export default function NameInputScreen({ route, navigation }) {
                                                                 }
                                                             }}
                                                             disabled={role !== 'owner' && isTaken && !isMe}
-                                                            style={{ flex: 1, paddingVertical: 8 }}
+                                                            style={{ flex: 1, paddingVertical: 3 }}
                                                         >
                                                             <Text style={{
                                                                 color: isPendingMe ? 'white' : (isTaken && !isMe ? '#666' : 'white'),
-                                                                fontSize: 16,
+                                                                fontSize: 15,
                                                                 fontWeight: isPendingMe ? 'bold' : 'normal',
                                                                 flexDirection: 'row',
                                                                 alignItems: 'center'
@@ -1902,7 +1905,8 @@ export default function NameInputScreen({ route, navigation }) {
                                         }}
                                         style={{
                                             flex: 1,
-                                            padding: 15,
+                                            paddingVertical: 10,
+                                            paddingHorizontal: 15,
                                             borderRadius: 12,
                                             borderWidth: 1,
                                             borderColor: '#444',
@@ -1927,7 +1931,8 @@ export default function NameInputScreen({ route, navigation }) {
                                         }}
                                         style={{
                                             flex: 1,
-                                            padding: 15,
+                                            paddingVertical: 10,
+                                            paddingHorizontal: 15,
                                             borderRadius: 12,
                                             backgroundColor: Colors.primary,
                                             alignItems: 'center'
@@ -2010,7 +2015,7 @@ export default function NameInputScreen({ route, navigation }) {
                                                 activeOpacity={0.7}
                                                 style={{
                                                     flex: 1,
-                                                    paddingVertical: 14,
+                                                    paddingVertical: 10,
                                                     borderRadius: 12,
                                                     borderWidth: 2,
                                                     borderColor: opt.color,
@@ -2069,7 +2074,7 @@ export default function NameInputScreen({ route, navigation }) {
                                         const isMe = mySelectedName === pName;
 
                                         return (
-                                            <View key={`part-${index}`} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.05)' }}>
+                                            <View key={`part-${index}`} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.05)' }}>
                                                 <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
                                                     <View style={{
                                                         width: 8,
@@ -2134,7 +2139,7 @@ export default function NameInputScreen({ route, navigation }) {
                                     {/* Show online users who are not in the participants list (e.g. they joined with a name that was later deleted) */}
                                     {onlineUsers.filter(u => !participants.some(p => (typeof p === 'object' ? p.name : p) === u.name)).map((user, index) => {
                                         return (
-                                            <View key={`loose-${index}`} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.05)', opacity: 0.6 }}>
+                                            <View key={`loose-${index}`} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.05)', opacity: 0.6 }}>
                                                 <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
                                                     <User size={14} color="#666" style={{ marginRight: 10 }} />
                                                     <Text style={{ color: '#666', fontSize: 14 }}>{user.name || 'Anonymous'}</Text>

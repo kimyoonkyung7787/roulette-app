@@ -117,7 +117,7 @@ export default function ResultScreen({ route, navigation }) {
         }));
 
         return (
-            <View style={{ position: 'absolute', width: '100%', alignItems: 'center', top: 20 }}>
+            <View style={{ position: 'absolute', width: '100%', alignItems: 'center', top: 20, overflow: 'hidden' }}>
                 {particles.map(p => (
                     <MovingConfetti
                         key={p.id}
@@ -377,8 +377,8 @@ export default function ResultScreen({ route, navigation }) {
     return (
         <CyberBackground>
             <Confetti active={allVoted} />
-            <SafeAreaView style={{ flex: 1 }}>
-                <ScrollView contentContainerStyle={{ flexGrow: 1 }} showsVerticalScrollIndicator={false}>
+            <SafeAreaView style={{ flex: 1, overflow: 'hidden' }}>
+                <ScrollView contentContainerStyle={{ flexGrow: 1 }} showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false} horizontal={false}>
                     <View style={styles.container}>
                         <View style={styles.header}>
                             {mode === 'online' ? (

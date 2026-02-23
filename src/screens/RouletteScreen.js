@@ -844,9 +844,9 @@ export default function RouletteScreen({ route, navigation }) {
 
     return (
         <CyberBackground>
-            <SafeAreaView style={{ flex: 1 }}>
-                <View style={[styles.container, { paddingVertical: 0, paddingBottom: 30 }]}>
-                    <View style={{ width: '100%', paddingTop: 15, marginBottom: 15, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+            <SafeAreaView style={{ flex: 1, overflow: 'hidden' }}>
+                <View style={[styles.container, { paddingVertical: 0, paddingBottom: 16 }]}>
+                    <View style={{ width: '100%', paddingTop: 10, marginBottom: 8, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
                         {mode === 'online' && (
                             <View style={{
                                 backgroundColor: 'rgba(0, 255, 255, 0.1)',
@@ -961,7 +961,7 @@ export default function RouletteScreen({ route, navigation }) {
                                 <TouchableOpacity
                                     disabled={true}
                                     activeOpacity={1}
-                                    style={[styles.reselectButton, { opacity: 0.4, marginBottom: 18 }]}
+                                    style={[styles.reselectButton, { opacity: 0.4, marginBottom: 10 }]}
                                 >
                                     <RotateCw color={Colors.primary} size={20} strokeWidth={2.5} style={{ marginRight: 8 }} />
                                     <Text style={styles.reselectText}>{getButtonText().toUpperCase()}</Text>
@@ -985,7 +985,7 @@ export default function RouletteScreen({ route, navigation }) {
                                         });
                                     }}
                                     activeOpacity={0.8}
-                                    style={[styles.reselectButton, { marginBottom: role === 'owner' ? 18 : 0 }]}
+                                    style={[styles.reselectButton, { marginBottom: role === 'owner' ? 10 : 0 }]}
                                 >
                                     <HandMetal color={Colors.primary} size={20} strokeWidth={2.5} style={{ marginRight: 8 }} />
                                     <Text style={styles.reselectText}>{t('common.re_pick').toUpperCase()}</Text>
@@ -1002,7 +1002,7 @@ export default function RouletteScreen({ route, navigation }) {
                                         style={[
                                             styles.spinButton,
                                             (spinning || votes.find(v => v.userId === syncService.myId)) && styles.disabledButton,
-                                            { marginBottom: (votes.find(v => v.userId === syncService.myId) && !spinning) || (role === 'owner' && votes.length > 0) ? 18 : 0 }
+                                            { marginBottom: (votes.find(v => v.userId === syncService.myId) && !spinning) || (role === 'owner' && votes.length > 0) ? 10 : 0 }
                                         ]}
                                     >
                                         <RotateCw color={spinning || votes.find(v => v.userId === syncService.myId) ? Colors.textSecondary : Colors.primary} size={24} style={{ marginRight: 12 }} />
@@ -1030,7 +1030,7 @@ export default function RouletteScreen({ route, navigation }) {
                                                 });
                                             }}
                                             activeOpacity={0.8}
-                                            style={[styles.reselectButton, { marginBottom: role === 'owner' && votes.length > 0 ? 18 : 0 }]}
+                                            style={[styles.reselectButton, { marginBottom: role === 'owner' && votes.length > 0 ? 10 : 0 }]}
                                         >
                                             <HandMetal color={Colors.primary} size={20} strokeWidth={2.5} style={{ marginRight: 8 }} />
                                             <Text style={styles.reselectText}>{t('common.re_pick').toUpperCase()}</Text>
@@ -1082,7 +1082,7 @@ export default function RouletteScreen({ route, navigation }) {
                                     const isMe = mySelectedName === pName;
 
                                     return (
-                                        <View key={`part-${idx}`} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.05)' }}>
+                                        <View key={`part-${idx}`} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.05)' }}>
                                             <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
                                                 <View style={{
                                                     width: 8,
@@ -1145,7 +1145,7 @@ export default function RouletteScreen({ route, navigation }) {
 
                                 {/* Loose participants section */}
                                 {onlineUsers.filter(u => !participantsState.some(p => (typeof p === 'object' ? p.name : p) === u.name)).map((user, index) => (
-                                    <View key={`loose-${index}`} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.05)', opacity: 0.6 }}>
+                                    <View key={`loose-${index}`} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.05)', opacity: 0.6 }}>
                                         <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
                                             <User size={14} color="#666" style={{ marginRight: 10 }} />
                                             <Text style={{ color: '#666', fontSize: 14 }}>{user.name || 'Anonymous'}</Text>
@@ -1258,7 +1258,7 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         borderWidth: 1.5,
         borderColor: Colors.primary,
-        paddingVertical: 14,
+        paddingVertical: 10,
         borderRadius: 16,
         backgroundColor: 'transparent',
     },
@@ -1372,11 +1372,12 @@ const styles = StyleSheet.create({
         width: '100%',
         alignItems: 'center',
         justifyContent: 'center',
+        overflow: 'hidden',
     },
     wheelWrapper: {
         alignItems: 'center',
         justifyContent: 'center',
-        marginVertical: 45, // Add more breathing room
+        marginVertical: 20,
     },
     pickCardContainer: {
         width: '100%',
@@ -1429,7 +1430,7 @@ const styles = StyleSheet.create({
     reselectButton: {
         width: '100%',
         backgroundColor: 'transparent',
-        paddingVertical: 14,
+        paddingVertical: 10,
         borderRadius: 16,
         flexDirection: 'row',
         alignItems: 'center',
@@ -1444,8 +1445,8 @@ const styles = StyleSheet.create({
         letterSpacing: 2,
     },
     forceResultButton: {
-        backgroundColor: '#8B1A1A', // Muted deep red for better comfort
-        paddingVertical: 14,
+        backgroundColor: '#8B1A1A',
+        paddingVertical: 10,
         paddingHorizontal: 24,
         borderRadius: 12,
         flexDirection: 'row',

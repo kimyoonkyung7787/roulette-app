@@ -85,7 +85,7 @@ export const Confetti = ({ active }) => {
     if (!active) return null;
 
     return (
-        <View style={StyleSheet.absoluteFill} pointerEvents="none">
+        <View style={[StyleSheet.absoluteFill, { overflow: 'hidden' }]} pointerEvents="none">
             {[...Array(CONFETTI_COUNT)].map((_, i) => (
                 <ConfettiPiece key={i} index={i} />
             ))}
