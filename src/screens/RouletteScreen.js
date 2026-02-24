@@ -658,9 +658,10 @@ export default function RouletteScreen({ route, navigation }) {
         startSpinAnimation(true);
     };
 
-    const animatedStyle = useAnimatedStyle(() => ({
-        transform: [{ rotate: `${rotation.value}deg` }],
-    }));
+    const animatedStyle = useAnimatedStyle(() => {
+        const val = Number.isFinite(rotation.value) ? rotation.value : 0;
+        return { transform: [{ rotate: `${val}deg` }] };
+    });
 
     const renderSections = () => {
         if (!Array.isArray(currentList) || currentList.length === 0) return null;
@@ -672,12 +673,13 @@ export default function RouletteScreen({ route, navigation }) {
             let cumulativeAngle = (360 / REPEAT_COUNT) * repeat; // Start angle for this repetition
 
             const totalWeight = calculateTotalWeight(currentList, spinTarget);
-            if (totalWeight <= 0) return null; // Prevent division by zero
+            if (!Number.isFinite(totalWeight) || totalWeight <= 0) return null; // Prevent division by zero / NaN
             currentList.forEach((p, i) => {
                 const name = typeof p === 'object' ? p.name : p;
                 const weight = spinTarget === 'people' ? (typeof p === 'object' ? (p.weight || 0) : 1) : 1;
                 // Divide angle by REPEAT_COUNT since we're repeating the pattern
                 const angle = (weight / totalWeight) * (360 / REPEAT_COUNT);
+                if (!Number.isFinite(angle)) return; // Skip invalid segment
 
                 const startAngle = cumulativeAngle;
                 const endAngle = cumulativeAngle + angle;
@@ -745,7 +747,8 @@ export default function RouletteScreen({ route, navigation }) {
                 const textAngle = startAngle + angle / 2;
 
                 // Rotates text 90 degrees relative to the arc to point at the center center
-                const finalRotation = textAngle + 90;
+                // Guard: prevent Infinity/NaN from division-by-zero edge cases
+                const finalRotation = Number.isFinite(textAngle) ? textAngle + 90 : 0;
 
                 // Position at the outer edge
                 const textDist = REPEAT_COUNT === 1 ? 0.45 : 0.465;
