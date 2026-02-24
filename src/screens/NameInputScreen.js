@@ -134,7 +134,7 @@ export default function NameInputScreen({ route, navigation }) {
     };
 
     const generateMenuForRestaurant = async (restaurant) => {
-        const name = (restaurant?.title || '').trim();
+        const name = (restaurant?.title || restaurant?.name || '').toString().trim();
         if (!name) {
             setAlertConfig({ visible: true, title: t('common.error'), message: t('name_input.menu_gen_error') });
             return;
@@ -143,14 +143,15 @@ export default function NameInputScreen({ route, navigation }) {
         setIsGeneratingMenu(true);
         setGeneratedMenus(null);
         try {
+            const payload = {
+                restaurantName: name,
+                category: activeCategory,
+                address: restaurant?.roadAddress || restaurant?.address || '',
+            };
             const resp = await fetch(`${getApiBaseUrl()}/api/generate-menu`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    restaurantName: name,
-                    category: activeCategory,
-                    address: restaurant?.roadAddress || restaurant?.address || '',
-                }),
+                body: JSON.stringify(payload),
             });
             const text = await resp.text();
             let data;
@@ -162,6 +163,9 @@ export default function NameInputScreen({ route, navigation }) {
             if (resp.ok && data.menus) {
                 setGeneratedMenus(data.menus);
             } else {
+                if (resp.status === 400) {
+                    console.warn('generate-menu 400: payload=', payload, 'response=', data);
+                }
                 const errMsg = data?.error || t('name_input.menu_gen_error');
                 setAlertConfig({ visible: true, title: t('common.error'), message: errMsg });
             }
