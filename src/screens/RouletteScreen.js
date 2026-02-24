@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, TouchableOpacity, Dimensions, StyleSheet, Text, Alert } from 'react-native';
+import { View, TouchableOpacity, Dimensions, StyleSheet, Text, Alert, BackHandler, Platform } from 'react-native';
 import { useIsFocused } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { NeonText } from '../components/NeonText';
@@ -93,6 +93,27 @@ export default function RouletteScreen({ route, navigation }) {
     useEffect(() => { spinTargetRef.current = spinTarget; }, [spinTarget]);
     useEffect(() => { participantsRef.current = participantsState; }, [participantsState]);
     useEffect(() => { menuItemsRef.current = menuItemsState; }, [menuItemsState]);
+
+    useEffect(() => {
+        const backHandler = BackHandler.addEventListener('hardwareBackPress', () => true);
+        const unsubscribe = navigation.addListener('beforeRemove', (e) => {
+            if (e.data.action.type === 'GO_BACK' || e.data.action.type === 'POP') {
+                e.preventDefault();
+            }
+        });
+        const handlePopState = (e) => { window.history.pushState(null, '', window.location.href); };
+        if (Platform.OS === 'web' && typeof window !== 'undefined') {
+            window.history.pushState(null, '', window.location.href);
+            window.addEventListener('popstate', handlePopState);
+        }
+        return () => {
+            backHandler.remove();
+            unsubscribe();
+            if (Platform.OS === 'web' && typeof window !== 'undefined') {
+                window.removeEventListener('popstate', handlePopState);
+            }
+        };
+    }, [navigation]);
 
     const calculateTotalWeight = (list, target) => {
         if (!Array.isArray(list)) return 0;
@@ -234,7 +255,8 @@ export default function RouletteScreen({ route, navigation }) {
                         isNavigating.current = true;
                         const hostName = roomHostName || onlineUsers.find(u => u.role === 'owner')?.name || (role === 'owner' ? mySelectedName : (roomId.length <= 8 ? roomId : null));
 
-                        navigation.navigate('Result', {
+                        const screenName = (mode === 'online' && finalData.type === 'menu') ? 'MenuResult' : 'Result';
+                        navigation.navigate(screenName, {
                             ...finalData,
                             roomId,
                             role,
@@ -381,7 +403,8 @@ export default function RouletteScreen({ route, navigation }) {
                     const hostUser = onlineUsers.find(u => u.role === 'owner');
                     const hostName = hostUser ? hostUser.name : (role === 'owner' ? mySelectedName : (roomId.length <= 8 ? roomId : null));
 
-                    navigation.navigate('Result', {
+                    const ownerScreenName = (mode === 'online' && spinTarget === 'menu') ? 'MenuResult' : 'Result';
+                    navigation.navigate(ownerScreenName, {
                         ...resultData,
                         roomId,
                         role,

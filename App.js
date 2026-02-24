@@ -8,6 +8,7 @@ import WelcomeScreen from './src/screens/WelcomeScreen';
 import NameInputScreen from './src/screens/NameInputScreen';
 import RouletteScreen from './src/screens/RouletteScreen';
 import ResultScreen from './src/screens/ResultScreen';
+import MenuResultScreen from './src/screens/MenuResultScreen';
 import HistoryScreen from './src/screens/HistoryScreen';
 import OfflineInputScreen from './src/screens/OfflineInputScreen';
 import { Colors } from './src/theme/colors';
@@ -33,6 +34,7 @@ export default function App() {
         NameInput: 'name-input',
         Roulette: 'roulette',
         Result: 'result',
+        MenuResult: 'menu-result',
         History: 'history',
         OfflineInput: 'offline-input',
       },
@@ -100,6 +102,7 @@ export default function App() {
         <Stack.Screen name="NameInput" component={NameInputScreen} />
         <Stack.Screen name="Roulette" component={RouletteScreen} />
         <Stack.Screen name="Result" component={ResultScreen} />
+        <Stack.Screen name="MenuResult" component={MenuResultScreen} />
         <Stack.Screen name="History" component={HistoryScreen} />
         <Stack.Screen name="OfflineInput" component={OfflineInputScreen} />
       </Stack.Navigator>

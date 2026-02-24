@@ -44,8 +44,11 @@
             "Caffè Latte",
             "Vanilla Latte",
             "Cappuccino",
-            "Fruchtlimonade",
+            "Karamell Macchiato",
+            "Cold Brew",
+            "Espresso",
             "Matcha Latte",
+            "Fruchtlimonade",
             "Smoothie"
         ],
         "meal": [
@@ -55,7 +58,10 @@
             "Pasta",
             "Gebratenes Hähnchen",
             "Schnitzel",
-            "Döner"
+            "Döner",
+            "Currywurst",
+            "Bratwurst",
+            "Salat"
         ],
         "snack": [
             "Popcorn",
@@ -64,18 +70,15 @@
             "Donuts",
             "Kekse",
             "Kartoffelchips",
-            "Brezeln"
+            "Brezeln",
+            "Brownies",
+            "Muffins",
+            "Kuchen"
         ],
-        "etc": {
-            "0": "Schere Stein Papier",
-            "1": "Kartenziehen",
-            "2": "Würfel",
-            "3": "Leiter",
-            "4": "Lotterie",
-            "5": "Niete",
-            "6": "Noch einmal",
-            "7": "Strafe"
-        }
+        "etc": [
+            "Sonstige 1",
+            "Sonstige 2"
+        ]
     },
     "welcome": {
         "select_category": "KATEGORIE WÄHLEN",
@@ -176,7 +179,9 @@
         "waiting_for_others": "WARTEN AUF ANDERE...",
         "retry": "WIEDERHOLEN",
         "winner_shout": "WINNER!",
-        "copied_to_clipboard": "Ergebnis in die Zwischenablage kopiert."
+        "copied_to_clipboard": "Ergebnis in die Zwischenablage kopiert.",
+        "vote_result": "ABSTIMMUNGSERGEBNIS",
+        "participant_detail": "TEILNEHMERDETAIL"
     },
     "entry": {
         "offline_title": "OFFLINE",
@@ -197,5 +202,50 @@
         "title": "PROTOKOLLVERLAUF",
         "no_data": "KEINE PROTOKOLLE GEFUNDEN",
         "restore": "RESTORE SETTINGS"
+    },
+    "onboarding": {
+        "skip": "Überspringen",
+        "next": "Weiter",
+        "done": "Los geht's!",
+        "tap_hint": "Tippen zum Fortfahren",
+        "owner_step1_title": "Wähle dich aus",
+        "owner_step1_msg": "Registriere Teilnehmer und wähle deinen Namen",
+        "owner_step1_icon": "👤",
+        "owner_step2_title": "Freunde einladen!",
+        "owner_step2_msg": "Teile den Raumcode, um deine Freunde einzuladen",
+        "owner_step2_icon": "📤",
+        "owner_step3_title": "Kategorie wählen",
+        "owner_step3_msg": "Wechsle zwischen Kaffee, Mahlzeit, Snack und mehr",
+        "owner_step3_icon": "🍽️",
+        "owner_step4_title": "Menü prüfen!",
+        "owner_step4_msg": "Menü prüfen, direkt auswählen oder das Roulette drehen",
+        "owner_step4_icon": "🍽️",
+        "participant_step1_title": "Wähle dich aus",
+        "participant_step1_msg": "Wähle deinen Namen aus der Liste",
+        "participant_step1_icon": "👤",
+        "participant_step2_title": "Menü prüfen!",
+        "participant_step2_msg": "Überprüfe die gewünschten Menüpunkte",
+        "participant_step2_icon": "📋",
+        "participant_step3_title": "Bitte warten",
+        "participant_step3_msg": "Der Host muss zuerst abstimmen.\nDanach kannst du ein Menü wählen oder das Roulette drehen",
+        "participant_step3_icon": "⏳",
+        "people_owner_step1_title": "Teilnehmer registrieren",
+        "people_owner_step1_msg": "Namen eingeben und auf Hinzufügen tippen",
+        "people_owner_step1_icon": "✏️",
+        "people_owner_step2_title": "Freunde einladen!",
+        "people_owner_step2_msg": "Teile den Raumcode, um deine Freunde einzuladen",
+        "people_owner_step2_icon": "📤",
+        "people_owner_step3_title": "Drehe das Roulette!",
+        "people_owner_step3_msg": "Wenn alle bereit sind,\ndrehe und wähle einen Gewinner",
+        "people_owner_step3_icon": "🎰",
+        "people_participant_step1_title": "Wähle dich aus",
+        "people_participant_step1_msg": "Wähle zuerst deinen eigenen Namen",
+        "people_participant_step1_icon": "👤",
+        "people_participant_step2_title": "Bitte warten",
+        "people_participant_step2_msg": "Der Host muss zuerst abstimmen.\nDanach drehe das Roulette",
+        "people_participant_step2_icon": "⏳",
+        "history_step_title": "Logs prüfen!",
+        "history_step_msg": "Vorherige Logs anzeigen, um\nTeilnehmer-/Menülisten zu importieren",
+        "history_step_icon": "📜"
     }
 }

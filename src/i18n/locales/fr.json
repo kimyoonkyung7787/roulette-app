@@ -44,8 +44,11 @@
             "Café Latte",
             "Latte Vanille",
             "Cappuccino",
-            "Limonade",
+            "Caramel Macchiato",
+            "Cold Brew",
+            "Espresso",
             "Matcha Latte",
+            "Limonade",
             "Smoothie"
         ],
         "meal": [
@@ -55,7 +58,10 @@
             "Pâtes",
             "Poulet Frit",
             "Tacos",
-            "Steak Frites"
+            "Steak Frites",
+            "Quiche",
+            "Couscous",
+            "Salade"
         ],
         "snack": [
             "Pop-corn",
@@ -64,18 +70,15 @@
             "Beignets",
             "Biscuits",
             "Chips",
-            "Crêpes"
+            "Crêpes",
+            "Brownies",
+            "Macarons",
+            "Gaufres"
         ],
-        "etc": {
-            "0": "Pierre-Papier-Ciseaux",
-            "1": "Tirage de Carte",
-            "2": "Dés",
-            "3": "Échelle",
-            "4": "Loterie",
-            "5": "Rien",
-            "6": "Encore une fois",
-            "7": "Pénalité"
-        }
+        "etc": [
+            "Autre 1",
+            "Autre 2"
+        ]
     },
     "welcome": {
         "select_category": "SÉLECTIONNER CATÉGORIE",
@@ -176,7 +179,9 @@
         "waiting_for_others": "EN ATTENTE DES AUTRES...",
         "retry": "RÉESSAYER",
         "winner_shout": "WINNER!",
-        "copied_to_clipboard": "Résultat copié dans le presse-papiers."
+        "copied_to_clipboard": "Résultat copié dans le presse-papiers.",
+        "vote_result": "RÉSULTAT DU VOTE",
+        "participant_detail": "DÉTAIL DES PARTICIPANTS"
     },
     "entry": {
         "offline_title": "OFFLINE",
@@ -197,5 +202,50 @@
         "title": "HISTORIQUE DES JOURNAUX",
         "no_data": "AUCUN JOURNAL TROUVÉ",
         "restore": "RESTORE SETTINGS"
+    },
+    "onboarding": {
+        "skip": "Passer",
+        "next": "Suivant",
+        "done": "C'est parti !",
+        "tap_hint": "Appuyez pour continuer",
+        "owner_step1_title": "Sélectionnez-vous",
+        "owner_step1_msg": "Enregistrez les participants et sélectionnez votre nom",
+        "owner_step1_icon": "👤",
+        "owner_step2_title": "Invitez vos amis !",
+        "owner_step2_msg": "Partagez le code de salle pour inviter vos amis",
+        "owner_step2_icon": "📤",
+        "owner_step3_title": "Choisissez une catégorie",
+        "owner_step3_msg": "Passez du café aux repas, collations et plus encore",
+        "owner_step3_icon": "🍽️",
+        "owner_step4_title": "Consultez le menu !",
+        "owner_step4_msg": "Vérifiez le menu, choisissez directement ou lancez la roulette",
+        "owner_step4_icon": "🍽️",
+        "participant_step1_title": "Sélectionnez-vous",
+        "participant_step1_msg": "Choisissez votre nom dans la liste",
+        "participant_step1_icon": "👤",
+        "participant_step2_title": "Consultez le menu !",
+        "participant_step2_msg": "Consultez les éléments du menu souhaités",
+        "participant_step2_icon": "📋",
+        "participant_step3_title": "Patientez",
+        "participant_step3_msg": "L'hôte doit voter en premier.\nEnsuite, choisissez un menu ou lancez la roulette",
+        "participant_step3_icon": "⏳",
+        "people_owner_step1_title": "Enregistrez les participants",
+        "people_owner_step1_msg": "Entrez les noms et appuyez sur le bouton d'ajout",
+        "people_owner_step1_icon": "✏️",
+        "people_owner_step2_title": "Invitez vos amis !",
+        "people_owner_step2_msg": "Partagez le code de salle pour inviter vos amis",
+        "people_owner_step2_icon": "📤",
+        "people_owner_step3_title": "Lancez la roulette !",
+        "people_owner_step3_msg": "Quand tout le monde est prêt,\nlancez pour choisir un gagnant",
+        "people_owner_step3_icon": "🎰",
+        "people_participant_step1_title": "Sélectionnez-vous",
+        "people_participant_step1_msg": "Commencez par sélectionner votre nom",
+        "people_participant_step1_icon": "👤",
+        "people_participant_step2_title": "Patientez",
+        "people_participant_step2_msg": "L'hôte doit voter en premier.\nEnsuite, lancez la roulette",
+        "people_participant_step2_icon": "⏳",
+        "history_step_title": "Consultez les logs !",
+        "history_step_msg": "Consultez les logs précédents pour\nimporter des listes de participants/menus",
+        "history_step_icon": "📜"
     }
 }

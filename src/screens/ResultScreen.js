@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { View, TouchableOpacity, StyleSheet, Text, Modal, ScrollView, Share, Alert, Image, Animated, Easing, Platform } from 'react-native';
+import { View, TouchableOpacity, StyleSheet, Text, Modal, ScrollView, Share, Alert, Image, Animated, Easing, Platform, BackHandler } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { NeonText } from '../components/NeonText';
 import { Colors } from '../theme/colors';
@@ -117,12 +117,14 @@ export default function ResultScreen({ route, navigation }) {
         }));
 
         return (
-            <View style={{ position: 'absolute', width: '100%', alignItems: 'center', top: 20, overflow: 'hidden' }}>
+            <View style={{ position: 'absolute', width: '100%', height: 200, top: -60 }} pointerEvents="none">
                 {particles.map(p => (
                     <MovingConfetti
                         key={p.id}
                         color={p.color}
                         size={p.size}
+                        top={80}
+                        left={`${45 + Math.random() * 10}%`}
                         rangeX={p.rangeX * (Math.random() > 0.5 ? 1 : -1)}
                         rangeY={p.rangeY}
                         delay={p.delay}
@@ -141,6 +143,27 @@ export default function ResultScreen({ route, navigation }) {
     const drumBeatAnim = useRef(new Animated.Value(0)).current;
     const trumpetBeatAnim = useRef(new Animated.Value(0)).current;
     const drumPulseAnim = useRef(new Animated.Value(0)).current;
+
+    useEffect(() => {
+        const backHandler = BackHandler.addEventListener('hardwareBackPress', () => true);
+        const unsubscribe = navigation.addListener('beforeRemove', (e) => {
+            if (e.data.action.type === 'GO_BACK' || e.data.action.type === 'POP') {
+                e.preventDefault();
+            }
+        });
+        const handlePopState = (e) => { window.history.pushState(null, '', window.location.href); };
+        if (Platform.OS === 'web' && typeof window !== 'undefined') {
+            window.history.pushState(null, '', window.location.href);
+            window.addEventListener('popstate', handlePopState);
+        }
+        return () => {
+            backHandler.remove();
+            unsubscribe();
+            if (Platform.OS === 'web' && typeof window !== 'undefined') {
+                window.removeEventListener('popstate', handlePopState);
+            }
+        };
+    }, [navigation]);
 
     useEffect(() => {
         if (!allVoted) {
@@ -380,7 +403,7 @@ export default function ResultScreen({ route, navigation }) {
 
     return (
         <CyberBackground>
-            <Confetti active={allVoted} />
+            {type === 'people' && <Confetti active={allVoted} />}
             <SafeAreaView style={{ flex: 1, overflow: 'hidden' }}>
                 <ScrollView contentContainerStyle={{ flexGrow: 1 }} showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false} horizontal={false}>
                     <View style={styles.container}>
@@ -683,7 +706,7 @@ export default function ResultScreen({ route, navigation }) {
                 />
 
                 {/* Festive Confetti Overlay */}
-                <Confetti active={allVoted} />
+                {type === 'people' && <Confetti active={allVoted} />}
             </SafeAreaView>
         </CyberBackground >
     );
@@ -865,21 +888,21 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         borderWidth: 1.5,
         borderColor: Colors.primary,
-        paddingVertical: 14,
+        paddingVertical: 10,
         borderRadius: 16,
         backgroundColor: 'transparent',
     },
     retryText: {
         color: Colors.primary,
-        fontSize: 20,
+        fontSize: 18,
         fontWeight: '900',
         letterSpacing: 2,
     },
     forceResultButton: {
         backgroundColor: '#8B1A1A',
-        paddingVertical: 14,
+        paddingVertical: 10,
         paddingHorizontal: 24,
-        borderRadius: 12,
+        borderRadius: 16,
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',
@@ -892,9 +915,9 @@ const styles = StyleSheet.create({
     },
     forceResultText: {
         color: '#fff',
-        fontSize: 16,
+        fontSize: 18,
         fontWeight: '900',
-        letterSpacing: 1.5,
+        letterSpacing: 2,
     },
     homeButton: {
         flex: 1,

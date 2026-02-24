@@ -44,8 +44,11 @@
             "Café Latte",
             "Latte de Vainilla",
             "Capuchino",
-            "Limonada",
+            "Caramel Macchiato",
+            "Cold Brew",
+            "Espresso",
             "Matcha Latte",
+            "Limonada",
             "Batido"
         ],
         "meal": [
@@ -55,7 +58,10 @@
             "Pasta",
             "Pollo Frito",
             "Tacos",
-            "Parrillada"
+            "Parrillada",
+            "Arroz con Pollo",
+            "Ceviche",
+            "Ensalada"
         ],
         "snack": [
             "Palomitas",
@@ -64,18 +70,15 @@
             "Donas",
             "Galletas",
             "Papas Fritas",
-            "Churros"
+            "Churros",
+            "Brownies",
+            "Magdalenas",
+            "Frutas"
         ],
-        "etc": {
-            "0": "Piedra Papel o Tijera",
-            "1": "Elegir Carta",
-            "2": "Dados",
-            "3": "Escalera",
-            "4": "Lotería",
-            "5": "Vacío",
-            "6": "Una Vez Más",
-            "7": "Penalización"
-        }
+        "etc": [
+            "Otro 1",
+            "Otro 2"
+        ]
     },
     "welcome": {
         "select_category": "SELECCIONAR CATEGORÍA",
@@ -176,7 +179,9 @@
         "waiting_for_others": "ESPERANDO A OTROS...",
         "retry": "REINTENTAR",
         "winner_shout": "WINNER!",
-        "copied_to_clipboard": "Resultado copiado al portapapeles."
+        "copied_to_clipboard": "Resultado copiado al portapapeles.",
+        "vote_result": "RESULTADO DE VOTACIÓN",
+        "participant_detail": "DETALLE DE PARTICIPANTE"
     },
     "entry": {
         "offline_title": "OFFLINE",
@@ -197,5 +202,50 @@
         "title": "HISTORIAL DE REGISTROS",
         "no_data": "NO SE ENCONTRARON REGISTROS",
         "restore": "RESTORE SETTINGS"
+    },
+    "onboarding": {
+        "skip": "Omitir",
+        "next": "Siguiente",
+        "done": "¡Empezar!",
+        "tap_hint": "Toca para continuar",
+        "owner_step1_title": "Selecciónate",
+        "owner_step1_msg": "Registra participantes y selecciona tu nombre",
+        "owner_step1_icon": "👤",
+        "owner_step2_title": "¡Invita amigos!",
+        "owner_step2_msg": "Comparte el código de sala para invitar a tus amigos",
+        "owner_step2_icon": "📤",
+        "owner_step3_title": "Elige categoría",
+        "owner_step3_msg": "Cambia entre café, comida, snacks y más",
+        "owner_step3_icon": "🍽️",
+        "owner_step4_title": "¡Revisa el menú!",
+        "owner_step4_msg": "Revisa el menú, elige directamente o gira la ruleta",
+        "owner_step4_icon": "🍽️",
+        "participant_step1_title": "Selecciónate",
+        "participant_step1_msg": "Elige tu nombre de la lista",
+        "participant_step1_icon": "👤",
+        "participant_step2_title": "¡Revisa el menú!",
+        "participant_step2_msg": "Revisa los elementos del menú que te gusten",
+        "participant_step2_icon": "📋",
+        "participant_step3_title": "Espera un momento",
+        "participant_step3_msg": "El anfitrión debe votar primero.\nDespués podrás elegir un menú o girar la ruleta",
+        "participant_step3_icon": "⏳",
+        "people_owner_step1_title": "Registra participantes",
+        "people_owner_step1_msg": "Ingresa nombres y toca el botón de agregar",
+        "people_owner_step1_icon": "✏️",
+        "people_owner_step2_title": "¡Invita amigos!",
+        "people_owner_step2_msg": "Comparte el código de sala para invitar a tus amigos",
+        "people_owner_step2_icon": "📤",
+        "people_owner_step3_title": "¡Gira la ruleta!",
+        "people_owner_step3_msg": "Cuando todos estén listos,\ngira para elegir un ganador",
+        "people_owner_step3_icon": "🎰",
+        "people_participant_step1_title": "Selecciónate",
+        "people_participant_step1_msg": "Primero, selecciona tu propio nombre",
+        "people_participant_step1_icon": "👤",
+        "people_participant_step2_title": "Espera un momento",
+        "people_participant_step2_msg": "El anfitrión debe votar primero.\nDespués gira la ruleta",
+        "people_participant_step2_icon": "⏳",
+        "history_step_title": "¡Revisa los registros!",
+        "history_step_msg": "Consulta registros anteriores para\nimportar listas de participantes/menú",
+        "history_step_icon": "📜"
     }
 }

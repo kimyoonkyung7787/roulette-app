@@ -44,8 +44,11 @@
             "拿铁咖啡",
             "香草拿铁",
             "卡布奇诺",
-            "水果气泡水",
+            "焦糖玛奇朵",
+            "冷萃咖啡",
+            "浓缩咖啡",
             "抹茶拿铁",
+            "水果气泡水",
             "冰沙"
         ],
         "meal": [
@@ -55,7 +58,10 @@
             "意大利面",
             "炸鸡",
             "烤肉",
-            "披萨"
+            "披萨",
+            "炒饭",
+            "拉面",
+            "沙拉"
         ],
         "snack": [
             "爆米花",
@@ -64,18 +70,15 @@
             "甜甜圈",
             "饼干",
             "薯片",
-            "小蛋糕"
+            "小蛋糕",
+            "布朗尼",
+            "马卡龙",
+            "麻花"
         ],
-        "etc": {
-            "0": "剪刀石头布",
-            "1": "抽卡",
-            "2": "骰子",
-            "3": "爬梯子",
-            "4": "彩票",
-            "5": "没中",
-            "6": "再来一次",
-            "7": "惩罚"
-        }
+        "etc": [
+            "其他 1",
+            "其他 2"
+        ]
     },
     "welcome": {
         "select_category": "选择类别",
@@ -176,7 +179,9 @@
         "waiting_for_others": "等待其他玩家...",
         "retry": "重试",
         "winner_shout": "WINNER!",
-        "copied_to_clipboard": "结果已复制到剪贴板。"
+        "copied_to_clipboard": "结果已复制到剪贴板。",
+        "vote_result": "投票结果",
+        "participant_detail": "参与者详情"
     },
     "entry": {
         "offline_title": "OFFLINE",
@@ -197,5 +202,50 @@
         "title": "记录历史",
         "no_data": "未找到记录日志",
         "restore": "RESTORE SETTINGS"
+    },
+    "onboarding": {
+        "skip": "跳过",
+        "next": "下一步",
+        "done": "开始吧！",
+        "tap_hint": "点击继续",
+        "owner_step1_title": "选择自己",
+        "owner_step1_msg": "注册参与者并选择你的名字",
+        "owner_step1_icon": "👤",
+        "owner_step2_title": "邀请朋友！",
+        "owner_step2_msg": "分享房间号邀请好友加入",
+        "owner_step2_icon": "📤",
+        "owner_step3_title": "选择分类",
+        "owner_step3_msg": "可以在咖啡、正餐、零食等分类之间切换",
+        "owner_step3_icon": "🍽️",
+        "owner_step4_title": "查看菜单！",
+        "owner_step4_msg": "确认菜单，直接选择或转动轮盘吧",
+        "owner_step4_icon": "🍽️",
+        "participant_step1_title": "选择自己",
+        "participant_step1_msg": "从列表中选择你的名字",
+        "participant_step1_icon": "👤",
+        "participant_step2_title": "查看菜单！",
+        "participant_step2_msg": "查看你想要的菜单",
+        "participant_step2_icon": "📋",
+        "participant_step3_title": "请稍等",
+        "participant_step3_msg": "主持人需要先投票。\n之后你可以直接选择菜单或转动轮盘",
+        "participant_step3_icon": "⏳",
+        "people_owner_step1_title": "注册参与者",
+        "people_owner_step1_msg": "输入名字并点击添加按钮",
+        "people_owner_step1_icon": "✏️",
+        "people_owner_step2_title": "邀请朋友！",
+        "people_owner_step2_msg": "分享房间号邀请好友加入",
+        "people_owner_step2_icon": "📤",
+        "people_owner_step3_title": "转动轮盘！",
+        "people_owner_step3_msg": "所有人准备好后\n转动轮盘选出幸运儿",
+        "people_owner_step3_icon": "🎰",
+        "people_participant_step1_title": "选择自己",
+        "people_participant_step1_msg": "请先选择自己的名字",
+        "people_participant_step1_icon": "👤",
+        "people_participant_step2_title": "请稍等",
+        "people_participant_step2_msg": "主持人需要先投票。\n之后再转动轮盘",
+        "people_participant_step2_icon": "⏳",
+        "history_step_title": "查看记录！",
+        "history_step_msg": "查看之前的记录，\n导入参与者/菜单列表",
+        "history_step_icon": "📜"
     }
 }

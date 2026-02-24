@@ -10,8 +10,10 @@ import { UserPlus, Trash2, Play, History, CheckCircle2, ListChecks, Users, X, Lo
 import { syncService } from '../services/SyncService';
 import { participantService } from '../services/ParticipantService';
 import { CyberAlert } from '../components/CyberAlert';
+import { CoachMark } from '../components/CoachMark';
 import { useTranslation } from 'react-i18next';
 import i18n from '../i18n';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { feedbackService } from '../services/FeedbackService';
 
 // Enable LayoutAnimation for Android
@@ -52,6 +54,8 @@ export default function NameInputScreen({ route, navigation }) {
     const [showUsersModal, setShowUsersModal] = useState(false);
     const [activeCategory, setActiveCategory] = useState(category);
     const categoryRef = useRef(category);
+    const isSwitchingCategoryRef = useRef(false);
+    const menuCacheRef = useRef({});
     const [alertConfig, setAlertConfig] = useState({ visible: false, title: '', message: '' });
     const [selectedMenuIndex, setSelectedMenuIndex] = useState(null);
     const [showExitConfirm, setShowExitConfirm] = useState(false);
@@ -65,6 +69,16 @@ export default function NameInputScreen({ route, navigation }) {
     const participantRefs = useRef([]);
     const modalScrollRef = useRef(null);
 
+    const [showCoachMark, setShowCoachMark] = useState(false);
+    const shareRef = useRef(null);
+    const shareIconRef = useRef(null);
+    const identityRef = useRef(null);
+    const categoryTabsRef = useRef(null);
+    const spinButtonRef = useRef(null);
+    const menuListRef = useRef(null);
+    const participantInputRef = useRef(null);
+    const historyRef = useRef(null);
+
     const [showRestaurantSearch, setShowRestaurantSearch] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
     const [searchResults, setSearchResults] = useState([]);
@@ -75,7 +89,12 @@ export default function NameInputScreen({ route, navigation }) {
 
     const getApiBaseUrl = () => {
         if (Platform.OS === 'web') {
-            return window.location.origin;
+            const origin = window.location.origin;
+            // 로컬 개발 시 API는 Vercel 서버리스에만 있으므로 배포 URL 사용
+            if (origin.includes('localhost') || origin.includes('127.0.0.1')) {
+                return process.env.EXPO_PUBLIC_API_URL || 'https://roulette-app-two.vercel.app';
+            }
+            return origin;
         }
         return '';
     };
@@ -93,7 +112,14 @@ export default function NameInputScreen({ route, navigation }) {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ query: q }),
             });
-            const data = await resp.json();
+            const text = await resp.text();
+            let data;
+            try {
+                data = JSON.parse(text);
+            } catch {
+                console.error('searchRestaurant: API returned non-JSON', text?.slice(0, 200));
+                throw new Error(t('name_input.search_error'));
+            }
             if (resp.ok && data.items) {
                 setSearchResults(data.items);
             } else {
@@ -288,29 +314,28 @@ export default function NameInputScreen({ route, navigation }) {
                     for (const cat of categoriesToInit) {
                         const existing = await syncService.getMenuByCategory(cat);
 
-                        // If category is empty, populate with 8 popular items
                         if (!existing || !Array.isArray(existing) || existing.length === 0) {
-                            console.log(`NameInputScreen: Initializing default 8 items for ${cat}`);
+                            console.log(`NameInputScreen: Initializing default items for ${cat}`);
                             const translatedPopular = t(`popular_items.${cat}`, { returnObjects: true });
                             const popular = Array.isArray(translatedPopular) ? translatedPopular : [];
 
-                            // Ensure we prioritize 8 items from i18n
                             const defaultMenus = popular.length > 0
                                 ? popular.map(name => ({ name }))
                                 : [{ name: `${t('common.item') || 'Item'} 1` }, { name: `${t('common.item') || 'Item'} 2` }];
 
-                            // Save to Firebase immediately
                             await syncService.setMenuByCategory(cat, defaultMenus);
+                            menuCacheRef.current[cat] = defaultMenus;
 
-                            // If this is the starting category, update local state
                             if (cat === initialCat) {
                                 console.log(`NameInputScreen: Setting initial state for ${cat}`);
                                 setMenuItems(defaultMenus);
                             }
-                        } else if (cat === initialCat) {
-                            // If already exists and is the initial category, just load it
-                            console.log(`NameInputScreen: Loading existing data for initial category ${cat}`);
-                            setMenuItems(existing);
+                        } else {
+                            menuCacheRef.current[cat] = existing;
+                            if (cat === initialCat) {
+                                console.log(`NameInputScreen: Loading existing data for initial category ${cat}`);
+                                setMenuItems(existing);
+                            }
                         }
                     }
 
@@ -319,15 +344,29 @@ export default function NameInputScreen({ route, navigation }) {
                     await syncService.clearFinalResults();
                 } else {
                     console.log('NameInputScreen: Owner returning to re-vote, skipping room reset');
-                    // Just load current state to ensure local UI matches DB
                     const currentParticipants = await syncService.getParticipants();
                     if (currentParticipants) setParticipants(currentParticipants);
 
-                    const currentMenus = await syncService.getMenuItems();
-                    if (currentMenus) setMenuItems(currentMenus);
+                    const currentCat = await syncService.getRoomCategory() || 'coffee';
+                    setActiveCategory(currentCat);
+                    categoryRef.current = currentCat;
 
-                    const currentCat = await syncService.getRoomCategory();
-                    if (currentCat) setActiveCategory(currentCat);
+                    // Load ALL categories into cache, then set current
+                    const cats = ['coffee', 'meal', 'snack', 'etc'];
+                    for (const cat of cats) {
+                        const catMenus = await syncService.getMenuByCategory(cat);
+                        if (catMenus && catMenus.length > 0) {
+                            menuCacheRef.current[cat] = catMenus;
+                        }
+                    }
+
+                    const currentMenus = menuCacheRef.current[currentCat];
+                    if (currentMenus && currentMenus.length > 0) {
+                        setMenuItems(currentMenus);
+                    } else {
+                        const fallback = await syncService.getMenuItems();
+                        if (fallback) setMenuItems(fallback);
+                    }
                 }
             }
 
@@ -405,6 +444,73 @@ export default function NameInputScreen({ route, navigation }) {
         };
     }, []);
 
+    const getOnboardingKey = () => {
+        const modeKey = activeTab === 'menu' ? 'menu' : 'people';
+        const roleKey = role === 'owner' ? 'owner' : 'participant';
+        return `onboarding_${modeKey}_${roleKey}_done`;
+    };
+
+    useEffect(() => {
+        if (!isLoaded) return;
+        const checkOnboarding = async () => {
+            const key = getOnboardingKey();
+            try {
+                const countStr = await AsyncStorage.getItem(key);
+                const count = countStr ? parseInt(countStr, 10) : 0;
+                if (count < 3) {
+                    setTimeout(() => setShowCoachMark(true), 800);
+                }
+            } catch (e) { /* ignore */ }
+        };
+        checkOnboarding();
+    }, [isLoaded, mode, activeTab]);
+
+    const handleOnboardingComplete = async () => {
+        setShowCoachMark(false);
+        const key = getOnboardingKey();
+        try {
+            const countStr = await AsyncStorage.getItem(key);
+            const count = countStr ? parseInt(countStr, 10) : 0;
+            await AsyncStorage.setItem(key, String(count + 1));
+        } catch (e) { /* ignore */ }
+    };
+
+    const getCoachMarkSteps = () => {
+        const historyStep = { ref: historyRef, title: t('onboarding.history_step_title'), message: t('onboarding.history_step_msg'), icon: t('onboarding.history_step_icon') };
+
+        if (activeTab === 'menu') {
+            if (role === 'owner') {
+                return [
+                    { ref: identityRef, title: t('onboarding.owner_step1_title'), message: t('onboarding.owner_step1_msg'), icon: t('onboarding.owner_step1_icon') },
+                    { ref: shareRef, arrowRef: shareIconRef, title: t('onboarding.owner_step2_title'), message: t('onboarding.owner_step2_msg'), icon: t('onboarding.owner_step2_icon') },
+                    { ref: categoryTabsRef, title: t('onboarding.owner_step3_title'), message: t('onboarding.owner_step3_msg'), icon: t('onboarding.owner_step3_icon') },
+                    { ref: menuListRef, title: t('onboarding.owner_step4_title'), message: t('onboarding.owner_step4_msg'), icon: t('onboarding.owner_step4_icon') },
+                    historyStep,
+                ];
+            }
+            return [
+                { ref: identityRef, title: t('onboarding.participant_step1_title'), message: t('onboarding.participant_step1_msg'), icon: t('onboarding.participant_step1_icon') },
+                { ref: menuListRef, title: t('onboarding.participant_step2_title'), message: t('onboarding.participant_step2_msg'), icon: t('onboarding.participant_step2_icon') },
+                { ref: spinButtonRef, title: t('onboarding.participant_step3_title'), message: t('onboarding.participant_step3_msg'), icon: t('onboarding.participant_step3_icon') },
+            ];
+        }
+        if (role === 'owner') {
+            const steps = [
+                { ref: participantInputRef, title: t('onboarding.people_owner_step1_title'), message: t('onboarding.people_owner_step1_msg'), icon: t('onboarding.people_owner_step1_icon') },
+            ];
+            if (mode === 'online') {
+                steps.push({ ref: shareRef, arrowRef: shareIconRef, title: t('onboarding.people_owner_step2_title'), message: t('onboarding.people_owner_step2_msg'), icon: t('onboarding.people_owner_step2_icon') });
+            }
+            steps.push({ ref: spinButtonRef, title: t('onboarding.people_owner_step3_title'), message: t('onboarding.people_owner_step3_msg'), icon: t('onboarding.people_owner_step3_icon') });
+            steps.push(historyStep);
+            return steps;
+        }
+        return [
+            { ref: menuListRef, title: t('onboarding.people_participant_step1_title'), message: t('onboarding.people_participant_step1_msg'), icon: t('onboarding.people_participant_step1_icon') },
+            { ref: spinButtonRef, title: t('onboarding.people_participant_step2_title'), message: t('onboarding.people_participant_step2_msg'), icon: t('onboarding.people_participant_step2_icon') },
+        ];
+    };
+
     // Effect to identify the first available participant when the identity modal opens
     useEffect(() => {
         if (showIdentityModal) {
@@ -481,7 +587,8 @@ export default function NameInputScreen({ route, navigation }) {
         if (finalResults) {
             console.log('NameInputScreen: Game already finished, auto-navigating to result...');
             isNavigatingRef.current = true;
-            navigation.navigate('Result', {
+            const resultScreen = (mode === 'online' && finalResults.type === 'menu') ? 'MenuResult' : 'Result';
+            navigation.navigate(resultScreen, {
                 ...finalResults,
                 roomId,
                 role: 'participant',
@@ -597,15 +704,13 @@ export default function NameInputScreen({ route, navigation }) {
 
     // Save menus whenever they change
     useEffect(() => {
-        // PREVENT OVERWRITE: Only save if the current menuItems actually belong to the current activeCategory
-        // We check if the items are legacy (all coffee) when they shouldn't be, or use a simpler check
-        if (role === 'owner' && isLoaded && menuItems.length > 0) {
-            // We only save if we're not in the middle of a category transition
-            // A simple way is to check if the first item matches the new category's defaults if it was just loaded
-            console.log(`NameInputScreen: Syncing ${activeCategory} menu to DB...`, menuItems.length);
-            syncService.setMenuByCategory(activeCategory, menuItems);
+        if (role === 'owner' && isLoaded && menuItems.length > 0 && !isSwitchingCategoryRef.current) {
+            const cat = categoryRef.current;
+            console.log(`NameInputScreen: Syncing ${cat} menu to DB...`, menuItems.length);
+            menuCacheRef.current[cat] = menuItems;
+            syncService.setMenuByCategory(cat, menuItems);
         }
-    }, [menuItems, role, isLoaded]); // Removed activeCategory from dependency to prevent transition-overwrites
+    }, [menuItems, role, isLoaded]);
 
     // Validate identity against participant list
     useEffect(() => {
@@ -660,39 +765,53 @@ export default function NameInputScreen({ route, navigation }) {
 
     const handleCategoryChange = async (newCat) => {
         if (role !== 'owner') return;
+        if (isSwitchingCategoryRef.current) return;
 
-        if (activeCategory !== newCat) {
-            console.log(`NameInputScreen: Category switching from ${activeCategory} to ${newCat}`);
-            try { feedbackService.playClick(); } catch (e) { }
+        const currentCat = categoryRef.current;
+        if (currentCat !== newCat) {
+            isSwitchingCategoryRef.current = true;
+            console.log(`NameInputScreen: Category switching from ${currentCat} to ${newCat}`);
 
-            // 1. Save current one explicitly before switching
-            await syncService.setMenuByCategory(activeCategory, menuItems);
+            try {
+                // 1. Save current items to local cache AND Firebase
+                menuCacheRef.current[currentCat] = [...menuItems];
+                syncService.setMenuByCategory(currentCat, menuItems);
 
-            // 2. Clear state that should be reset
-            setSelectedMenuIndex(null);
+                // 2. Clear state that should be reset
+                setSelectedMenuIndex(null);
 
-            // 3. Update category state
-            setActiveCategory(newCat);
-            await syncService.setRoomCategory(newCat);
+                // 3. Update category ref + state + Firebase
+                categoryRef.current = newCat;
+                setActiveCategory(newCat);
+                syncService.setRoomCategory(newCat);
 
-            // 4. Fetch the NEW items FIRST, then set them
-            // This order is crucial to prevent the 'save' useEffect from seeing old items with new category
-            const savedMenus = await syncService.getMenuByCategory(newCat);
+                // 4. Load new category items from LOCAL CACHE first (instant, no race condition)
+                const cached = menuCacheRef.current[newCat];
+                if (cached && cached.length > 0) {
+                    console.log(`NameInputScreen: Loaded menu for ${newCat} from cache (${cached.length} items)`);
+                    setMenuItems([...cached]);
+                } else {
+                    // Fallback: try Firebase, then i18n defaults
+                    const savedMenus = await syncService.getMenuByCategory(newCat);
+                    if (savedMenus && savedMenus.length > 0) {
+                        console.log(`NameInputScreen: Loaded saved menu for ${newCat} from Firebase`);
+                        menuCacheRef.current[newCat] = savedMenus;
+                        setMenuItems(savedMenus);
+                    } else {
+                        console.log(`NameInputScreen: Loading defaults for ${newCat}`);
+                        const translatedPopular = t(`popular_items.${newCat}`, { returnObjects: true });
+                        const popular = Array.isArray(translatedPopular) ? translatedPopular : [];
+                        const newItems = popular.length > 0 ? popular.map(name => ({ name })) : [{ name: `${t('common.item') || 'Item'} 1` }];
+                        menuCacheRef.current[newCat] = newItems;
+                        setMenuItems(newItems);
+                    }
+                }
 
-            if (savedMenus && savedMenus.length > 0) {
-                console.log(`NameInputScreen: Loaded saved menu for ${newCat}`);
-                setMenuItems(savedMenus);
-            } else {
-                console.log(`NameInputScreen: Loading defaults for ${newCat}`);
-                const translatedPopular = t(`popular_items.${newCat}`, { returnObjects: true });
-                const popular = Array.isArray(translatedPopular) ? translatedPopular : [];
-                const newItems = popular.length > 0 ? popular.map(name => ({ name })) : [{ name: `${t('common.item') || 'Item'} 1` }];
-                setMenuItems(newItems);
-                // The useEffect will handle saving these new defaults
-            }
-
-            if (Platform.OS !== 'web') {
-                LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+                if (Platform.OS !== 'web') {
+                    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+                }
+            } finally {
+                isSwitchingCategoryRef.current = false;
             }
         }
     };
@@ -1223,17 +1342,20 @@ export default function NameInputScreen({ route, navigation }) {
                         )}
                         {mode === 'offline' && <View />}
 
-                        <View style={{ flexDirection: 'row', gap: 10, alignItems: 'center' }}>
+                        <View ref={shareRef} style={{ flexDirection: 'row', gap: 10, alignItems: 'center' }}>
                             {mode === 'online' && role === 'owner' && (
-                                <TouchableOpacity onPress={handleShare} style={{ padding: 4 }}>
+                                <TouchableOpacity ref={shareIconRef} onPress={handleShare} style={{ padding: 4 }}>
                                     <Share2 color={Colors.accent} size={24} />
                                 </TouchableOpacity>
                             )}
                             <TouchableOpacity onPress={() => setShowUsersModal(true)} style={{ padding: 4 }}>
                                 <ListChecks color={Colors.success} size={24} />
                             </TouchableOpacity>
-                            <TouchableOpacity onPress={() => navigation.navigate('History', { role, roomId, mode, category: activeCategory, activeTab })} style={{ padding: 4 }}>
+                            <TouchableOpacity ref={historyRef} onPress={() => navigation.navigate('History', { role, roomId, mode, category: activeCategory, activeTab })} style={{ padding: 4 }}>
                                 <History color={Colors.primary} size={24} />
+                            </TouchableOpacity>
+                            <TouchableOpacity onPress={() => setShowCoachMark(true)} style={{ padding: 4 }}>
+                                <HelpCircle color="rgba(255,255,255,0.45)" size={22} />
                             </TouchableOpacity>
                             <TouchableOpacity
                                 onPress={handleExit}
@@ -1337,6 +1459,7 @@ export default function NameInputScreen({ route, navigation }) {
 
                         {activeTab === 'menu' && (
                             <TouchableOpacity
+                                ref={identityRef}
                                 onPress={() => setShowIdentityModal(true)}
                                 style={{
                                     flexDirection: 'row',
@@ -1366,7 +1489,7 @@ export default function NameInputScreen({ route, navigation }) {
 
 
                     {activeTab === 'menu' && role === 'owner' && (
-                        <View style={{ flexDirection: 'row', marginBottom: 20, alignItems: 'center' }}>
+                        <View ref={categoryTabsRef} style={{ flexDirection: 'row', marginBottom: 20, alignItems: 'center' }}>
                             <View style={{ flexDirection: 'row', flexWrap: 'wrap', flex: 1 }}>
                                 {['coffee', 'meal', 'snack', 'etc'].map((cat) => {
                                     const isSelected = activeCategory === cat;
@@ -1409,7 +1532,7 @@ export default function NameInputScreen({ route, navigation }) {
                     )}
 
                     {role === 'owner' && (
-                        <View style={{ flexDirection: 'column', marginBottom: 25 }}>
+                        <View ref={participantInputRef} style={{ flexDirection: 'column', marginBottom: 25 }}>
                             <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                                 <View style={{ flex: 1, backgroundColor: 'rgba(255,255,255,0.12)', borderRadius: 12, borderWidth: 1, borderColor: 'rgba(255,255,255,0.15)', marginRight: 10, overflow: 'hidden' }}>
                                     <TextInput
@@ -1467,8 +1590,10 @@ export default function NameInputScreen({ route, navigation }) {
                         </View>
                     )}
 
+                    <View ref={menuListRef} style={{ flex: 1 }}>
                     <FlatList
                         data={activeTab === 'people' ? participants : menuItems}
+                        extraData={activeCategory}
                         renderItem={({ item, index }) => {
                             // Ensure nameToCheck is always a string
                             const rawName = typeof item === 'object' ? (item.name || item.text || '') : String(item);
@@ -1655,11 +1780,12 @@ export default function NameInputScreen({ route, navigation }) {
                             ) : null
                         }
                     />
+                    </View>
 
 
 
                     {/* Bottom Action Button */}
-                    <View style={{ paddingTop: 0 }}>
+                    <View ref={spinButtonRef} style={{ paddingTop: 0 }}>
                         {activeTab === 'menu' ? (
                             <View style={{ alignItems: 'center' }}>
                                 {selectedMenuIndex !== null ? (
@@ -2501,6 +2627,14 @@ export default function NameInputScreen({ route, navigation }) {
                     </Modal>
                 </View>
             </SafeAreaView>
+
+            {/* Onboarding Coach Mark */}
+            <CoachMark
+                steps={getCoachMarkSteps()}
+                visible={showCoachMark}
+                onComplete={handleOnboardingComplete}
+                onSkip={handleOnboardingComplete}
+            />
         </CyberBackground >
     );
 }
