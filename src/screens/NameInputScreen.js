@@ -92,7 +92,7 @@ export default function NameInputScreen({ route, navigation }) {
             const origin = window.location.origin;
             // 로컬 개발 시 API는 Vercel 서버리스에만 있으므로 배포 URL 사용
             if (origin.includes('localhost') || origin.includes('127.0.0.1')) {
-                return process.env.EXPO_PUBLIC_API_URL || 'https://roulette-app-two.vercel.app';
+                return process.env.EXPO_PUBLIC_API_URL || 'https://roulette-app.vercel.app';
             }
             return origin;
         }
@@ -1268,7 +1268,7 @@ export default function NameInputScreen({ route, navigation }) {
 
     const handleShare = async () => {
         try {
-            const inviteUrl = `https://roulette-app-two.vercel.app/?roomId=${roomId}`;
+            const inviteUrl = `https://roulette-app.vercel.app/?roomId=${roomId}`;
             const displayName = mySelectedName || syncService.myName || t('common.host') || 'Host';
             const message = t('common.invite_message', {
                 name: displayName,
