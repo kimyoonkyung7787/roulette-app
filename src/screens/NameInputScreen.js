@@ -134,6 +134,11 @@ export default function NameInputScreen({ route, navigation }) {
     };
 
     const generateMenuForRestaurant = async (restaurant) => {
+        const name = (restaurant?.title || '').trim();
+        if (!name) {
+            setAlertConfig({ visible: true, title: t('common.error'), message: t('name_input.menu_gen_error') });
+            return;
+        }
         setSelectedRestaurant(restaurant);
         setIsGeneratingMenu(true);
         setGeneratedMenus(null);
@@ -142,16 +147,23 @@ export default function NameInputScreen({ route, navigation }) {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    restaurantName: restaurant.title,
+                    restaurantName: name,
                     category: activeCategory,
-                    address: restaurant.roadAddress || restaurant.address,
+                    address: restaurant?.roadAddress || restaurant?.address || '',
                 }),
             });
-            const data = await resp.json();
+            const text = await resp.text();
+            let data;
+            try {
+                data = text ? JSON.parse(text) : {};
+            } catch {
+                data = {};
+            }
             if (resp.ok && data.menus) {
                 setGeneratedMenus(data.menus);
             } else {
-                setAlertConfig({ visible: true, title: t('common.error'), message: t('name_input.menu_gen_error') });
+                const errMsg = data?.error || t('name_input.menu_gen_error');
+                setAlertConfig({ visible: true, title: t('common.error'), message: errMsg });
             }
         } catch (err) {
             console.error('generateMenu error:', err);

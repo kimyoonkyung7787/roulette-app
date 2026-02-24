@@ -7,8 +7,9 @@ export default async function handler(req, res) {
     if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
     const { restaurantName, category, address } = req.body || {};
-    if (!restaurantName) {
-        return res.status(400).json({ error: 'Missing restaurantName' });
+    const name = (restaurantName || '').toString().trim();
+    if (!name) {
+        return res.status(400).json({ error: 'Missing restaurantName', code: 'MISSING_NAME' });
     }
 
     const apiKey = process.env.GEMINI_API_KEY;
@@ -28,7 +29,7 @@ export default async function handler(req, res) {
 메뉴 이름만 간결하게 작성하세요 (가격 제외).
 실제로 해당 가게에서 팔 법한 메뉴를 추측하세요.
 
-가게명: ${restaurantName}
+가게명: ${name}
 업종: ${categoryLabel}
 ${address ? `주소: ${address}` : ''}
 
@@ -76,7 +77,7 @@ ${address ? `주소: ${address}` : ''}
 
         return res.status(200).json({
             menus: menus.filter((m) => typeof m === 'string' && m.trim().length > 0),
-            restaurantName,
+            restaurantName: name,
         });
     } catch (err) {
         console.error('generate-menu error:', err);
