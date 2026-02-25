@@ -26,7 +26,7 @@ export default function App() {
   }, []);
 
   const linking = {
-    prefixes: ['http://localhost:19006', 'https://roulette-app.vercel.app', 'rouletteapp://'],
+    prefixes: ['http://localhost:19006', 'https://roulette-app-two.vercel.app', 'rouletteapp://'],
     config: {
       screens: {
         Entry: '', // Root path should be Entry

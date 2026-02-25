@@ -39,6 +39,7 @@ export default function MenuResultScreen({ route, navigation }) {
     const [allVoted, setAllVoted] = useState(false);
     const [onlineUsers, setOnlineUsers] = useState([]);
     const [showExitConfirm, setShowExitConfirm] = useState(false);
+    const [fixedParticipantDetails, setFixedParticipantDetails] = useState(null);
     const hasSavedRef = useRef(false);
 
     const pulseAnim = useRef(new Animated.Value(0)).current;
@@ -88,7 +89,7 @@ export default function MenuResultScreen({ route, navigation }) {
                 Animated.sequence([
                     Animated.timing(iconBounceAnim, { toValue: 1, duration: 200, easing: Easing.out(Easing.back(2)), useNativeDriver: true }),
                     Animated.timing(iconBounceAnim, { toValue: 0, duration: 500, easing: Easing.inOut(Easing.sin), useNativeDriver: true }),
-                    Animated.delay(400)
+                    Animated.delay(1000)
                 ])
             );
             anim.start();
@@ -145,6 +146,13 @@ export default function MenuResultScreen({ route, navigation }) {
                 const originalList = route.params.menuItems;
                 historyService.addWinner(winner, type, details, originalList, roomId, category);
                 hasSavedRef.current = true;
+                setFixedParticipantDetails(details.map((d, i) => ({
+                    id: d.name + '-' + i,
+                    name: d.name,
+                    votedFor: d.votedFor,
+                    isMe: d.isMe,
+                    isOwner: d.isOwner
+                })));
             }
         }
     }, [tally, totalParticipants, isForced, winner, type, onlineUsers, finalVotes]);
@@ -208,6 +216,9 @@ export default function MenuResultScreen({ route, navigation }) {
     const tallyEntries = Object.entries(tally);
 
     const participantDetails = (() => {
+        if (fixedParticipantDetails && fixedParticipantDetails.length > 0) {
+            return fixedParticipantDetails;
+        }
         if (onlineUsers && onlineUsers.length > 0) {
             return onlineUsers.map(user => {
                 const vote = finalVotes.find(v => v.userId === user.id);

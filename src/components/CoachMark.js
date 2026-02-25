@@ -345,10 +345,8 @@ const styles = StyleSheet.create({
         zIndex: 10,
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: 'rgba(255,255,255,0.08)',
         paddingHorizontal: 12,
         paddingVertical: 6,
-        borderRadius: 20,
         gap: 4,
     },
     skipText: {

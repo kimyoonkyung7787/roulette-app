@@ -35,7 +35,7 @@ export default function ResultScreen({ route, navigation }) {
         const driftAnim = useRef(new Animated.Value(0)).current;
 
         useEffect(() => {
-            Animated.loop(
+            const anim = Animated.loop(
                 Animated.parallel([
                     Animated.timing(rotateAnim, {
                         toValue: 1,
@@ -72,8 +72,11 @@ export default function ResultScreen({ route, navigation }) {
                             useNativeDriver: true
                         })
                     ])
-                ])
-            ).start();
+                ]),
+                { iterations: 3 }
+            );
+            anim.start();
+            return () => anim.stop();
         }, []);
 
         const rotation = rotateAnim.interpolate({
@@ -107,7 +110,7 @@ export default function ResultScreen({ route, navigation }) {
     };
 
     const ConfettiExplosion = () => {
-        const particles = [...Array(40)].map((_, i) => ({
+        const particles = [...Array(20)].map((_, i) => ({
             id: i,
             color: [Colors.primary, Colors.accent, Colors.success, '#FF00FF', '#FFA500', '#00FF00', '#FFFF00'][i % 7],
             size: Math.random() * 8 + 4,
@@ -136,6 +139,7 @@ export default function ResultScreen({ route, navigation }) {
 
     const [allVoted, setAllVoted] = useState(false);
     const [onlineUsers, setOnlineUsers] = useState([]);
+    const [fixedParticipantDetails, setFixedParticipantDetails] = useState(null);
     const [showUsersModal, setShowUsersModal] = useState(false);
     const [showExitConfirm, setShowExitConfirm] = useState(false);
     const hasSavedRef = useRef(false);
@@ -185,14 +189,14 @@ export default function ResultScreen({ route, navigation }) {
                 Animated.sequence([
                     Animated.timing(drumBeatAnim, { toValue: 1, duration: 150, easing: Easing.out(Easing.back(2)), useNativeDriver: true }),
                     Animated.timing(drumBeatAnim, { toValue: 0, duration: 400, easing: Easing.inOut(Easing.sin), useNativeDriver: true }),
-                    Animated.delay(300)
+                    Animated.delay(1000)
                 ])
             );
             const trumpetAnim = Animated.loop(
                 Animated.sequence([
                     Animated.timing(trumpetBeatAnim, { toValue: 1, duration: 150, easing: Easing.out(Easing.back(2)), useNativeDriver: true }),
                     Animated.timing(trumpetBeatAnim, { toValue: 0, duration: 400, easing: Easing.inOut(Easing.sin), useNativeDriver: true }),
-                    Animated.delay(300)
+                    Animated.delay(1000)
                 ])
             );
 
@@ -300,6 +304,7 @@ export default function ResultScreen({ route, navigation }) {
                 }
                 historyService.addWinner(winner, type, details, originalList, roomId, category);
                 hasSavedRef.current = true;
+                setFixedParticipantDetails(details);
             }
         }
     }, [tally, totalParticipants, isForced, winner, type, onlineUsers, finalVotes]);
@@ -635,48 +640,59 @@ export default function ResultScreen({ route, navigation }) {
                             </View>
 
                             <ScrollView style={{ maxHeight: 400 }}>
-                                {onlineUsers.map((user) => {
-                                    const userVote = finalVotes.find(v => v.userId === user.id);
-                                    const isMe = user.id === syncService.myId;
-
-                                    return (
-                                        <View key={user.id} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.05)' }}>
-                                            <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
-                                                <View style={{
-                                                    width: 8,
-                                                    height: 8,
-                                                    borderRadius: 4,
-                                                    backgroundColor: userVote ? Colors.success : Colors.primary,
-                                                    marginRight: 10,
-                                                    shadowColor: userVote ? Colors.success : Colors.primary,
-                                                    shadowRadius: 4,
-                                                    shadowOpacity: 0.5
-                                                }} />
-                                                <Text style={{ color: 'white', fontSize: 16, fontWeight: '500' }}>
-                                                    {user.name} {isMe ? <Text style={{ fontSize: 11, color: Colors.primary }}> {t('common.me')}</Text> : ''}
-                                                </Text>
-                                            </View>
-                                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                                                <View style={{
-                                                    backgroundColor: userVote ? 'rgba(57, 255, 20, 0.1)' : 'rgba(255, 255, 255, 0.05)',
-                                                    paddingHorizontal: 8,
-                                                    paddingVertical: 4,
-                                                    borderRadius: 4,
-                                                    borderWidth: 1,
-                                                    borderColor: userVote ? 'rgba(57, 255, 20, 0.3)' : 'rgba(255, 255, 255, 0.1)',
-                                                    flexDirection: 'row',
-                                                    alignItems: 'center'
-                                                }}>
-                                                    {userVote && <CheckCircle2 size={12} color={Colors.success} style={{ marginRight: 4 }} />}
-                                                    <Text style={{ color: userVote ? Colors.success : 'rgba(255,255,255,0.3)', fontSize: 11, fontWeight: 'bold' }}>
-                                                        {userVote ? userVote.votedFor.toUpperCase() : t('roulette.spinning').toUpperCase()}
+                                {(() => {
+                                    const list = fixedParticipantDetails && fixedParticipantDetails.length > 0
+                                        ? fixedParticipantDetails
+                                        : onlineUsers.map(user => {
+                                            const vote = finalVotes.find(v => v.userId === user.id);
+                                            return {
+                                                name: user.name,
+                                                votedFor: vote ? vote.votedFor : null,
+                                                isMe: user.id === syncService.myId,
+                                                isOwner: user.role === 'owner' || (user.id === syncService.myId && role === 'owner')
+                                            };
+                                        });
+                                    return list.map((d, i) => {
+                                        const hasVote = d.votedFor && d.votedFor !== t('common.no_vote').toUpperCase();
+                                        return (
+                                            <View key={d.name + '-' + i} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.05)' }}>
+                                                <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
+                                                    <View style={{
+                                                        width: 8,
+                                                        height: 8,
+                                                        borderRadius: 4,
+                                                        backgroundColor: hasVote ? Colors.success : Colors.primary,
+                                                        marginRight: 10,
+                                                        shadowColor: hasVote ? Colors.success : Colors.primary,
+                                                        shadowRadius: 4,
+                                                        shadowOpacity: 0.5
+                                                    }} />
+                                                    <Text style={{ color: 'white', fontSize: 16, fontWeight: '500' }}>
+                                                        {d.name} {d.isMe ? <Text style={{ fontSize: 11, color: Colors.primary }}> {t('common.me')}</Text> : ''}
                                                     </Text>
                                                 </View>
+                                                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                                                    <View style={{
+                                                        backgroundColor: hasVote ? 'rgba(57, 255, 20, 0.1)' : 'rgba(255, 255, 255, 0.05)',
+                                                        paddingHorizontal: 8,
+                                                        paddingVertical: 4,
+                                                        borderRadius: 4,
+                                                        borderWidth: 1,
+                                                        borderColor: hasVote ? 'rgba(57, 255, 20, 0.3)' : 'rgba(255, 255, 255, 0.1)',
+                                                        flexDirection: 'row',
+                                                        alignItems: 'center'
+                                                    }}>
+                                                        {hasVote && <CheckCircle2 size={12} color={Colors.success} style={{ marginRight: 4 }} />}
+                                                        <Text style={{ color: hasVote ? Colors.success : 'rgba(255,255,255,0.3)', fontSize: 11, fontWeight: 'bold' }}>
+                                                            {hasVote ? (d.votedFor || '').toUpperCase() : t('roulette.spinning').toUpperCase()}
+                                                        </Text>
+                                                    </View>
+                                                </View>
                                             </View>
-                                        </View>
-                                    );
-                                })}
-                                {onlineUsers.length === 0 && (
+                                        );
+                                    });
+                                })()}
+                                {(!fixedParticipantDetails || fixedParticipantDetails.length === 0) && onlineUsers.length === 0 && (
                                     <Text style={{ color: 'rgba(255,255,255,0.5)', textAlign: 'center', marginVertical: 20 }}>{t('roulette.no_participants').toUpperCase()}</Text>
                                 )}
                             </ScrollView>

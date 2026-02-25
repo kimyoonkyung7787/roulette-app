@@ -92,7 +92,7 @@ export default function NameInputScreen({ route, navigation }) {
             const origin = window.location.origin;
             // 로컬 개발 시 API는 Vercel 서버리스에만 있으므로 배포 URL 사용
             if (origin.includes('localhost') || origin.includes('127.0.0.1')) {
-                return process.env.EXPO_PUBLIC_API_URL || 'https://roulette-app.vercel.app';
+                return process.env.EXPO_PUBLIC_API_URL || 'https://roulette-app-two.vercel.app';
             }
             return origin;
         }
@@ -498,10 +498,10 @@ export default function NameInputScreen({ route, navigation }) {
             if (role === 'owner') {
                 return [
                     { ref: identityRef, title: t('onboarding.owner_step1_title'), message: t('onboarding.owner_step1_msg'), icon: t('onboarding.owner_step1_icon') },
-                    { ref: shareRef, arrowRef: shareIconRef, title: t('onboarding.owner_step2_title'), message: t('onboarding.owner_step2_msg'), icon: t('onboarding.owner_step2_icon') },
+                    historyStep,
+                    { ref: shareIconRef, title: t('onboarding.owner_step2_title'), message: t('onboarding.owner_step2_msg'), icon: t('onboarding.owner_step2_icon') },
                     { ref: categoryTabsRef, title: t('onboarding.owner_step3_title'), message: t('onboarding.owner_step3_msg'), icon: t('onboarding.owner_step3_icon') },
                     { ref: menuListRef, title: t('onboarding.owner_step4_title'), message: t('onboarding.owner_step4_msg'), icon: t('onboarding.owner_step4_icon') },
-                    historyStep,
                 ];
             }
             return [
@@ -513,12 +513,12 @@ export default function NameInputScreen({ route, navigation }) {
         if (role === 'owner') {
             const steps = [
                 { ref: participantInputRef, title: t('onboarding.people_owner_step1_title'), message: t('onboarding.people_owner_step1_msg'), icon: t('onboarding.people_owner_step1_icon') },
+                historyStep,
             ];
             if (mode === 'online') {
-                steps.push({ ref: shareRef, arrowRef: shareIconRef, title: t('onboarding.people_owner_step2_title'), message: t('onboarding.people_owner_step2_msg'), icon: t('onboarding.people_owner_step2_icon') });
+                steps.push({ ref: shareIconRef, title: t('onboarding.people_owner_step2_title'), message: t('onboarding.people_owner_step2_msg'), icon: t('onboarding.people_owner_step2_icon') });
             }
             steps.push({ ref: spinButtonRef, title: t('onboarding.people_owner_step3_title'), message: t('onboarding.people_owner_step3_msg'), icon: t('onboarding.people_owner_step3_icon') });
-            steps.push(historyStep);
             return steps;
         }
         return [
@@ -1284,7 +1284,7 @@ export default function NameInputScreen({ route, navigation }) {
 
     const handleShare = async () => {
         try {
-            const inviteUrl = `https://roulette-app.vercel.app/?roomId=${roomId}`;
+            const inviteUrl = `https://roulette-app-two.vercel.app/?roomId=${roomId}`;
             const displayName = mySelectedName || syncService.myName || t('common.host') || 'Host';
             const message = t('common.invite_message', {
                 name: displayName,
@@ -1435,7 +1435,7 @@ export default function NameInputScreen({ route, navigation }) {
                             </View>
 
                             {activeTab === 'menu' && role === 'owner' && (activeCategory === 'meal' || activeCategory === 'snack') && i18n.language === 'ko' && (() => {
-                                const aiBtnColor = activeCategory === 'meal' ? Colors.success : Colors.accent;
+                                const aiBtnColor = '#FF9100';
                                 return (
                                     <TouchableOpacity
                                         onPress={() => {
@@ -1701,8 +1701,17 @@ export default function NameInputScreen({ route, navigation }) {
                                                 onPress={() => {
                                                     if (role === 'owner') {
                                                         startEditing(index);
-                                                    } else if (!isTakenByOther) {
+                                                    } else if (isPeopleTab && !isTakenByOther) {
                                                         toggleMe(nameToCheck);
+                                                    } else if (!isPeopleTab) {
+                                                        const catOpts = CATEGORY_OPTIONS[activeCategory];
+                                                        if (catOpts) {
+                                                            setPendingMenuIndex(index);
+                                                            setShowOptionSheet(true);
+                                                            try { feedbackService.playClick(); } catch (e) { }
+                                                        } else {
+                                                            setSelectedMenuIndex(index);
+                                                        }
                                                     }
                                                 }}
                                                 style={{ flex: 1, flexDirection: 'row', alignItems: 'center', paddingVertical: 4 }}

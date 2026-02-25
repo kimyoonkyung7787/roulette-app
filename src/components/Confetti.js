@@ -12,7 +12,7 @@ import Animated, {
 } from 'react-native-reanimated';
 
 const { width, height } = Dimensions.get('window');
-const CONFETTI_COUNT = 60;
+const CONFETTI_COUNT = 30;
 const COLORS = ['#ff6b6b', '#ffd93d', '#6bcbff', '#6bffb8', '#ff6bff', '#00ffff'];
 
 const ConfettiPiece = ({ index }) => {
@@ -45,7 +45,7 @@ const ConfettiPiece = ({ index }) => {
             delay,
             withRepeat(
                 withTiming(360 * 2, { duration: duration / 2, easing: Easing.linear }),
-                -1,
+                5,
                 false
             )
         );

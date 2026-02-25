@@ -45,48 +45,69 @@ ${address ? `주소: ${address}` : ''}
 ["메뉴1", "메뉴2", "메뉴3", ...]`;
 
     try {
-        const response = await fetch(
-            `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
-            {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    contents: [{ parts: [{ text: prompt }] }],
-                    generationConfig: {
-                        temperature: 0.7,
-                        maxOutputTokens: 512,
-                    },
-                }),
+    const modelsToTry = ['gemini-2.0-flash', 'gemini-1.5-flash', 'gemini-1.5-flash-8b'];
+    let lastError = null;
+    let lastStatus = 500;
+
+    for (const model of modelsToTry) {
+        try {
+            const response = await fetch(
+                `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
+                {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        contents: [{ parts: [{ text: prompt }] }],
+                        generationConfig: {
+                            temperature: 0.7,
+                            maxOutputTokens: 512,
+                        },
+                    }),
+                }
+            );
+
+            if (!response.ok) {
+                const text = await response.text();
+                lastError = text;
+                lastStatus = response.status;
+                console.warn(`Gemini API (${model}) error:`, response.status, text?.slice(0, 300));
+                continue;
             }
-        );
 
-        if (!response.ok) {
-            const text = await response.text();
-            console.error('Gemini API error:', response.status, text);
-            return res.status(response.status).json({ error: 'Gemini API request failed' });
+            const data = await response.json();
+            const rawText = data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
+            const jsonMatch = rawText.match(/\[[\s\S]*?\]/);
+            if (!jsonMatch) {
+                console.warn(`Gemini (${model}) parse failed:`, rawText?.slice(0, 200));
+                lastError = 'Failed to parse menu data';
+                lastStatus = 500;
+                continue;
+            }
+
+            const menus = JSON.parse(jsonMatch[0]);
+            if (!Array.isArray(menus) || menus.length === 0) {
+                lastError = 'Empty menu result';
+                continue;
+            }
+
+            return res.status(200).json({
+                menus: menus.filter((m) => typeof m === 'string' && m.trim().length > 0),
+                restaurantName: name,
+            });
+        } catch (err) {
+            console.warn(`Gemini (${model}) exception:`, err?.message);
+            lastError = err?.message || 'Internal error';
+            continue;
         }
+    }
 
-        const data = await response.json();
-
-        const rawText =
-            data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
-
-        const jsonMatch = rawText.match(/\[[\s\S]*?\]/);
-        if (!jsonMatch) {
-            console.error('Failed to parse Gemini response:', rawText);
-            return res.status(500).json({ error: 'Failed to parse menu data' });
-        }
-
-        const menus = JSON.parse(jsonMatch[0]);
-
-        if (!Array.isArray(menus) || menus.length === 0) {
-            return res.status(500).json({ error: 'Empty menu result' });
-        }
-
-        return res.status(200).json({
-            menus: menus.filter((m) => typeof m === 'string' && m.trim().length > 0),
-            restaurantName: name,
-        });
+    const userMsg = lastStatus === 429
+        ? '요청이 너무 많습니다. 잠시 후 다시 시도해 주세요.'
+        : 'Gemini API request failed';
+    return res.status(lastStatus >= 400 ? lastStatus : 500).json({
+        error: userMsg,
+        code: lastStatus === 429 ? 'RATE_LIMIT' : 'API_ERROR',
+    });
     } catch (err) {
         console.error('generate-menu error:', err);
         return res.status(500).json({ error: 'Internal server error' });
