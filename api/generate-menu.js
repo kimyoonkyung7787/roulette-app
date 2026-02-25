@@ -45,7 +45,7 @@ ${address ? `주소: ${address}` : ''}
 ["메뉴1", "메뉴2", "메뉴3", ...]`;
 
     try {
-    const modelsToTry = ['gemini-2.0-flash', 'gemini-1.5-flash', 'gemini-1.5-flash-8b'];
+    const modelsToTry = ['gemini-2.5-flash', 'gemini-2.5-flash-lite', 'gemini-2.0-flash', 'gemini-1.5-flash', 'gemini-pro'];
     let lastError = null;
     let lastStatus = 500;
 
@@ -70,7 +70,12 @@ ${address ? `주소: ${address}` : ''}
                 const text = await response.text();
                 lastError = text;
                 lastStatus = response.status;
-                console.warn(`Gemini API (${model}) error:`, response.status, text?.slice(0, 300));
+                let parsed = null;
+                try {
+                    parsed = JSON.parse(text);
+                } catch {}
+                const msg = parsed?.error?.message || parsed?.error?.status || text?.slice(0, 200);
+                console.warn(`Gemini API (${model}) ${response.status}:`, msg);
                 continue;
             }
 
@@ -103,7 +108,9 @@ ${address ? `주소: ${address}` : ''}
 
     const userMsg = lastStatus === 429
         ? '요청이 너무 많습니다. 잠시 후 다시 시도해 주세요.'
-        : 'Gemini API request failed';
+        : lastStatus === 400
+            ? 'Gemini API 요청 실패. API 키 제한(HTTP referrer 등)을 확인해 주세요.'
+            : 'Gemini API request failed';
     return res.status(lastStatus >= 400 ? lastStatus : 500).json({
         error: userMsg,
         code: lastStatus === 429 ? 'RATE_LIMIT' : 'API_ERROR',
