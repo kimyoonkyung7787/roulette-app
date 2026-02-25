@@ -249,7 +249,7 @@
         "people_participant_step2_msg": "The host needs to vote first.\nThen spin the roulette",
         "people_participant_step2_icon": "⏳",
         "history_step_title": "I want to use previously registered information",
-        "history_step_msg": "View previous logs to\nimport participant lists",
+        "history_step_msg": "View previous logs to\nimport participant/menu lists",
         "history_step_icon": "📜"
     }
 }

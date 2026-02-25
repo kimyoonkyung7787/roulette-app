@@ -245,7 +245,7 @@
         "people_participant_step2_msg": "호스트가 먼저 투표를 해야 해요.\n이후 룰렛을 돌려보세요",
         "people_participant_step2_icon": "⏳",
         "history_step_title": "전에 등록한 정보를 활용하고 싶어요",
-        "history_step_msg": "이전 로그를 조회하여,\n참여자 리스트를 가져올 수 있어요",
+        "history_step_msg": "이전 로그를 조회하여,\n참여자/메뉴 리스트를 가져올 수 있어요",
         "history_step_icon": "📜"
     }
 }

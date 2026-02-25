@@ -78,6 +78,7 @@ export default function NameInputScreen({ route, navigation }) {
     const menuListRef = useRef(null);
     const participantInputRef = useRef(null);
     const historyRef = useRef(null);
+    const isRestoredFromHistoryRef = useRef(false);
 
     const [showRestaurantSearch, setShowRestaurantSearch] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
@@ -90,9 +91,9 @@ export default function NameInputScreen({ route, navigation }) {
     const getApiBaseUrl = () => {
         if (Platform.OS === 'web') {
             const origin = window.location.origin;
-            // 로컬 개발 시 API는 Vercel 서버리스에만 있으므로 배포 URL 사용
+            // 로컬 개발: 프록시 사용 시 상대 URL (dev-proxy.js), 아니면 Vercel 직접 호출
             if (origin.includes('localhost') || origin.includes('127.0.0.1')) {
-                return process.env.EXPO_PUBLIC_API_URL || 'https://roulette-app-two.vercel.app';
+                return ''; // 상대 URL → dev-proxy가 /api를 Vercel로 전달
             }
             return origin;
         }
@@ -319,15 +320,23 @@ export default function NameInputScreen({ route, navigation }) {
                     }
 
                     // Default category setup
-                    // Default category setup
                     const initialCat = category || 'coffee';
                     setActiveCategory(initialCat);
 
+                    // Skip menu init when restoring from history - restoredData effect will handle it
+                    const hasMenuRestore = route.params?.restoredData?.type === 'menu';
+                    if (hasMenuRestore) {
+                        console.log('NameInputScreen: Skipping menu init - will restore from history');
+                    } else {
                     // PROACTIVE SETUP: Ensure ALL categories have default menus if empty
                     const categoriesToInit = ['coffee', 'meal', 'snack', 'etc'];
                     console.log('NameInputScreen: Starting proactive menu initialization for room:', roomId);
 
                     for (const cat of categoriesToInit) {
+                        if (isRestoredFromHistoryRef.current) {
+                            console.log(`NameInputScreen: Skipping menu init for ${cat} - restored from history`);
+                            break;
+                        }
                         const existing = await syncService.getMenuByCategory(cat);
 
                         if (!existing || !Array.isArray(existing) || existing.length === 0) {
@@ -342,17 +351,18 @@ export default function NameInputScreen({ route, navigation }) {
                             await syncService.setMenuByCategory(cat, defaultMenus);
                             menuCacheRef.current[cat] = defaultMenus;
 
-                            if (cat === initialCat) {
+                            if (cat === initialCat && !isRestoredFromHistoryRef.current) {
                                 console.log(`NameInputScreen: Setting initial state for ${cat}`);
                                 setMenuItems(defaultMenus);
                             }
                         } else {
                             menuCacheRef.current[cat] = existing;
-                            if (cat === initialCat) {
+                            if (cat === initialCat && !isRestoredFromHistoryRef.current) {
                                 console.log(`NameInputScreen: Loading existing data for initial category ${cat}`);
                                 setMenuItems(existing);
                             }
                         }
+                    }
                     }
 
                     await syncService.clearSpinState();
@@ -743,7 +753,7 @@ export default function NameInputScreen({ route, navigation }) {
     // Handle data restoration from history
     useEffect(() => {
         if (route.params?.restoredData && role === 'owner') {
-            const { type, list, participants: restoredParticipants } = route.params.restoredData;
+            const { type, list, participants: restoredParticipants, category: restoredCategory } = route.params.restoredData;
             console.log(`NameInputScreen: Restoring ${type} from history... (current mode: ${mode})`);
 
             if (type === 'people') {
@@ -757,13 +767,21 @@ export default function NameInputScreen({ route, navigation }) {
                 // Don't force tab switch - stay on current tab
                 // This allows "뭐 먹지?" mode to import participants from "누가 쏠까?" history
             } else {
-                // Restore menu items
+                // Restore menu items - prevent loadInitialData from overwriting if still running
+                isRestoredFromHistoryRef.current = true;
                 const normalizedList = list.map(m => {
                     const itemName = typeof m === 'object' ? (m.name || m.text || m) : m;
                     return { name: itemName };
                 });
+                const cat = restoredCategory || activeCategory || 'coffee';
+                setActiveCategory(cat);
+                categoryRef.current = cat;
+                menuCacheRef.current[cat] = [...normalizedList];
                 setMenuItems(normalizedList);
-                syncService.setMenuItems(normalizedList);
+                setActiveTab('menu');
+                // Sync room category to Firebase first so subscribeToCategory won't overwrite
+                syncService.setRoomCategory(cat);
+                syncService.setMenuByCategory(cat, normalizedList);
 
                 // Also restore participants from the voting details (if available)
                 if (restoredParticipants && restoredParticipants.length > 0) {

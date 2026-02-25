@@ -75,6 +75,7 @@ export default function HistoryScreen({ route, navigation }) {
                 type: item.type,
                 list: item.originalList,
                 participants: participantsList,
+                category: item.category || category || 'coffee',
                 timestamp: Date.now()
             }
         });

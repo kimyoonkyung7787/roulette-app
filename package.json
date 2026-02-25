@@ -7,7 +7,9 @@
     "android": "expo start --android",
     "ios": "expo start --ios",
     "web": "expo start --web",
-    "build": "expo export --platform web"
+    "build": "expo export --platform web",
+    "dev": "node dev-proxy.js",
+    "dev:expo": "expo start --web --port 19006"
   },
   "dependencies": {
     "@expo-google-fonts/black-han-sans": "^0.4.1",
