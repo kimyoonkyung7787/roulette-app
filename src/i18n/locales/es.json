@@ -183,6 +183,8 @@
         "winner_shout": "WINNER!",
         "copied_to_clipboard": "Resultado copiado al portapapeles.",
         "vote_result": "RESULTADO DE VOTACIÓN",
+        "all_complete": "Votación completada",
+        "voted_partial": "{{voted}}/{{total}} votaron",
         "participant_detail": "DETALLE DE PARTICIPANTE"
     },
     "entry": {

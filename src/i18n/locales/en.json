@@ -186,6 +186,8 @@
         "winner_shout": "WINNER!",
         "copied_to_clipboard": "Result copied to clipboard.",
         "vote_result": "VOTE RESULT",
+        "all_complete": "All voted",
+        "voted_partial": "{{voted}}/{{total}} voted",
         "participant_detail": "PARTICIPANT DETAIL"
     },
     "entry": {

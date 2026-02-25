@@ -220,7 +220,6 @@ export default function MenuResultScreen({ route, navigation }) {
     const CatIcon = catInfo.Icon;
     const catColor = catInfo.color;
 
-    const tallyEntries = Object.entries(tally);
 
     const participantDetails = (() => {
         if (fixedParticipantDetails && fixedParticipantDetails.length > 0) {
@@ -247,6 +246,7 @@ export default function MenuResultScreen({ route, navigation }) {
         }));
     })();
 
+    const tallyEntries = Object.entries(tally);
     const sortedParticipants = [...participantDetails].sort((a, b) => {
         if (a.votedFor && !b.votedFor) return -1;
         if (!a.votedFor && b.votedFor) return 1;

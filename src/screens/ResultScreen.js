@@ -557,44 +557,25 @@ export default function ResultScreen({ route, navigation }) {
                                 </View>
                             )}
 
-                            {/* Tally Chart - Hide in offline mode */}
-                            {mode !== 'offline' && (
-                                <View style={styles.tallyContainer}>
-                                    {Object.entries(tally).map(([name, count]) => {
-                                        const isHost = name === (route.params?.hostName);
-                                        const menuCount = route.params?.menuItems?.length || originalItems?.length || 0;
-                                        const cellCount = Math.max(type === 'menu' ? menuCount : totalParticipants, 1);
-                                        return (
-                                        <View key={name} style={styles.tallyItem}>
-                                            <View style={styles.tallyNameRow}>
-                                                <Text style={styles.tallyName} numberOfLines={1}>{name}</Text>
-                                                {isHost && (
-                                                    <View style={styles.tallyHostBadge}>
-                                                        <Crown color={Colors.accent} size={8} fill={`${Colors.accent}33`} style={{ marginRight: 2 }} />
-                                                        <Text style={styles.tallyHostBadgeText}>{t('common.host').toUpperCase()}</Text>
-                                                    </View>
-                                                )}
-                                            </View>
-                                            <View style={styles.tallyBarContainer}>
-                                                {[...Array(cellCount)].map((_, i) => (
-                                                    <View
-                                                        key={i}
-                                                        style={[
-                                                            styles.tallyCell,
-                                                            { backgroundColor: i < count ? Colors.secondary : 'rgba(255,255,255,0.05)' }
-                                                        ]}
-                                                    />
-                                                ))}
-                                            </View>
-                                            <View style={styles.tallyCountContainer}>
-                                                <Text style={styles.tallyCountValue}>{count}</Text>
-                                                <Text style={styles.tallyCountLabel}>{count === 1 ? t('result.vote') : t('result.votes')}</Text>
-                                            </View>
-                                        </View>
-                                        );
-                                    })}
-                                </View>
-                            )}
+                            {/* Vote status indicator - subtle, no vote tally */}
+                            {mode !== 'offline' && type === 'people' && (() => {
+                                const votedCount = finalVotes?.length || 0;
+                                const total = Math.max(totalParticipants || 0, onlineUsers?.length || 0, votedCount);
+                                if (total < 2 || (votedCount === 0 && !allVoted)) return null;
+                                const isAll = votedCount >= total;
+                                return (
+                                    <View style={styles.completeIndicator}>
+                                        {isAll ? (
+                                            <CheckCircle2 color={Colors.success} size={14} style={{ marginRight: 6, opacity: 0.8 }} />
+                                        ) : (
+                                            <View style={{ width: 14, height: 14, marginRight: 6, borderRadius: 7, borderWidth: 1.5, borderColor: 'rgba(255,255,255,0.4)' }} />
+                                        )}
+                                        <Text style={styles.completeIndicatorText}>
+                                            {isAll ? t('result.all_complete') : t('result.voted_partial', { voted: votedCount, total })}
+                                        </Text>
+                                    </View>
+                                );
+                            })()}
 
                             <Text style={styles.subText}>
                                 {!allVoted && t('result.waiting_for_others')}
@@ -832,73 +813,20 @@ const styles = StyleSheet.create({
         marginTop: 5,
         fontWeight: '500',
     },
-    tallyContainer: {
-        width: '100%',
-        marginTop: 30,
-        paddingTop: 20,
+    completeIndicator: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginTop: 24,
+        paddingTop: 16,
         borderTopWidth: 1,
         borderTopColor: 'rgba(255,255,255,0.05)',
     },
-    tallyItem: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        marginVertical: 4,
-    },
-    tallyNameRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        width: 120,
-        flexShrink: 0,
-    },
-    tallyName: {
-        color: 'white',
+    completeIndicatorText: {
+        color: 'rgba(255,255,255,0.4)',
         fontSize: 12,
-        flexShrink: 1,
-    },
-    tallyHostBadge: {
-        backgroundColor: `${Colors.accent}25`,
-        borderColor: Colors.accent,
-        borderWidth: 1.5,
-        borderRadius: 6,
-        paddingHorizontal: 5,
-        paddingVertical: 1,
-        marginLeft: 4,
-        flexDirection: 'row',
-        alignItems: 'center',
-    },
-    tallyHostBadgeText: {
-        color: Colors.accent,
-        fontSize: 8,
-        fontWeight: 'bold',
-    },
-    tallyBarContainer: {
-        flex: 1,
-        flexDirection: 'row',
-        gap: 2,
-        height: 12,
-        marginHorizontal: 10,
-    },
-    tallyCell: {
-        flex: 1,
-        height: '100%',
-        borderRadius: 2,
-        borderWidth: 1,
-        borderColor: 'rgba(255,255,255,0.1)',
-    },
-    tallyCountContainer: {
-        width: 60,
-        alignItems: 'flex-end',
-    },
-    tallyCountValue: {
-        color: Colors.secondary,
-        fontSize: 14,
-        fontWeight: 'bold',
-    },
-    tallyCountLabel: {
-        color: 'rgba(255,255,255,0.3)',
-        fontSize: 8,
+        fontWeight: '500',
         letterSpacing: 1,
-        marginTop: -3,
     },
     footer: {
         width: '100%',

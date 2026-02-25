@@ -183,6 +183,8 @@
         "winner_shout": "WINNER!",
         "copied_to_clipboard": "تم نسخ النتيجة إلى الحافظة.",
         "vote_result": "نتيجة التصويت",
+        "all_complete": "اكتمل التصويت",
+        "voted_partial": "{{voted}}/{{total}} صوتوا",
         "participant_detail": "تفاصيل المشاركين"
     },
     "entry": {

@@ -186,6 +186,8 @@
         "winner_shout": "WINNER!",
         "copied_to_clipboard": "결과가 클립보드에 복사되었습니다.",
         "vote_result": "투표 결과",
+        "all_complete": "투표 완료",
+        "voted_partial": "{{voted}}/{{total}} 참여",
         "participant_detail": "참여자 상세 결과"
     },
     "entry": {

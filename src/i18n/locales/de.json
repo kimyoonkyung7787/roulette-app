@@ -183,6 +183,8 @@
         "winner_shout": "WINNER!",
         "copied_to_clipboard": "Ergebnis in die Zwischenablage kopiert.",
         "vote_result": "ABSTIMMUNGSERGEBNIS",
+        "all_complete": "Abgestimmt",
+        "voted_partial": "{{voted}}/{{total}} abgestimmt",
         "participant_detail": "TEILNEHMERDETAIL"
     },
     "entry": {

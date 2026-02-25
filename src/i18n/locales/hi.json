@@ -183,6 +183,8 @@
         "winner_shout": "WINNER!",
         "copied_to_clipboard": "क्लिपबोर्ड पर कॉपी हो गया।",
         "vote_result": "वोट परिणाम",
+        "all_complete": "मतदान पूर्ण",
+        "voted_partial": "{{voted}}/{{total}} ने मतदान किया",
         "participant_detail": "प्रतिभागी विवरण"
     },
     "entry": {

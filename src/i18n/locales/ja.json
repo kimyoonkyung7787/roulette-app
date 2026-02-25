@@ -183,6 +183,8 @@
         "winner_shout": "WINNER!",
         "copied_to_clipboard": "結果をクリップボードにコピーしました。",
         "vote_result": "投票結果",
+        "all_complete": "投票完了",
+        "voted_partial": "{{voted}}/{{total}} 参加",
         "participant_detail": "参加者詳細"
     },
     "entry": {
