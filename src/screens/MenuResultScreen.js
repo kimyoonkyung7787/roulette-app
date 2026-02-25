@@ -30,11 +30,18 @@ export default function MenuResultScreen({ route, navigation }) {
         mode = 'online',
         role = 'participant',
         isForced = false,
-        finalVotes = [],
+        finalVotes: rawFinalVotes = [],
         type = 'menu',
         category = 'coffee',
         originalItems = []
     } = route.params || {};
+
+    // Firebase/Chrome: finalVotes가 객체로 올 수 있음 → 항상 배열로 정규화
+    const finalVotes = Array.isArray(rawFinalVotes)
+        ? rawFinalVotes
+        : (rawFinalVotes && typeof rawFinalVotes === 'object')
+            ? Object.values(rawFinalVotes)
+            : [];
 
     const [allVoted, setAllVoted] = useState(false);
     const [onlineUsers, setOnlineUsers] = useState([]);
@@ -72,9 +79,9 @@ export default function MenuResultScreen({ route, navigation }) {
         if (!allVoted) {
             const animation = Animated.loop(
                 Animated.sequence([
-                    Animated.timing(pulseAnim, { toValue: 1, duration: 600, easing: Easing.out(Easing.back(1.5)), useNativeDriver: true }),
-                    Animated.timing(pulseAnim, { toValue: 0, duration: 500, easing: Easing.inOut(Easing.sin), useNativeDriver: true }),
-                    Animated.delay(200)
+                    Animated.timing(pulseAnim, { toValue: 1, duration: 1200, easing: Easing.out(Easing.back(1.5)), useNativeDriver: true }),
+                    Animated.timing(pulseAnim, { toValue: 0, duration: 800, easing: Easing.inOut(Easing.sin), useNativeDriver: true }),
+                    Animated.delay(800)
                 ])
             );
             animation.start();
@@ -87,9 +94,9 @@ export default function MenuResultScreen({ route, navigation }) {
         if (allVoted) {
             const anim = Animated.loop(
                 Animated.sequence([
-                    Animated.timing(iconBounceAnim, { toValue: 1, duration: 200, easing: Easing.out(Easing.back(2)), useNativeDriver: true }),
-                    Animated.timing(iconBounceAnim, { toValue: 0, duration: 500, easing: Easing.inOut(Easing.sin), useNativeDriver: true }),
-                    Animated.delay(1000)
+                    Animated.timing(iconBounceAnim, { toValue: 1, duration: 400, easing: Easing.out(Easing.back(2)), useNativeDriver: true }),
+                    Animated.timing(iconBounceAnim, { toValue: 0, duration: 800, easing: Easing.inOut(Easing.sin), useNativeDriver: true }),
+                    Animated.delay(2000)
                 ])
             );
             anim.start();
@@ -268,7 +275,7 @@ export default function MenuResultScreen({ route, navigation }) {
                                     <History color={Colors.primary} size={24} />
                                 </TouchableOpacity>
                                 <TouchableOpacity onPress={() => setShowExitConfirm(true)} style={{ padding: 4 }}>
-                                    <LogOut color={Colors.error} size={24} />
+                                    <LogOut color="rgba(255,255,255,0.45)" size={24} />
                                 </TouchableOpacity>
                             </View>
                         </View>

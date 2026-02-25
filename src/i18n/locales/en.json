@@ -108,6 +108,7 @@
         "select_option": "SELECT OPTION",
         "add_menu_item": "Add menu item...",
         "participant_status": "PARTICIPANT STATUS",
+        "spin_auto_start_hint": "Starting automatically in 3 seconds",
         "voter": "VOTER",
         "winner": "WINNER",
         "waiting": "WAITING...",
@@ -124,6 +125,8 @@
         "vote": "VOTE",
         "waiting_for_host": "Waiting for host...",
         "wait_for_host": "Please wait for the host to finish setting up",
+        "wait_for_host_spin": "Waiting for host to spin the roulette",
+        "participants_ready_spin": "{{current}}/{{total}} ready - Spin",
         "selected": "SELECTED",
         "please_select_name": "Please select your name",
         "game_in_progress": "Game in progress...",
@@ -148,7 +151,9 @@
         "apply_menu": "Apply this menu",
         "search_error": "An error occurred during search",
         "menu_gen_error": "Failed to generate menu",
-        "min_menu_error": "At least 2 menu items are required"
+        "min_menu_error": "At least 2 menu items are required",
+        "memo_label": "Add option (optional)",
+        "memo_placeholder": "e.g. strawberry, mango"
     },
     "roulette": {
         "spin_center": "SPIN",

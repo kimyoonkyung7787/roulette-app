@@ -124,6 +124,8 @@
         "vote": "تصويت",
         "waiting_for_host": "في انتظار المضيف...",
         "wait_for_host": "يرجى الانتظار حتى ينتهي المضيف من الإعداد",
+        "wait_for_host_spin": "في انتظار المضيف لتدوير الروليت",
+        "participants_ready_spin": "{{current}}/{{total}} جاهزون - تدوير",
         "selected": "SELECTED",
         "please_select_name": "يرجى اختيار اسمك",
         "game_in_progress": "اللعبة قيد التنفيذ...",

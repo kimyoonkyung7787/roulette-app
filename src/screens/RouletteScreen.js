@@ -330,15 +330,13 @@ export default function RouletteScreen({ route, navigation }) {
         }
     }, [remoteSpinState, isFocused, spinning, onlineUsers, votes]);
 
-    // Check if everyone has voted
+    // Check if everyone has voted (menu 모드만 - people 모드는 옵션 A로 vote 없음)
     useEffect(() => {
+        if (spinTarget !== 'menu') return;
         if (!isFocused || spinning || isNavigating.current || votes.length === 0) return;
 
-        // Determine expected voter count
         const expectedVoterCount = Math.max(participantsState.length, onlineUsers.length);
 
-        // AUTO-FINALIZE: When all registered participants have voted
-        // Works for both spin and "Pick Now" scenarios
         if (votes.length >= expectedVoterCount && expectedVoterCount > 0) {
             console.log(`RouletteScreen: All ${expectedVoterCount} participants voted. Finalizing...`);
             processFinalResult(false);
@@ -479,14 +477,39 @@ export default function RouletteScreen({ route, navigation }) {
             return;
         }
 
-        // Only submit vote if I AM the one who started this spin
-        // Using ref isInitiator for reliability over synced state
+        // 옵션 A: people 모드는 vote 없이 호스트 스핀 결과로 즉시 확정
         if (isInitiator.current) {
-            await syncService.submitVote(winner);
-
-            // Finalize global spin state so others see the spin is done
-            await syncService.finishSpin(winner);
-
+            if (currentTarget === 'people') {
+                // 호스트 스핀 완료 → 바로 finalize (참여자 vote 불필요)
+                const resultData = {
+                    winner,
+                    isTie: false,
+                    tally: { [winner]: 1 },
+                    totalParticipants: currentDataList.length,
+                    isForced: false,
+                    finalVotes: [{ userId: syncService.myId, userName: syncService.myName || 'Host', votedFor: winner }],
+                    type: 'people',
+                    participants: currentDataList,
+                    menuItems: menuItemsRef.current || []
+                };
+                await syncService.finishSpin(winner);
+                await syncService.finalizeGame(resultData);
+                // 호스트 즉시 Result 화면으로 이동
+                isNavigating.current = true;
+                const hostUser = onlineUsers.find(u => u.role === 'owner');
+                const finalHostName = hostUser ? hostUser.name : (role === 'owner' ? mySelectedName : (roomId.length <= 8 ? roomId : null));
+                navigation.navigate('Result', {
+                    ...resultData,
+                    roomId,
+                    role,
+                    category,
+                    hostName: finalHostName
+                });
+            } else {
+                // menu 모드: 기존 vote 방식 유지
+                await syncService.submitVote(winner);
+                await syncService.finishSpin(winner);
+            }
             isInitiator.current = false;
         }
 
@@ -962,7 +985,7 @@ export default function RouletteScreen({ route, navigation }) {
                                 disabled={spinning}
                                 style={{ padding: 4, opacity: spinning ? 0.3 : 1 }}
                             >
-                                <LogOut color={Colors.error} size={24} />
+                                <LogOut color="rgba(255,255,255,0.45)" size={24} />
                             </TouchableOpacity>
                         </View>
                     </View>
@@ -1066,24 +1089,35 @@ export default function RouletteScreen({ route, navigation }) {
                         ) : (
                             !votedItem && (
                                 <>
-                                    <TouchableOpacity
-                                        onPress={spinRoulette}
-                                        disabled={!!(spinning || votes.find(v => v.userId === syncService.myId))}
-                                        activeOpacity={0.8}
-                                        style={[
-                                            styles.spinButton,
-                                            (spinning || votes.find(v => v.userId === syncService.myId)) && styles.disabledButton,
-                                            { marginBottom: (votes.find(v => v.userId === syncService.myId) && !spinning) || (role === 'owner' && votes.length > 0) ? 10 : 0 }
-                                        ]}
-                                    >
-                                        <RotateCw color={spinning || votes.find(v => v.userId === syncService.myId) ? Colors.textSecondary : Colors.primary} size={24} style={{ marginRight: 12 }} />
-                                        <NeonText className="text-xl">
-                                            {getButtonText()}
-                                        </NeonText>
-                                    </TouchableOpacity>
+                                    {/* B 방식: people 모드 참여자는 시청만 (스핀 버튼 없음) */}
+                                    {spinTarget === 'people' && role === 'participant' ? (
+                                        <View style={[styles.spinButton, { opacity: 0.9, justifyContent: 'center' }]}>
+                                            <Text style={{ color: Colors.textSecondary, fontSize: 16 }}>
+                                                {remoteSpinState?.isSpinning
+                                                    ? t('roulette.remote_spinning', { name: remoteSpinState.starter })
+                                                    : t('name_input.waiting_for_host')}
+                                            </Text>
+                                        </View>
+                                    ) : (
+                                        <>
+                                            <TouchableOpacity
+                                                onPress={spinRoulette}
+                                                disabled={!!(spinning || votes.find(v => v.userId === syncService.myId))}
+                                                activeOpacity={0.8}
+                                                style={[
+                                                    styles.spinButton,
+                                                    (spinning || votes.find(v => v.userId === syncService.myId)) && styles.disabledButton,
+                                                    { marginBottom: (votes.find(v => v.userId === syncService.myId) && !spinning) || (role === 'owner' && votes.length > 0) ? 10 : 0 }
+                                                ]}
+                                            >
+                                                <RotateCw color={spinning || votes.find(v => v.userId === syncService.myId) ? Colors.textSecondary : Colors.primary} size={24} style={{ marginRight: 12 }} />
+                                                <NeonText className="text-xl">
+                                                    {getButtonText()}
+                                                </NeonText>
+                                            </TouchableOpacity>
 
-                                    {/* RE PICK button - shown when user has voted but votedItem not set */}
-                                    {votes.find(v => v.userId === syncService.myId) && !spinning && (
+                                            {/* RE PICK button - shown when user has voted but votedItem not set (menu 모드만) */}
+                                            {votes.find(v => v.userId === syncService.myId) && !spinning && (
                                         <TouchableOpacity
                                             onPress={async () => {
                                                 const expectedVoterCount = Math.max(participantsState.length, onlineUsers.length);
@@ -1106,6 +1140,8 @@ export default function RouletteScreen({ route, navigation }) {
                                             <HandMetal color={Colors.primary} size={20} strokeWidth={2.5} style={{ marginRight: 8 }} />
                                             <Text style={styles.reselectText}>{t('common.re_pick').toUpperCase()}</Text>
                                         </TouchableOpacity>
+                                            )}
+                                        </>
                                     )}
 
                                 </>

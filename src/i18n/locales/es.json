@@ -124,6 +124,8 @@
         "vote": "VOTAR",
         "waiting_for_host": "Esperando al anfitrión...",
         "wait_for_host": "Por favor espere a que el anfitrión termine de configurar",
+        "wait_for_host_spin": "Esperando a que el anfitrión gire la ruleta",
+        "participants_ready_spin": "{{current}}/{{total}} listos - Girar",
         "selected": "SELECTED",
         "please_select_name": "Por favor seleccione su nombre",
         "game_in_progress": "Juego en progreso...",

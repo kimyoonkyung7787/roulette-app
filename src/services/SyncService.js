@@ -277,7 +277,9 @@ class SyncService {
     async getMenuByCategory(category) {
         try {
             const snapshot = await get(ref(db, `${this.roomPath}/menus/${category}`));
-            return snapshot.val() || null;
+            const raw = snapshot.val();
+            if (!raw) return null;
+            return this._normalizeArray(raw);
         } catch (e) {
             console.error('SyncService: Failed to get menu by category:', e);
             return null;

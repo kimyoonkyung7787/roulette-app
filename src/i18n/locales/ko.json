@@ -108,6 +108,7 @@
         "select_option": "옵션 선택",
         "add_menu_item": "메뉴 추가...",
         "participant_status": "참여자 상태",
+        "spin_auto_start_hint": "3초 후 자동으로 시작됩니다",
         "voter": "투표자",
         "winner": "당첨자",
         "waiting": "대기 중...",
@@ -124,6 +125,8 @@
         "vote": "투표하기",
         "waiting_for_host": "호스트를 기다리는 중...",
         "wait_for_host": "호스트의 설정 완료를 기다려주세요",
+        "wait_for_host_spin": "호스트가 룰렛을 돌릴 때까지 대기",
+        "participants_ready_spin": "{{current}}/{{total}} 참여 완료 - 돌리기",
         "selected": "SELECTED",
         "please_select_name": "당신의 이름을 선택해 주세요",
         "game_in_progress": "게임 진행 중...",
@@ -148,7 +151,9 @@
         "apply_menu": "이 메뉴로 채우기",
         "search_error": "검색 중 오류가 발생했습니다",
         "menu_gen_error": "메뉴 생성에 실패했습니다",
-        "min_menu_error": "메뉴가 2개 이상 필요합니다"
+        "min_menu_error": "메뉴가 2개 이상 필요합니다",
+        "memo_label": "옵션 추가 (선택)",
+        "memo_placeholder": "예: 딸기, 망고"
     },
     "roulette": {
         "spin_center": "회전",

@@ -124,6 +124,8 @@
         "vote": "वोट दें",
         "waiting_for_host": "मेजबान की प्रतीक्षा में...",
         "wait_for_host": "कृपया मेजबान के सेटअप समाप्त करने की प्रतीक्षा करें",
+        "wait_for_host_spin": "मेजबान के रूलेट घुमाने की प्रतीक्षा करें",
+        "participants_ready_spin": "{{current}}/{{total}} तैयार - घुमाएं",
         "selected": "SELECTED",
         "please_select_name": "कृपया अपना नाम चुनें",
         "game_in_progress": "गेम चल रहा है...",

@@ -124,6 +124,8 @@
         "vote": "投票",
         "waiting_for_host": "ホストを待機中...",
         "wait_for_host": "ホストの設定完了をお待ちください",
+        "wait_for_host_spin": "ホストがルーレットを回すまでお待ちください",
+        "participants_ready_spin": "{{current}}/{{total}} 参加完了 - 回す",
         "selected": "SELECTED",
         "please_select_name": "名前を選択してください",
         "game_in_progress": "ゲーム進行中...",

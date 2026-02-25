@@ -124,6 +124,8 @@
         "vote": "投票",
         "waiting_for_host": "等待主机...",
         "wait_for_host": "请等待主机完成设置",
+        "wait_for_host_spin": "请等待主机转动轮盘",
+        "participants_ready_spin": "{{current}}/{{total}} 已就绪 - 转动",
         "selected": "SELECTED",
         "please_select_name": "请选择您的姓名",
         "game_in_progress": "游戏进行中...",

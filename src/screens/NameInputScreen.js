@@ -1,12 +1,12 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { View, TextInput, TouchableOpacity, FlatList, Text, Modal, ScrollView, Platform, Alert, StyleSheet, LayoutAnimation, UIManager, Share, Animated } from 'react-native';
-import { useIsFocused } from '@react-navigation/native';
+import { useIsFocused, useFocusEffect } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Colors } from '../theme/colors';
 import { CyberBackground } from '../components/CyberBackground';
 import { NeonText } from '../components/NeonText';
-import { UserPlus, Trash2, Play, History, CheckCircle2, ListChecks, Users, X, Loader, LogOut, Crown, Utensils, Coffee, Cookie, User, HelpCircle, Circle, Zap, Target, Home, RotateCw, Guitar, Pencil, Check, Share2, Search, MapPin, Store, Sparkles } from 'lucide-react-native';
+import { UserPlus, Trash2, Play, History, CheckCircle2, ListChecks, Users, X, Loader, LogOut, Crown, Utensils, Coffee, Cookie, User, HelpCircle, Circle, Zap, Target, Home, RotateCw, Guitar, Pencil, Check, Share2, Search, MapPin, Store, Sparkles, FileText } from 'lucide-react-native';
 import { syncService } from '../services/SyncService';
 import { participantService } from '../services/ParticipantService';
 import { CyberAlert } from '../components/CyberAlert';
@@ -52,6 +52,7 @@ export default function NameInputScreen({ route, navigation }) {
     const [onlineUsers, setOnlineUsers] = useState([]);
     const [votes, setVotes] = useState([]);
     const [showUsersModal, setShowUsersModal] = useState(false);
+    const [isSpinDelayModal, setIsSpinDelayModal] = useState(false);
     const [activeCategory, setActiveCategory] = useState(category);
     const categoryRef = useRef(category);
     const isSwitchingCategoryRef = useRef(false);
@@ -75,10 +76,16 @@ export default function NameInputScreen({ route, navigation }) {
     const identityRef = useRef(null);
     const categoryTabsRef = useRef(null);
     const spinButtonRef = useRef(null);
+    const spinDelayTimerRef = useRef(null);
+    const participantNavigateTimerRef = useRef(null);
     const menuListRef = useRef(null);
     const participantInputRef = useRef(null);
     const historyRef = useRef(null);
     const isRestoredFromHistoryRef = useRef(false);
+
+    const [showMemoModal, setShowMemoModal] = useState(false);
+    const [memoEditingIndex, setMemoEditingIndex] = useState(null);
+    const [memoInputValue, setMemoInputValue] = useState('');
 
     const [showRestaurantSearch, setShowRestaurantSearch] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
@@ -234,6 +241,7 @@ export default function NameInputScreen({ route, navigation }) {
     }, [activeCategory]);
     const [remoteSpinState, setRemoteSpinState] = useState(null);
     const [roomPhase, setRoomPhaseState] = useState('waiting');
+    const [spinTarget, setSpinTargetState] = useState('people');
     const [finalResults, setFinalResults] = useState(null);
     const [hostName, setHostName] = useState(null);
     const isNavigatingRef = useRef(false);
@@ -445,6 +453,11 @@ export default function NameInputScreen({ route, navigation }) {
                 setRoomPhaseState(phase);
             }));
 
+            // Listen for spin target (people vs menu)
+            unsubs.push(syncService.subscribeToSpinTarget(target => {
+                setSpinTargetState(target || 'people');
+            }));
+
             // Listen for final results (game finished)
             unsubs.push(syncService.subscribeToFinalResults(results => {
                 setFinalResults(results);
@@ -603,13 +616,10 @@ export default function NameInputScreen({ route, navigation }) {
         }
     }, [showIdentityModal, participants, onlineUsers, mySelectedName]);
 
-    // Auto-navigate ONLY to Result screen when game is finished
-    // Participants must manually click "WHAT?" button to join roulette screen
+    // Auto-navigate to Result screen when game is finished
     useEffect(() => {
-        // Guard: Only for participants, must be focused, and not currently navigating or resetting
         if (role !== 'participant' || !isFocused || isNavigatingRef.current || inhibitedByResetRef.current) return;
 
-        // Auto-navigate ONLY if game is finished (Results exist)
         if (finalResults) {
             console.log('NameInputScreen: Game already finished, auto-navigating to result...');
             isNavigatingRef.current = true;
@@ -623,8 +633,56 @@ export default function NameInputScreen({ route, navigation }) {
             });
             return;
         }
-
     }, [finalResults, role, isFocused, roomId, activeCategory]);
+
+    // B 방식: 호스트가 피플 게임 시작 시 참여자도 "참여자 상태" 팝업 → 3초 후 Roulette 이동 (실시간 스핀 시청)
+    useEffect(() => {
+        if (role !== 'participant' || !isFocused || !isLoaded || isNavigatingRef.current || inhibitedByResetRef.current) return;
+        if (finalResults) return;
+        if (roomPhase !== 'roulette' || spinTarget !== 'people') return;
+        if (participants.length < 2) return;
+
+        const doNavigate = () => {
+            isNavigatingRef.current = true;
+            const finalHostName = hostName || onlineUsers.find(u => u.role === 'owner')?.name || (roomId.length <= 8 ? roomId : null);
+            navigation.navigate('Roulette', {
+                participants,
+                menuItems,
+                mySelectedName,
+                roomId,
+                mode,
+                role,
+                category: activeCategory,
+                spinTarget: 'people',
+                hostName: finalHostName
+            });
+        };
+
+        console.log('NameInputScreen: Host started people game, showing participant status popup for 3s then Roulette...');
+        setIsSpinDelayModal(true);
+        setShowUsersModal(true);
+        if (participantNavigateTimerRef.current) clearTimeout(participantNavigateTimerRef.current);
+        participantNavigateTimerRef.current = setTimeout(() => {
+            participantNavigateTimerRef.current = null;
+            setIsSpinDelayModal(false);
+            setShowUsersModal(false);
+            doNavigate();
+        }, 3000);
+
+        return () => {
+            if (participantNavigateTimerRef.current) {
+                clearTimeout(participantNavigateTimerRef.current);
+                participantNavigateTimerRef.current = null;
+            }
+        };
+    }, [role, isFocused, isLoaded, roomPhase, spinTarget, finalResults, participants, hostName, onlineUsers, roomId, activeCategory]);
+
+    // Reset navigation flag when leaving screen
+    useFocusEffect(
+        React.useCallback(() => () => {
+            isNavigatingRef.current = false;
+        }, [])
+    );
 
     // Safe reset of selection state when navigating back
     useEffect(() => {
@@ -728,8 +786,9 @@ export default function NameInputScreen({ route, navigation }) {
         }
     }, [participants, role, isLoaded]);
 
-    // Save menus whenever they change
+    // Save menus whenever they change (skip when just restored - restore effect handles it)
     useEffect(() => {
+        if (isRestoredFromHistoryRef.current) return;
         if (role === 'owner' && isLoaded && menuItems.length > 0 && !isSwitchingCategoryRef.current) {
             const cat = categoryRef.current;
             console.log(`NameInputScreen: Syncing ${cat} menu to DB...`, menuItems.length);
@@ -776,7 +835,14 @@ export default function NameInputScreen({ route, navigation }) {
                 const cat = restoredCategory || activeCategory || 'coffee';
                 setActiveCategory(cat);
                 categoryRef.current = cat;
-                menuCacheRef.current[cat] = [...normalizedList];
+                // Only restore to the target category - clear other categories so they refetch
+                ['coffee', 'meal', 'snack', 'etc'].forEach(c => {
+                    if (c === cat) {
+                        menuCacheRef.current[c] = [...normalizedList];
+                    } else {
+                        delete menuCacheRef.current[c];
+                    }
+                });
                 setMenuItems(normalizedList);
                 setActiveTab('menu');
                 // Sync room category to Firebase first so subscribeToCategory won't overwrite
@@ -789,7 +855,8 @@ export default function NameInputScreen({ route, navigation }) {
                     setParticipants(restoredParticipants);
                     syncService.setParticipants(restoredParticipants);
                 }
-                // Don't force tab switch - stay on current tab
+                // Reset flag after restore so "Save menus" effect works for subsequent edits
+                setTimeout(() => { isRestoredFromHistoryRef.current = false; }, 0);
             }
 
             // Clear the param so it doesn't trigger again on re-focus
@@ -938,6 +1005,24 @@ export default function NameInputScreen({ route, navigation }) {
             }
         }
         setEditingIndex(null);
+    };
+
+    const saveMemoEdit = async () => {
+        if (memoEditingIndex === null) return;
+        const trimmed = memoInputValue.trim();
+        const newMenu = [...menuItems];
+        const item = newMenu[memoEditingIndex] || { name: '' };
+        if (trimmed) {
+            newMenu[memoEditingIndex] = { ...item, name: item.name || '', note: trimmed };
+        } else {
+            const { note, ...rest } = item;
+            newMenu[memoEditingIndex] = rest;
+        }
+        setMenuItems(newMenu);
+        if (role === 'owner') await syncService.setMenuByCategory(activeCategory, newMenu);
+        setShowMemoModal(false);
+        setMemoEditingIndex(null);
+        setMemoInputValue('');
     };
 
     const saveWeightEdit = async () => {
@@ -1230,21 +1315,49 @@ export default function NameInputScreen({ route, navigation }) {
             }
 
             const finalHostName = hostName || onlineUsers.find(u => u.role === 'owner')?.name || (role === 'owner' ? mySelectedName : (roomId.length <= 8 ? roomId : null));
+            const readyCount = onlineUsers.filter(u => participants.some(p => (typeof p === 'object' ? p.name : p) === u.name)).length;
+            const allReady = readyCount >= participants.length;
 
-            navigation.navigate('Roulette', {
-                participants,
-                menuItems,
-                mySelectedName,
-                roomId,
-                mode,
-                role,
-                category: activeCategory,
-                spinTarget: target, // Explicitly pass the target mode
-                autoStartSpin: true,
-                hostName: finalHostName
-            });
+            const doNavigate = () => {
+                navigation.navigate('Roulette', {
+                    participants,
+                    menuItems,
+                    mySelectedName,
+                    roomId,
+                    mode,
+                    role,
+                    category: activeCategory,
+                    spinTarget: target,
+                    autoStartSpin: true,
+                    hostName: finalHostName
+                });
+            };
+
+            // 전체 인원 미참여 시: 참여자상태 팝업 → 3초 후 자동 스핀
+            if (target === 'people' && mode === 'online' && !allReady) {
+                if (spinDelayTimerRef.current) clearTimeout(spinDelayTimerRef.current);
+                setIsSpinDelayModal(true);
+                setShowUsersModal(true);
+                spinDelayTimerRef.current = setTimeout(() => {
+                    spinDelayTimerRef.current = null;
+                    setIsSpinDelayModal(false);
+                    setShowUsersModal(false);
+                    doNavigate();
+                }, 3000);
+            } else {
+                doNavigate();
+            }
         } else {
-            // Participant handling for SPIN button
+            // Participant in people mode: Option A - stay on NameInput, wait for final_results
+            if (target === 'people') {
+                setAlertConfig({
+                    visible: true,
+                    title: t('common.info'),
+                    message: t('name_input.wait_for_host_spin')
+                });
+                return;
+            }
+            // Participant in menu mode: navigate to Roulette when game active
             const isGameActive = roomPhase === 'roulette' || remoteSpinState?.isSpinning;
             if (!isGameActive) {
                 setAlertConfig({
@@ -1395,7 +1508,7 @@ export default function NameInputScreen({ route, navigation }) {
                                 onPress={handleExit}
                                 style={{ padding: 4 }}
                             >
-                                <LogOut color={Colors.error} size={24} />
+                                <LogOut color="rgba(255,255,255,0.45)" size={24} />
                             </TouchableOpacity>
                         </View>
                     </View>
@@ -1453,7 +1566,6 @@ export default function NameInputScreen({ route, navigation }) {
                             </View>
 
                             {activeTab === 'menu' && role === 'owner' && (activeCategory === 'meal' || activeCategory === 'snack') && i18n.language === 'ko' && (() => {
-                                const aiBtnColor = '#FF9100';
                                 return (
                                     <TouchableOpacity
                                         onPress={() => {
@@ -1467,16 +1579,16 @@ export default function NameInputScreen({ route, navigation }) {
                                         style={{
                                             flexDirection: 'row',
                                             alignItems: 'center',
-                                            backgroundColor: `${aiBtnColor}15`,
+                                            backgroundColor: `${Colors.primary}15`,
                                             borderWidth: 1.5,
-                                            borderColor: aiBtnColor,
+                                            borderColor: Colors.primary,
                                             borderRadius: 6,
                                             paddingVertical: 3,
                                             paddingHorizontal: 10,
                                         }}
                                     >
-                                        <Store color={aiBtnColor} size={12} style={{ marginRight: 5 }} />
-                                        <Text style={{ color: aiBtnColor, fontSize: 10, fontWeight: '900' }}>
+                                        <Store color={Colors.primary} size={12} style={{ marginRight: 5 }} />
+                                        <Text style={{ color: Colors.primary, fontSize: 10, fontWeight: '900' }}>
                                             AI 메뉴
                                         </Text>
                                     </TouchableOpacity>
@@ -1910,32 +2022,62 @@ export default function NameInputScreen({ route, navigation }) {
                                 )}
                             </View>
                         ) : (
-                            <TouchableOpacity
-                                onPress={() => {
-                                    if (checkIdentityBeforeAction()) {
-                                        startRoulette(activeTab);
-                                    }
-                                }}
-                                style={{
-                                    backgroundColor: 'transparent',
-                                    paddingVertical: 10,
+                            /* People tab: Host = N/N 참여 완료 - 룰렛 돌리기, Participant = 대기 안내 */
+                            role === 'owner' ? (
+                                <TouchableOpacity
+                                    onPress={() => {
+                                        if (checkIdentityBeforeAction()) {
+                                            startRoulette(activeTab);
+                                        }
+                                    }}
+                                    style={{
+                                        backgroundColor: 'transparent',
+                                        paddingVertical: 10,
+                                        borderRadius: 16,
+                                        flexDirection: 'row',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        borderWidth: 1.5,
+                                        borderColor: Colors.primary
+                                    }}
+                                >
+                                    <RotateCw color={Colors.primary} size={22} />
+                                    <Text style={{
+                                        color: Colors.primary,
+                                        fontSize: 18,
+                                        fontWeight: '900',
+                                        letterSpacing: 2,
+                                        marginLeft: 8
+                                    }}>
+                                        {mode === 'online' && participants.length > 0
+                                            ? t('name_input.participants_ready_spin', {
+                                                current: onlineUsers.filter(u => participants.some(p => (typeof p === 'object' ? p.name : p) === u.name)).length,
+                                                total: participants.length
+                                            }).toUpperCase()
+                                            : t('name_input.what').toUpperCase()}
+                                    </Text>
+                                </TouchableOpacity>
+                            ) : (
+                                <View style={{
+                                    backgroundColor: 'rgba(0,255,255,0.08)',
+                                    paddingVertical: 14,
+                                    paddingHorizontal: 20,
                                     borderRadius: 16,
-                                    flexDirection: 'row',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
                                     borderWidth: 1.5,
-                                    borderColor: Colors.primary
-                                }}
-                            >
-                                <RotateCw color={Colors.primary} size={22} />
-                                <Text style={{
-                                    color: Colors.primary,
-                                    fontSize: 18,
-                                    fontWeight: '900',
-                                    letterSpacing: 2,
-                                    marginLeft: 8
-                                }}>{t('name_input.what').toUpperCase()}</Text>
-                            </TouchableOpacity>
+                                    borderColor: 'rgba(0,255,255,0.3)',
+                                    alignItems: 'center',
+                                    justifyContent: 'center'
+                                }}>
+                                    <Text style={{
+                                        color: Colors.textSecondary,
+                                        fontSize: 15,
+                                        fontWeight: '600',
+                                        textAlign: 'center'
+                                    }}>
+                                        {t('name_input.wait_for_host_spin')}
+                                    </Text>
+                                </View>
+                            )
                         )}
                     </View>
 
@@ -2505,14 +2647,32 @@ export default function NameInputScreen({ route, navigation }) {
                                 <Text style={{ color: Colors.textSecondary, fontSize: 12, fontWeight: '600', letterSpacing: 1, marginBottom: 4 }}>
                                     {t('name_input.select_option') || 'SELECT OPTION'}
                                 </Text>
-                                <Text style={{ color: 'white', fontSize: 20, fontWeight: '900', marginBottom: 20 }}>
-                                    {pendingMenuIndex !== null && menuItems[pendingMenuIndex]
-                                        ? (typeof menuItems[pendingMenuIndex] === 'object' ? menuItems[pendingMenuIndex].name : menuItems[pendingMenuIndex])
-                                        : ''}
-                                </Text>
+                                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
+                                    <Text style={{ color: 'white', fontSize: 20, fontWeight: '900', flex: 1 }}>
+                                        {pendingMenuIndex !== null && menuItems[pendingMenuIndex]
+                                            ? (typeof menuItems[pendingMenuIndex] === 'object' ? menuItems[pendingMenuIndex].name : menuItems[pendingMenuIndex])
+                                            : ''}
+                                    </Text>
+                                    {activeCategory === 'coffee' && role === 'owner' && pendingMenuIndex !== null && (
+                                        <TouchableOpacity
+                                            onPress={() => {
+                                                setMemoEditingIndex(pendingMenuIndex);
+                                                setMemoInputValue(typeof menuItems[pendingMenuIndex] === 'object' && menuItems[pendingMenuIndex].note ? menuItems[pendingMenuIndex].note : '');
+                                                setShowMemoModal(true);
+                                                try { feedbackService.playClick(); } catch (e) { }
+                                            }}
+                                            style={{ padding: 4 }}
+                                        >
+                                            <FileText
+                                                color={typeof menuItems[pendingMenuIndex] === 'object' && menuItems[pendingMenuIndex].note ? Colors.accent : 'rgba(255,255,255,0.4)'}
+                                                size={20}
+                                            />
+                                        </TouchableOpacity>
+                                    )}
+                                </View>
 
                                 {CATEGORY_OPTIONS[activeCategory] && (
-                                    <View style={{ flexDirection: 'row', gap: 12 }}>
+                                    <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 12 }}>
                                         {CATEGORY_OPTIONS[activeCategory].options.map((opt) => (
                                             <TouchableOpacity
                                                 key={opt.label}
@@ -2523,6 +2683,7 @@ export default function NameInputScreen({ route, navigation }) {
                                                 activeOpacity={0.7}
                                                 style={{
                                                     flex: 1,
+                                                    minWidth: 100,
                                                     paddingVertical: 10,
                                                     borderRadius: 12,
                                                     borderWidth: 2,
@@ -2538,8 +2699,100 @@ export default function NameInputScreen({ route, navigation }) {
                                                 <Text style={{ color: opt.color, fontSize: 18, fontWeight: '900', letterSpacing: 1 }}>{opt.label}</Text>
                                             </TouchableOpacity>
                                         ))}
+                                        {pendingMenuIndex !== null && menuItems[pendingMenuIndex] && typeof menuItems[pendingMenuIndex] === 'object' && menuItems[pendingMenuIndex].note && (
+                                            <TouchableOpacity
+                                                onPress={() => {
+                                                    try { feedbackService.playClick(); } catch (e) { }
+                                                    handleOptionSelect(menuItems[pendingMenuIndex].note);
+                                                }}
+                                                activeOpacity={0.7}
+                                                style={{
+                                                    flex: 1,
+                                                    minWidth: 100,
+                                                    paddingVertical: 10,
+                                                    borderRadius: 12,
+                                                    borderWidth: 2,
+                                                    borderColor: Colors.accent,
+                                                    backgroundColor: `${Colors.accent}15`,
+                                                    flexDirection: 'row',
+                                                    alignItems: 'center',
+                                                    justifyContent: 'center',
+                                                    gap: 8,
+                                                }}
+                                            >
+                                                <FileText color={Colors.accent} size={18} />
+                                                <Text style={{ color: Colors.accent, fontSize: 14, fontWeight: '900', letterSpacing: 1 }}>{menuItems[pendingMenuIndex].note}</Text>
+                                            </TouchableOpacity>
+                                        )}
                                     </View>
                                 )}
+                            </TouchableOpacity>
+                        </TouchableOpacity>
+                    </Modal>
+
+                    {/* Memo Modal (coffee only) */}
+                    <Modal
+                        visible={showMemoModal}
+                        transparent={true}
+                        animationType="fade"
+                        onRequestClose={() => { setShowMemoModal(false); setMemoEditingIndex(null); setMemoInputValue(''); }}
+                    >
+                        <TouchableOpacity
+                            activeOpacity={1}
+                            onPress={() => { setShowMemoModal(false); setMemoEditingIndex(null); setMemoInputValue(''); }}
+                            style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'center', alignItems: 'center', padding: 24 }}
+                        >
+                            <TouchableOpacity activeOpacity={1} onPress={() => {}} style={{
+                                width: '100%',
+                                maxWidth: 280,
+                                backgroundColor: Colors.surface,
+                                borderRadius: 12,
+                                padding: 16,
+                                borderWidth: 1,
+                                borderColor: Colors.glassBorder,
+                            }}>
+                                <Text style={{ color: Colors.textSecondary, fontSize: 10, fontWeight: '600', marginBottom: 6 }}>
+                                    {t('name_input.memo_label') || '옵션 추가 (선택)'}
+                                </Text>
+                                <Text style={{ color: 'white', fontSize: 14, fontWeight: '700', marginBottom: 10 }} numberOfLines={1}>
+                                    {memoEditingIndex !== null && menuItems[memoEditingIndex]
+                                        ? (typeof menuItems[memoEditingIndex] === 'object' ? menuItems[memoEditingIndex].name : menuItems[memoEditingIndex])
+                                        : ''}
+                                </Text>
+                                <TextInput
+                                    style={{
+                                        color: 'white',
+                                        fontSize: 13,
+                                        paddingVertical: 8,
+                                        paddingHorizontal: 10,
+                                        backgroundColor: 'rgba(255,255,255,0.08)',
+                                        borderRadius: 8,
+                                        borderWidth: 1,
+                                        borderColor: 'rgba(255,255,255,0.15)',
+                                        marginBottom: 12,
+                                    }}
+                                    placeholder={t('name_input.memo_placeholder') || '예: 딸기, 망고'}
+                                    placeholderTextColor="rgba(255,255,255,0.35)"
+                                    value={memoInputValue}
+                                    onChangeText={setMemoInputValue}
+                                    onSubmitEditing={saveMemoEdit}
+                                    maxLength={20}
+                                    autoFocus
+                                />
+                                <View style={{ flexDirection: 'row', gap: 8 }}>
+                                    <TouchableOpacity
+                                        onPress={() => { setShowMemoModal(false); setMemoEditingIndex(null); setMemoInputValue(''); }}
+                                        style={{ flex: 1, paddingVertical: 8, borderRadius: 8, backgroundColor: 'rgba(255,255,255,0.1)', alignItems: 'center' }}
+                                    >
+                                        <Text style={{ color: Colors.textSecondary, fontSize: 12, fontWeight: '600' }}>{t('common.cancel') || '취소'}</Text>
+                                    </TouchableOpacity>
+                                    <TouchableOpacity
+                                        onPress={saveMemoEdit}
+                                        style={{ flex: 1, paddingVertical: 8, borderRadius: 8, backgroundColor: Colors.primary, alignItems: 'center' }}
+                                    >
+                                        <Text style={{ color: 'black', fontSize: 12, fontWeight: '700' }}>{t('common.confirm') || '확인'}</Text>
+                                    </TouchableOpacity>
+                                </View>
                             </TouchableOpacity>
                         </TouchableOpacity>
                     </Modal>
@@ -2549,7 +2802,21 @@ export default function NameInputScreen({ route, navigation }) {
                         visible={showUsersModal}
                         transparent={true}
                         animationType="fade"
-                        onRequestClose={() => setShowUsersModal(false)}
+                        onRequestClose={() => {
+                            if (spinDelayTimerRef.current) {
+                                clearTimeout(spinDelayTimerRef.current);
+                                spinDelayTimerRef.current = null;
+                            }
+                            if (participantNavigateTimerRef.current) {
+                                clearTimeout(participantNavigateTimerRef.current);
+                                participantNavigateTimerRef.current = null;
+                                const finalHostName = hostName || onlineUsers.find(u => u.role === 'owner')?.name || (roomId.length <= 8 ? roomId : null);
+                                isNavigatingRef.current = true;
+                                navigation.navigate('Roulette', { participants, menuItems, mySelectedName, roomId, mode, role, category: activeCategory, spinTarget: 'people', hostName: finalHostName });
+                            }
+                            setIsSpinDelayModal(false);
+                            setShowUsersModal(false);
+                        }}
                     >
                         <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.8)', justifyContent: 'center', alignItems: 'center', padding: 20 }}>
                             <View style={{
@@ -2568,7 +2835,21 @@ export default function NameInputScreen({ route, navigation }) {
                             }}>
                                 <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
                                     <NeonText style={{ fontSize: 20 }}>{t('name_input.participant_status')}</NeonText>
-                                    <TouchableOpacity onPress={() => setShowUsersModal(false)}>
+                                    <TouchableOpacity onPress={() => {
+                                        if (spinDelayTimerRef.current) {
+                                            clearTimeout(spinDelayTimerRef.current);
+                                            spinDelayTimerRef.current = null;
+                                        }
+                                        if (participantNavigateTimerRef.current) {
+                                            clearTimeout(participantNavigateTimerRef.current);
+                                            participantNavigateTimerRef.current = null;
+                                            const finalHostName = hostName || onlineUsers.find(u => u.role === 'owner')?.name || (roomId.length <= 8 ? roomId : null);
+                                            isNavigatingRef.current = true;
+                                            navigation.navigate('Roulette', { participants, menuItems, mySelectedName, roomId, mode, role, category: activeCategory, spinTarget: 'people', hostName: finalHostName });
+                                        }
+                                        setIsSpinDelayModal(false);
+                                        setShowUsersModal(false);
+                                    }}>
                                         <X color={Colors.text} size={24} />
                                     </TouchableOpacity>
                                 </View>
@@ -2665,6 +2946,11 @@ export default function NameInputScreen({ route, navigation }) {
                                     )}
 
                                 </ScrollView>
+                                {isSpinDelayModal && (
+                                    <Text style={{ color: Colors.primary, fontSize: 13, textAlign: 'center', marginTop: 16, opacity: 0.9 }}>
+                                        {t('name_input.spin_auto_start_hint')}
+                                    </Text>
+                                )}
                             </View>
                         </View>
                     </Modal>

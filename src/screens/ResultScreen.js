@@ -23,11 +23,18 @@ export default function ResultScreen({ route, navigation }) {
         mode = 'online',
         role = 'participant',
         isForced = false,
-        finalVotes = [],
+        finalVotes: rawFinalVotes = [],
         type = 'people',
         category = 'coffee',
         originalItems = []
     } = route.params || {};
+
+    // Firebase/Chrome: finalVotes가 객체로 올 수 있음 → 항상 배열로 정규화
+    const finalVotes = Array.isArray(rawFinalVotes)
+        ? rawFinalVotes
+        : (rawFinalVotes && typeof rawFinalVotes === 'object')
+            ? Object.values(rawFinalVotes)
+            : [];
 
     const MovingConfetti = ({ color, size, top, left, right, bottom, rangeX = 15, rangeY = -25, delay = 0 }) => {
         const rotateAnim = useRef(new Animated.Value(0)).current;
@@ -173,9 +180,9 @@ export default function ResultScreen({ route, navigation }) {
         if (!allVoted) {
             const animation = Animated.loop(
                 Animated.sequence([
-                    Animated.timing(drumPulseAnim, { toValue: 1, duration: 400, easing: Easing.out(Easing.back(1.5)), useNativeDriver: true }),
-                    Animated.timing(drumPulseAnim, { toValue: 0, duration: 300, easing: Easing.inOut(Easing.sin), useNativeDriver: true }),
-                    Animated.delay(100)
+                    Animated.timing(drumPulseAnim, { toValue: 1, duration: 1200, easing: Easing.out(Easing.back(1.5)), useNativeDriver: true }),
+                    Animated.timing(drumPulseAnim, { toValue: 0, duration: 800, easing: Easing.inOut(Easing.sin), useNativeDriver: true }),
+                    Animated.delay(800)
                 ])
             );
             animation.start();
@@ -187,16 +194,16 @@ export default function ResultScreen({ route, navigation }) {
         if (allVoted) {
             const drumAnim = Animated.loop(
                 Animated.sequence([
-                    Animated.timing(drumBeatAnim, { toValue: 1, duration: 150, easing: Easing.out(Easing.back(2)), useNativeDriver: true }),
-                    Animated.timing(drumBeatAnim, { toValue: 0, duration: 400, easing: Easing.inOut(Easing.sin), useNativeDriver: true }),
-                    Animated.delay(1000)
+                    Animated.timing(drumBeatAnim, { toValue: 1, duration: 400, easing: Easing.out(Easing.back(2)), useNativeDriver: true }),
+                    Animated.timing(drumBeatAnim, { toValue: 0, duration: 800, easing: Easing.inOut(Easing.sin), useNativeDriver: true }),
+                    Animated.delay(2000)
                 ])
             );
             const trumpetAnim = Animated.loop(
                 Animated.sequence([
-                    Animated.timing(trumpetBeatAnim, { toValue: 1, duration: 150, easing: Easing.out(Easing.back(2)), useNativeDriver: true }),
-                    Animated.timing(trumpetBeatAnim, { toValue: 0, duration: 400, easing: Easing.inOut(Easing.sin), useNativeDriver: true }),
-                    Animated.delay(1000)
+                    Animated.timing(trumpetBeatAnim, { toValue: 1, duration: 400, easing: Easing.out(Easing.back(2)), useNativeDriver: true }),
+                    Animated.timing(trumpetBeatAnim, { toValue: 0, duration: 800, easing: Easing.inOut(Easing.sin), useNativeDriver: true }),
+                    Animated.delay(2000)
                 ])
             );
 
@@ -216,13 +223,15 @@ export default function ResultScreen({ route, navigation }) {
     const trumpetOpacity = trumpetBeatAnim.interpolate({ inputRange: [0, 1], outputRange: [0.8, 1] });
 
     useEffect(() => {
-        // Check if all participants have voted OR it was forced by owner
+        // 피플 모드(B): 호스트 스핀 = 결과 확정, 투표 대기 없음
+        const peopleModeComplete = type === 'people' && finalVotes && finalVotes.length > 0;
+        // 메뉴 모드: 모든 참여자 투표 또는 강제 확정
         let totalVotes = 0;
         const voteCounts = Object.values(tally || {});
         for (let i = 0; i < voteCounts.length; i++) {
             totalVotes += (voteCounts[i] || 0);
         }
-        const votingComplete = isForced || (totalVotes >= totalParticipants && totalParticipants > 0);
+        const votingComplete = peopleModeComplete || isForced || (totalVotes >= totalParticipants && totalParticipants > 0);
         setAllVoted(votingComplete);
 
         // Trigger success feedback only if all voted or forced
@@ -454,7 +463,7 @@ export default function ResultScreen({ route, navigation }) {
                                         onPress={handleExit}
                                         style={{ padding: 4 }}
                                     >
-                                        <LogOut color={Colors.error} size={24} />
+                                        <LogOut color="rgba(255,255,255,0.45)" size={24} />
                                     </TouchableOpacity>
                                 )}
                             </View>
@@ -467,10 +476,10 @@ export default function ResultScreen({ route, navigation }) {
                                     <View style={styles.trophyGlow} />
                                 </>
                             ) : (
-                                <Animated.View style={{ transform: [{ scale: drumPulseAnim.interpolate({ inputRange: [0, 1], outputRange: [1, 1.25] }) }] }}>
+                                <Animated.View style={{ transform: [{ scale: drumPulseAnim.interpolate({ inputRange: [0, 1], outputRange: [1, 1.25] }) }], alignItems: 'center', justifyContent: 'center' }}>
                                     <Image
                                         source={{ uri: 'https://raw.githubusercontent.com/googlefonts/noto-emoji/main/png/128/emoji_u1f941.png' }}
-                                        style={{ width: 80, height: 80 }}
+                                        style={{ width: 80, height: 80, aspectRatio: 1 }}
                                         resizeMode="contain"
                                     />
                                     <View style={styles.loaderGlow} />
@@ -535,6 +544,7 @@ export default function ResultScreen({ route, navigation }) {
                                                 {
                                                     width: 60,
                                                     height: 60,
+                                                    aspectRatio: 1,
                                                     transform: [{ scale: mode === 'online' ? drumScale : trumpetScale }],
                                                     opacity: mode === 'online' ? drumOpacity : trumpetOpacity
                                                 }
