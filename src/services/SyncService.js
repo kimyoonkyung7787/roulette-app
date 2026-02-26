@@ -74,6 +74,11 @@ class SyncService {
 
             console.log(`SyncService: Identity - ID: ${this.myId}, Name: ${this.myName}`);
 
+            if (!db) {
+                console.warn('SyncService: DB not available, skipping Firebase presence');
+                return;
+            }
+
             // Setup presence - Always re-verify presence when init is called to be safe
             const myPresenceRef = ref(db, `${this.roomPath}/presence/${this.myId}`);
             const connectedRef = ref(db, '.info/connected');
@@ -100,15 +105,23 @@ class SyncService {
     }
 
     async setIdentity(name) {
-        this.myName = name;
-        await AsyncStorage.setItem('my_display_name', name);
-        if (this.myId && this.roomId) {
-            update(ref(db, `${this.roomPath}/presence/${this.myId}`), { name });
+        try {
+            this.myName = name;
+            await AsyncStorage.setItem('my_display_name', name);
+            if (db && this.myId && this.roomId) {
+                await update(ref(db, `${this.roomPath}/presence/${this.myId}`), { name });
+            }
+        } catch (e) {
+            console.error('SyncService: Failed to set identity:', e);
         }
     }
 
     subscribeToOnlineCount(callback) {
-        onValue(ref(db, `${this.roomPath}/presence`), (snapshot) => {
+        if (!db) {
+            callback(0);
+            return () => {};
+        }
+        return onValue(ref(db, `${this.roomPath}/presence`), (snapshot) => {
             if (!snapshot || typeof snapshot.numChildren !== 'function') {
                 callback(0);
                 return;
@@ -120,6 +133,10 @@ class SyncService {
     }
 
     subscribeToOnlineUsers(callback) {
+        if (!db) {
+            callback([]);
+            return () => {};
+        }
         return onValue(ref(db, `${this.roomPath}/presence`), (snapshot) => {
             const users = [];
             if (snapshot && typeof snapshot.forEach === 'function') {
@@ -133,6 +150,7 @@ class SyncService {
     }
 
     async setRoomCategory(category) {
+        if (!db) return;
         try {
             await set(ref(db, `${this.roomPath}/category`), category);
             console.log(`SyncService: Category updated to ${category} in room ${this.roomId}`);
@@ -142,6 +160,7 @@ class SyncService {
     }
 
     async setHostName(name) {
+        if (!db) return;
         try {
             await set(ref(db, `${this.roomPath}/hostName`), name);
             console.log(`SyncService: Host name set to ${name} in room ${this.roomId}`);
@@ -151,6 +170,10 @@ class SyncService {
     }
 
     subscribeToCategory(callback) {
+        if (!db) {
+            callback('coffee');
+            return () => {};
+        }
         return onValue(ref(db, `${this.roomPath}/category`), (snapshot) => {
             const category = snapshot.val() || 'coffee';
             console.log(`SyncService: Category update received: ${category}`);
@@ -159,6 +182,10 @@ class SyncService {
     }
 
     subscribeToHostName(callback) {
+        if (!db) {
+            callback(null);
+            return () => {};
+        }
         return onValue(ref(db, `${this.roomPath}/hostName`), (snapshot) => {
             const hostName = snapshot.val();
             console.log(`SyncService: Host name update received: ${hostName}`);
@@ -167,6 +194,7 @@ class SyncService {
     }
 
     async getRoomCategory() {
+        if (!db) return 'coffee';
         try {
             const snapshot = await get(ref(db, `${this.roomPath}/category`));
             return snapshot.val() || 'coffee';
@@ -177,6 +205,7 @@ class SyncService {
     }
 
     async setRoomPhase(phase) {
+        if (!db) return;
         try {
             await set(ref(db, `${this.roomPath}/phase`), phase);
             console.log(`SyncService: Room phase updated to ${phase}`);
@@ -186,6 +215,10 @@ class SyncService {
     }
 
     subscribeToRoomPhase(callback) {
+        if (!db) {
+            callback('waiting');
+            return () => {};
+        }
         return onValue(ref(db, `${this.roomPath}/phase`), (snapshot) => {
             const phase = snapshot.val() || 'waiting';
             callback(phase);
@@ -210,6 +243,7 @@ class SyncService {
     }
 
     async setParticipants(participants) {
+        if (!db) return;
         try {
             await set(ref(db, `${this.roomPath}/participants`), participants);
             console.log(`SyncService: Participants list updated (${participants.length} items) in room ${this.roomId}`);
@@ -219,6 +253,10 @@ class SyncService {
     }
 
     subscribeToParticipants(callback) {
+        if (!db) {
+            callback([]);
+            return () => {};
+        }
         return onValue(ref(db, `${this.roomPath}/participants`), (snapshot) => {
             const participants = this._normalizeArray(snapshot.val());
             console.log(`SyncService: Participants update received (${participants.length} items)`);
@@ -227,6 +265,7 @@ class SyncService {
     }
 
     async setMenuItems(menuItems) {
+        if (!db) return;
         try {
             await set(ref(db, `${this.roomPath}/menu_items`), menuItems);
             console.log(`SyncService: Menu items list updated (${menuItems.length} items) in room ${this.roomId}`);
@@ -236,6 +275,7 @@ class SyncService {
     }
 
     async setMenuByCategory(category, menuItems) {
+        if (!db) return;
         try {
             await set(ref(db, `${this.roomPath}/menus/${category}`), menuItems);
             // Also update the active legacy path for backwards compatibility with participants
@@ -247,6 +287,10 @@ class SyncService {
     }
 
     subscribeToMenuItems(callback) {
+        if (!db) {
+            callback([]);
+            return () => {};
+        }
         return onValue(ref(db, `${this.roomPath}/menu_items`), (snapshot) => {
             const menuItems = this._normalizeArray(snapshot.val());
             console.log(`SyncService: Menu items update received (${menuItems.length} items)`);
@@ -255,6 +299,7 @@ class SyncService {
     }
 
     async getParticipants() {
+        if (!db) return [];
         try {
             const snapshot = await get(ref(db, `${this.roomPath}/participants`));
             return this._normalizeArray(snapshot.val());
@@ -265,6 +310,7 @@ class SyncService {
     }
 
     async getMenuItems() {
+        if (!db) return [];
         try {
             const snapshot = await get(ref(db, `${this.roomPath}/menu_items`));
             return this._normalizeArray(snapshot.val());
@@ -275,6 +321,7 @@ class SyncService {
     }
 
     async getMenuByCategory(category) {
+        if (!db) return null;
         try {
             const snapshot = await get(ref(db, `${this.roomPath}/menus/${category}`));
             const raw = snapshot.val();
@@ -286,7 +333,42 @@ class SyncService {
         }
     }
 
+    /** Clear a single category in menus/ (does not touch menu_items) - used when restoring from history to prevent stale/duplicate data */
+    async clearMenuCategory(category) {
+        if (!db) return;
+        try {
+            await set(ref(db, `${this.roomPath}/menus/${category}`), null);
+            console.log(`SyncService: Cleared menu category ${category}`);
+        } catch (e) {
+            console.error('SyncService: Failed to clear menu category:', e);
+        }
+    }
+
+    /**
+     * Atomic restore: set one category's menu and clear all others in a single write.
+     * Prevents race conditions that cause 2+ tabs to show the same value.
+     */
+    async restoreMenuFromHistory(category, menuItems) {
+        if (!db) return;
+        try {
+            const baseRef = ref(db, this.roomPath);
+            const updates = {
+                'menu_items': menuItems,
+                'category': category,
+                [`menus/${category}`]: menuItems,
+            };
+            ['coffee', 'meal', 'snack', 'etc'].forEach(c => {
+                if (c !== category) updates[`menus/${c}`] = null;
+            });
+            await update(baseRef, updates);
+            console.log(`SyncService: Restored menu for ${category} (atomic), cleared others`);
+        } catch (e) {
+            console.error('SyncService: restoreMenuFromHistory failed:', e);
+        }
+    }
+
     async getSpinTarget() {
+        if (!db) return 'people';
         try {
             const snapshot = await get(ref(db, `${this.roomPath}/spin_target`));
             return snapshot.val() || 'people';
@@ -297,6 +379,7 @@ class SyncService {
     }
 
     async setSpinTarget(target) {
+        if (!db) return;
         try {
             await set(ref(db, `${this.roomPath}/spin_target`), target);
             console.log(`SyncService: Spin target updated to ${target}`);
@@ -306,6 +389,10 @@ class SyncService {
     }
 
     subscribeToSpinTarget(callback) {
+        if (!db) {
+            callback('people');
+            return () => {};
+        }
         return onValue(ref(db, `${this.roomPath}/spin_target`), (snapshot) => {
             const target = snapshot.val() || 'people';
             console.log(`SyncService: Spin target update received: ${target}`);
@@ -314,12 +401,17 @@ class SyncService {
     }
 
     subscribeToSpinState(callback) {
+        if (!db) {
+            callback(null);
+            return () => {};
+        }
         return onValue(ref(db, `${this.roomPath}/spin_state`), (snapshot) => {
             callback(snapshot.val());
         });
     }
 
     async startSpin(userName, winnerIndex = null, role = 'participant') {
+        if (!db) return;
         try {
             await set(ref(db, `${this.roomPath}/spin_state`), {
                 isSpinning: true,
@@ -334,6 +426,7 @@ class SyncService {
     }
 
     async finishSpin(result) {
+        if (!db) return;
         try {
             await set(ref(db, `${this.roomPath}/spin_state`), {
                 isSpinning: false,
@@ -348,7 +441,7 @@ class SyncService {
     // --- Tournament Methods ---
 
     async submitVote(votedForName) {
-        if (!this.myId) return;
+        if (!this.myId || !db) return;
         try {
             await set(ref(db, `${this.roomPath}/votes/${this.myId}`), {
                 userId: this.myId,
@@ -363,7 +456,7 @@ class SyncService {
     }
 
     async removeMyVote() {
-        if (!this.myId) return;
+        if (!this.myId || !db) return;
         try {
             await set(ref(db, `${this.roomPath}/votes/${this.myId}`), null);
             console.log(`SyncService: Vote removed for user ${this.myId}`);
@@ -373,6 +466,10 @@ class SyncService {
     }
 
     subscribeToVotes(callback) {
+        if (!db) {
+            callback([]);
+            return () => {};
+        }
         return onValue(ref(db, `${this.roomPath}/votes`), (snapshot) => {
             const votes = [];
             if (snapshot.exists()) {
@@ -385,6 +482,7 @@ class SyncService {
     }
 
     async getVotes() {
+        if (!db) return [];
         try {
             const snapshot = await get(ref(db, `${this.roomPath}/votes`));
             const votes = [];
@@ -401,6 +499,7 @@ class SyncService {
     }
 
     async clearVotes() {
+        if (!db) return;
         try {
             await set(ref(db, `${this.roomPath}/votes`), null);
             console.log('SyncService: All votes cleared');
@@ -410,6 +509,7 @@ class SyncService {
     }
 
     async clearSpinState() {
+        if (!db) return;
         try {
             await set(ref(db, `${this.roomPath}/spin_state`), null);
             console.log('SyncService: Spin state cleared');
@@ -419,6 +519,7 @@ class SyncService {
     }
 
     async finalizeGame(resultData) {
+        if (!db) return;
         try {
             await set(ref(db, `${this.roomPath}/final_results`), {
                 ...resultData,
@@ -431,12 +532,17 @@ class SyncService {
     }
 
     subscribeToFinalResults(callback) {
+        if (!db) {
+            callback(null);
+            return () => {};
+        }
         return onValue(ref(db, `${this.roomPath}/final_results`), (snapshot) => {
             callback(snapshot.val());
         });
     }
 
     async clearFinalResults() {
+        if (!db) return;
         try {
             await set(ref(db, `${this.roomPath}/final_results`), null);
         } catch (e) {
@@ -445,6 +551,7 @@ class SyncService {
     }
 
     async checkRoomExists(roomId) {
+        if (!db) return false;
         try {
             const snapshot = await get(ref(db, `rooms/${roomId}`));
             return snapshot.exists();
@@ -455,6 +562,7 @@ class SyncService {
     }
 
     async getRoomData(roomId) {
+        if (!db) return null;
         try {
             const snapshot = await get(ref(db, `rooms/${roomId}`));
             return snapshot.exists() ? snapshot.val() : null;
@@ -465,6 +573,7 @@ class SyncService {
     }
 
     async preInitRoom(roomId, data) {
+        if (!db) return;
         try {
             await update(ref(db, `rooms/${roomId}`), data);
             console.log(`SyncService: Pre-initialized room ${roomId} with data`, data);

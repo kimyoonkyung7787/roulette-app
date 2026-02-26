@@ -64,20 +64,31 @@ export default function HistoryScreen({ route, navigation }) {
             }));
         }
 
-        // Navigate back to NameInput with the restored data AND original session info
-        navigation.navigate('NameInput', {
-            roomId,
-            role,
-            mode,
-            category: category || item.category || 'coffee',
-            initialTab: currentTab || (item.type === 'people' ? 'people' : 'menu'),
-            restoredData: {
-                type: item.type,
-                list: item.originalList,
-                participants: participantsList,
-                category: item.category || category || 'coffee',
-                timestamp: Date.now()
-            }
+        // Use reset to get a fresh NameInputScreen (avoids stale menuCacheRef causing 2 tabs same value)
+        const restoredCat = item.category || category || 'coffee';
+        const restoredData = {
+            type: item.type,
+            list: item.originalList,
+            participants: participantsList,
+            category: restoredCat,
+            timestamp: Date.now()
+        };
+        navigation.reset({
+            index: 1,
+            routes: [
+                { name: 'Welcome' },
+                {
+                    name: 'NameInput',
+                    params: {
+                        roomId,
+                        role,
+                        mode,
+                        category: restoredCat, // 복구 항목 카테고리 우선 (meal/snack 복구 시 coffee 탭이 먼저 나오는 문제 방지)
+                        initialTab: currentTab || (item.type === 'people' ? 'people' : 'menu'),
+                        restoredData
+                    }
+                }
+            ]
         });
     };
 
