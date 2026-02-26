@@ -164,6 +164,7 @@
         "gourmet_selection": "SÉLECTION",
         "force_result": "FORCER LE RÉSULTAT",
         "no_participants": "PAS DE PARTICIPANTS",
+        "no_menu_items": "Veuillez d'abord ajouter des éléments au menu",
         "ready_shout": "READY !",
         "go_shout": "GO !",
         "voting_already_finished": "Le vote est déjà terminé."
@@ -185,7 +186,9 @@
         "vote_result": "RÉSULTAT DU VOTE",
         "all_complete": "Vote terminé",
         "voted_partial": "{{voted}}/{{total}} ont voté",
-        "participant_detail": "DÉTAIL DES PARTICIPANTS"
+        "participant_detail": "DÉTAIL DES PARTICIPANTS",
+        "participants_joined_suffix": "participé",
+        "watched": "Regarder"
     },
     "entry": {
         "offline_title": "OFFLINE",

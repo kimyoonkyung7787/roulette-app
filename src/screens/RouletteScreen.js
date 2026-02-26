@@ -88,11 +88,13 @@ export default function RouletteScreen({ route, navigation }) {
     const spinTargetRef = useRef(spinTarget);
     const participantsRef = useRef(participantsState);
     const menuItemsRef = useRef(menuItemsState);
+    const onlineUsersRef = useRef([]);
 
-    // Keep refs in sync with state
+    // Keep refs in sync with state (onlineUsersRef = 최신 접속자, finalize 시 stale closure 방지)
     useEffect(() => { spinTargetRef.current = spinTarget; }, [spinTarget]);
     useEffect(() => { participantsRef.current = participantsState; }, [participantsState]);
     useEffect(() => { menuItemsRef.current = menuItemsState; }, [menuItemsState]);
+    useEffect(() => { onlineUsersRef.current = onlineUsers; }, [onlineUsers]);
 
     useEffect(() => {
         const backHandler = BackHandler.addEventListener('hardwareBackPress', () => true);
@@ -373,23 +375,46 @@ export default function RouletteScreen({ route, navigation }) {
 
             const tally = {};
             finalVotes.forEach(v => {
-                tally[v.votedFor] = (tally[v.votedFor] || 0) + 1;
+                if (v.votedFor != null && v.votedFor !== '') {
+                    tally[v.votedFor] = (tally[v.votedFor] || 0) + 1;
+                }
             });
 
             const voteValues = Object.values(tally);
             const maxVotes = voteValues.length > 0 ? Math.max(...voteValues) : 0;
             const winners = Object.keys(tally).filter(name => tally[name] === maxVotes);
 
+            // Prefer winners that exist in current menu/participants (handles menu change after vote)
+            const validNames = spinTarget === 'menu'
+                ? menuItemsState.map(m => typeof m === 'object' ? m.name : m)
+                : participantsState.map(p => typeof p === 'object' ? p.name : p);
+            const validWinners = winners.filter(w => validNames.includes(w));
+            const winnerStr = validWinners.length > 0
+                ? (validWinners.length === 1 ? validWinners[0] : validWinners.join(', '))
+                : (winners.length === 1 ? winners[0] : (winners.length > 0 ? winners.join(', ') : 'Unknown'));
+
+            const latestOnline = onlineUsersRef.current || onlineUsers;
+            const hostUser = latestOnline.find(u => u.role === 'owner');
+            const finalHostName = hostUser ? hostUser.name : (role === 'owner' ? mySelectedName : (roomId.length <= 8 ? roomId : null));
+            const fullParticipants = participants.length > 0 ? participants : participantsState;
+            const getName = (p) => typeof p === 'object' ? (p.name || p.text || '') : String(p);
+            const norm = (s) => String(s || '').trim().replace(/\s+/g, '');
+            const joinedNames = fullParticipants
+                .filter(p => latestOnline.some(u => norm(u.name || '') === norm(getName(p))))
+                .map(p => getName(p))
+                .filter(Boolean);
             const resultData = {
-                winner: winners.length === 1 ? winners[0] : (winners.length > 0 ? winners.join(', ') : 'Unknown'),
+                winner: winnerStr,
                 isTie: winners.length > 1,
                 tally,
-                totalParticipants: participantsState.length,
-                isForced: isManualForce || (finalVotes.length < participantsState.length),
+                totalParticipants: fullParticipants.length,
+                isForced: isManualForce || (finalVotes.length < fullParticipants.length),
                 finalVotes: finalVotes,
                 type: spinTarget,
-                participants: participantsState,
-                menuItems: menuItems
+                participants: fullParticipants,
+                menuItems: menuItems,
+                hostName: finalHostName,
+                joinedNames
             };
 
             if (role === 'owner') {
@@ -398,16 +423,12 @@ export default function RouletteScreen({ route, navigation }) {
                     console.log('RouletteScreen: Owner finalize SUCCESS');
 
                     // Navigate owner immediately
-                    const hostUser = onlineUsers.find(u => u.role === 'owner');
-                    const hostName = hostUser ? hostUser.name : (role === 'owner' ? mySelectedName : (roomId.length <= 8 ? roomId : null));
-
                     const ownerScreenName = (mode === 'online' && spinTarget === 'menu') ? 'MenuResult' : 'Result';
                     navigation.navigate(ownerScreenName, {
                         ...resultData,
                         roomId,
                         role,
-                        category,
-                        hostName
+                        category
                     });
                 } catch (err) {
                     console.error('RouletteScreen: Owner finalize FAILED:', err);
@@ -459,6 +480,8 @@ export default function RouletteScreen({ route, navigation }) {
 
         if (mode === 'offline') {
             setSpinning(false);
+            const getName = (p) => typeof p === 'object' ? (p.name || p.text || '') : String(p);
+            const offlineJoined = currentDataList.map(p => getName(p)).filter(Boolean);
             navigation.navigate('Result', {
                 winner,
                 isTie: false,
@@ -472,7 +495,8 @@ export default function RouletteScreen({ route, navigation }) {
                 finalVotes: [{ userId: 'local', userName: t('common.local'), votedFor: winner }],
                 participants: currentDataList,
                 menuItems: currentDataList,
-                originalItems: route.params?.originalItems // Preserve the original input items
+                originalItems: route.params?.originalItems,
+                joinedNames: offlineJoined
             });
             return;
         }
@@ -481,29 +505,38 @@ export default function RouletteScreen({ route, navigation }) {
         if (isInitiator.current) {
             if (currentTarget === 'people') {
                 // 호스트 스핀 완료 → 바로 finalize (참여자 vote 불필요)
+                const latestOnline = onlineUsersRef.current || onlineUsers;
+                const hostUser = latestOnline.find(u => u.role === 'owner');
+                const finalHostName = hostUser ? hostUser.name : (role === 'owner' ? mySelectedName : (roomId.length <= 8 ? roomId : null));
+                const fullParticipants = participants.length > 0 ? participants : currentDataList;
+                const getName = (p) => typeof p === 'object' ? (p.name || p.text || '') : String(p);
+                const norm = (s) => String(s || '').trim().replace(/\s+/g, '');
+                const joinedNames = fullParticipants
+                    .filter(p => latestOnline.some(u => norm(u.name || '') === norm(getName(p))))
+                    .map(p => getName(p))
+                    .filter(Boolean);
                 const resultData = {
                     winner,
                     isTie: false,
                     tally: { [winner]: 1 },
-                    totalParticipants: currentDataList.length,
+                    totalParticipants: fullParticipants.length,
                     isForced: false,
                     finalVotes: [{ userId: syncService.myId, userName: syncService.myName || 'Host', votedFor: winner }],
                     type: 'people',
-                    participants: currentDataList,
-                    menuItems: menuItemsRef.current || []
+                    participants: fullParticipants,
+                    menuItems: menuItemsRef.current || [],
+                    hostName: finalHostName,
+                    joinedNames
                 };
                 await syncService.finishSpin(winner);
                 await syncService.finalizeGame(resultData);
                 // 호스트 즉시 Result 화면으로 이동
                 isNavigating.current = true;
-                const hostUser = onlineUsers.find(u => u.role === 'owner');
-                const finalHostName = hostUser ? hostUser.name : (role === 'owner' ? mySelectedName : (roomId.length <= 8 ? roomId : null));
                 navigation.navigate('Result', {
                     ...resultData,
                     roomId,
                     role,
-                    category,
-                    hostName: finalHostName
+                    category
                 });
             } else {
                 // menu 모드: 기존 vote 방식 유지
@@ -568,6 +601,14 @@ export default function RouletteScreen({ route, navigation }) {
     const startSpinAnimation = (shouldSyncStart = true, fixedWinnerIndex = null) => {
         if (spinning) return;
 
+        const totalWeight = calculateTotalWeight(currentList, spinTarget);
+        if (!Array.isArray(currentList) || currentList.length === 0 || totalWeight <= 0) {
+            if (mode === 'online') {
+                Alert.alert(t('common.alert'), spinTarget === 'menu' ? t('roulette.no_menu_items') : t('roulette.no_participants'));
+            }
+            return;
+        }
+
         setSpinning(true);
         isInitiator.current = shouldSyncStart;
         spinStartTime.value = Date.now();
@@ -576,7 +617,6 @@ export default function RouletteScreen({ route, navigation }) {
         const normalizedRotation = (rotation.value % 360 + 360) % 360;
         const pointerAngle = (360 - normalizedRotation) % 360;
         const pointerAngleInPattern = pointerAngle % PATTERN_ANGLE;
-        const totalWeight = calculateTotalWeight(currentList, spinTarget);
 
         let initialIdx = 0;
         if (totalWeight > 0) {
@@ -677,6 +717,12 @@ export default function RouletteScreen({ route, navigation }) {
             onlineUsers.some(u => u.name === remoteSpinState.starter);
 
         if (spinning || isOtherSpinning) return;
+
+        const totalWeight = calculateTotalWeight(currentList, spinTarget);
+        if (!Array.isArray(currentList) || currentList.length === 0 || totalWeight <= 0) {
+            Alert.alert(t('common.alert'), spinTarget === 'menu' ? t('roulette.no_menu_items') : t('roulette.no_participants'));
+            return;
+        }
 
         startSpinAnimation(true);
     };
@@ -1102,15 +1148,15 @@ export default function RouletteScreen({ route, navigation }) {
                                         <>
                                             <TouchableOpacity
                                                 onPress={spinRoulette}
-                                                disabled={!!(spinning || votes.find(v => v.userId === syncService.myId))}
+                                                disabled={!!(spinning || votes.find(v => v.userId === syncService.myId) || currentList.length === 0)}
                                                 activeOpacity={0.8}
                                                 style={[
                                                     styles.spinButton,
-                                                    (spinning || votes.find(v => v.userId === syncService.myId)) && styles.disabledButton,
+                                                    (spinning || votes.find(v => v.userId === syncService.myId) || currentList.length === 0) && styles.disabledButton,
                                                     { marginBottom: (votes.find(v => v.userId === syncService.myId) && !spinning) || (role === 'owner' && votes.length > 0) ? 10 : 0 }
                                                 ]}
                                             >
-                                                <RotateCw color={spinning || votes.find(v => v.userId === syncService.myId) ? Colors.textSecondary : Colors.primary} size={24} style={{ marginRight: 12 }} />
+                                                <RotateCw color={spinning || votes.find(v => v.userId === syncService.myId) || currentList.length === 0 ? Colors.textSecondary : Colors.primary} size={24} style={{ marginRight: 12 }} />
                                                 <NeonText className="text-xl">
                                                     {getButtonText()}
                                                 </NeonText>

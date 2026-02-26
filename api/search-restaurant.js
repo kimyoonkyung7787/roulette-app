@@ -45,15 +45,18 @@ export default async function handler(req, res) {
         }
 
         const data = await response.json();
+        const rawItems = Array.isArray(data?.items) ? data.items : [];
 
-        const items = (data.items || []).map((item) => ({
-            title: item.title.replace(/<[^>]*>/g, ''),
-            address: item.address,
-            roadAddress: item.roadAddress,
-            category: item.category,
-            mapx: item.mapx,
-            mapy: item.mapy,
-        }));
+        const items = rawItems
+            .filter((item) => item && typeof item === 'object')
+            .map((item) => ({
+                title: (item.title || '').toString().replace(/<[^>]*>/g, ''),
+                address: item.address ?? '',
+                roadAddress: item.roadAddress ?? '',
+                category: item.category ?? '',
+                mapx: item.mapx ?? '',
+                mapy: item.mapy ?? '',
+            }));
 
         return res.status(200).json({ items });
     } catch (err) {

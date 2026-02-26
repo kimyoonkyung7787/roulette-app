@@ -164,6 +164,7 @@
         "gourmet_selection": "اختيار",
         "force_result": "فرض النتيجة",
         "no_participants": "لا يوجد مشاركون",
+        "no_menu_items": "يرجى إضافة عناصر القائمة أولاً",
         "ready_shout": "READY !",
         "go_shout": "GO !",
         "voting_already_finished": "انتهى التصويت بالفعل."
@@ -185,7 +186,9 @@
         "vote_result": "نتيجة التصويت",
         "all_complete": "اكتمل التصويت",
         "voted_partial": "{{voted}}/{{total}} صوتوا",
-        "participant_detail": "تفاصيل المشاركين"
+        "participant_detail": "تفاصيل المشاركين",
+        "participants_joined_suffix": "شارك",
+        "watched": "مشاهدة"
     },
     "entry": {
         "offline_title": "OFFLINE",

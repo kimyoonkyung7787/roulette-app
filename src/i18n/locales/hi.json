@@ -164,6 +164,7 @@
         "gourmet_selection": "चयन",
         "force_result": "परिणाम बाध्य करें",
         "no_participants": "कोई प्रतिभागी नहीं",
+        "no_menu_items": "कृपया पहले मेनू आइटम जोड़ें",
         "ready_shout": "READY !",
         "go_shout": "GO !",
         "voting_already_finished": "मतदान पहले ही समाप्त हो चुका है।"
@@ -185,7 +186,9 @@
         "vote_result": "वोट परिणाम",
         "all_complete": "मतदान पूर्ण",
         "voted_partial": "{{voted}}/{{total}} ने मतदान किया",
-        "participant_detail": "प्रतिभागी विवरण"
+        "participant_detail": "प्रतिभागी विवरण",
+        "participants_joined_suffix": "भाग लिया",
+        "watched": "देखा"
     },
     "entry": {
         "offline_title": "OFFLINE",

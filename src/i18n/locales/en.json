@@ -167,6 +167,7 @@
         "gourmet_selection": "SELECTION",
         "force_result": "FORCE RESULT",
         "no_participants": "NO PARTICIPANTS",
+        "no_menu_items": "Please add menu items first",
         "ready_shout": "READY !",
         "go_shout": "GO !",
         "voting_already_finished": "Voting has already finished."
@@ -188,7 +189,9 @@
         "vote_result": "VOTE RESULT",
         "all_complete": "All voted",
         "voted_partial": "{{voted}}/{{total}} voted",
-        "participant_detail": "PARTICIPANT DETAIL"
+        "participant_detail": "PARTICIPANT DETAIL",
+        "participants_joined_suffix": "participated",
+        "watched": "WATCHED"
     },
     "entry": {
         "offline_title": "OFFLINE",
@@ -253,7 +256,7 @@
         "people_participant_step1_msg": "First, select your own name",
         "people_participant_step1_icon": "👤",
         "people_participant_step2_title": "Hang Tight!",
-        "people_participant_step2_msg": "The host needs to vote first.\nThen spin the roulette",
+        "people_participant_step2_msg": "The host votes on behalf of everyone. Participants will see the roulette and result automatically.",
         "people_participant_step2_icon": "⏳",
         "history_step_title": "I want to use previously registered information",
         "history_step_msg": "View previous logs to\nimport participant/menu lists",

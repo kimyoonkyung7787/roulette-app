@@ -9,7 +9,7 @@ import { feedbackService } from '../services/FeedbackService';
 import { historyService } from '../services/HistoryService';
 import { syncService } from '../services/SyncService';
 import { useTranslation } from 'react-i18next';
-import { Share2, ListChecks, History, LogOut, Trophy, Loader, RefreshCw, X, Home, Zap, Cpu, Radio, Activity, Drum, Sparkle, HandMetal, Gavel, User, CheckCircle2, Crown } from 'lucide-react-native';
+import { Share2, ListChecks, History, LogOut, Trophy, Loader, RefreshCw, X, Home, Zap, Cpu, Radio, Activity, Drum, Sparkle, HandMetal, Gavel, User, CheckCircle2, Crown, CircleOff } from 'lucide-react-native';
 import { Confetti } from '../components/Confetti';
 
 export default function ResultScreen({ route, navigation }) {
@@ -26,15 +26,20 @@ export default function ResultScreen({ route, navigation }) {
         finalVotes: rawFinalVotes = [],
         type = 'people',
         category = 'coffee',
-        originalItems = []
+        originalItems = [],
+        joinedNames: rawJoinedNames = []
     } = route.params || {};
 
-    // Firebase/Chrome: finalVotes가 객체로 올 수 있음 → 항상 배열로 정규화
+    // Firebase/Chrome: finalVotes, participants 등이 객체로 올 수 있음 → 항상 배열로 정규화
     const finalVotes = Array.isArray(rawFinalVotes)
         ? rawFinalVotes
         : (rawFinalVotes && typeof rawFinalVotes === 'object')
             ? Object.values(rawFinalVotes)
             : [];
+    const ensureArray = (v) => Array.isArray(v) ? v : (v && typeof v === 'object' ? Object.values(v) : []);
+    const rawJoined = ensureArray(rawJoinedNames).map(n => String(n).trim()).filter(Boolean);
+    const norm = (s) => String(s || '').trim().replace(/\s+/g, '');
+    const joinedNamesSet = new Set(rawJoined.map(norm));
 
     const MovingConfetti = ({ color, size, top, left, right, bottom, rangeX = 15, rangeY = -25, delay = 0 }) => {
         const rotateAnim = useRef(new Animated.Value(0)).current;
@@ -266,52 +271,52 @@ export default function ResultScreen({ route, navigation }) {
                     })
                     .catch(err => console.error('🎺 ResultScreen: Fanfare failed:', err));
 
-                // Construct details: prefer onlineUsers for complete list, fallback to finalVotes
-                let details = [];
+                // Construct details: fix된 전체 참여자 + joinedNames로 참여/미접속 구분
                 const hostNameFromParams = route.params?.hostName;
+                const participants = ensureArray(route.params?.participants);
+                const joinedNames = ensureArray(route.params?.joinedNames);
+                const joinedSet = new Set(joinedNames.map(n => norm(String(n))));
+                const fromParams = participants.map(p => ({ name: typeof p === 'object' ? (p.name || p.text) : p })).filter(u => u.name && u.name.trim());
+                const fromJoined = joinedNames.map(n => ({ name: String(n).trim() })).filter(u => u.name);
+                const fromVotes = (finalVotes || []).map(v => ({ name: (v.userName || v.votedFor || '').trim() })).filter(u => u.name);
+                const detailNameToItem = new Map(fromParams.map(u => [norm(u.name), u]));
+                [...fromJoined, ...fromVotes].forEach(u => { const k = norm(u.name); if (k && !detailNameToItem.has(k)) detailNameToItem.set(k, { name: u.name }); });
+                const fullParticipantsForDetails = Array.from(detailNameToItem.values());
 
-                if (onlineUsers && onlineUsers.length > 0) {
-                    details = onlineUsers.map(user => {
-                        const vote = finalVotes.find(v => v.userId === user.id);
-                        // Case 1: Use hostName passed from previous screen (most reliable)
-                        let isUserOwner = hostNameFromParams ? (user.name === hostNameFromParams) : false;
-
-                        // Case 2: Use explicit role from Firebase presence
-                        if (!isUserOwner) isUserOwner = user.role === 'owner';
-
-                        // Case 3: If presence doesn't have role yet, check if it's "Me" and I am the owner
-                        if (!isUserOwner && user.id === syncService.myId && role === 'owner') {
-                            isUserOwner = true;
-                        }
-
-                        // Case 4: Fallback check by name (Host name matches Room ID in this app's logic)
-                        if (!isUserOwner && user.name === roomId) {
-                            isUserOwner = true;
-                        }
-
+                let details = [];
+                if (fullParticipantsForDetails.length > 0) {
+                    details = fullParticipantsForDetails.map(p => {
+                        const name = (p.name || '').trim();
+                        if (!name) return null;
+                        const joined = joinedSet.has(norm(name));
+                        const vote = finalVotes.find(v => v.userName === name || v.votedFor === name);
+                        const isUserOwner = (hostNameFromParams && norm(name) === norm(hostNameFromParams)) || name === roomId;
                         return {
-                            name: user.name,
-                            votedFor: vote ? vote.votedFor : t('common.no_vote').toUpperCase(),
-                            isMe: user.id === syncService.myId,
+                            name,
+                            votedFor: joined ? (vote ? vote.votedFor : (type === 'people' ? t('result.watched') : t('common.no_vote'))) : t('common.not_connected'),
+                            isWatched: type === 'people' && joined && !vote,
+                            isNotConnected: !joined,
+                            isMe: syncService.myName === name,
                             isOwner: isUserOwner
                         };
-                    });
+                    }).filter(Boolean);
                 } else {
-                    // Fallback to purely finalVotes if onlineUsers hasn't synced yet
                     details = finalVotes.map(v => ({
                         name: v.userName || 'Unknown',
                         votedFor: v.votedFor,
+                        isWatched: false,
+                        isNotConnected: false,
                         isMe: v.userId === syncService.myId,
                         isOwner: (hostNameFromParams && v.userName === hostNameFromParams) || (v.userName === roomId) || (v.userId === syncService.myId && role === 'owner')
                     }));
                 }
 
                 console.log(`ResultScreen: Saving history with ${details.length} details`);
-                let originalList = type === 'people' ? route.params.participants : route.params.menuItems;
+                let originalList = type === 'people' ? route.params?.participants : route.params?.menuItems;
                 if (mode === 'offline' && route.params?.originalItems) {
                     originalList = route.params.originalItems;
                 }
-                historyService.addWinner(winner, type, details, originalList, roomId, category);
+                historyService.addWinner(winner, type, details, ensureArray(originalList), roomId, category);
                 hasSavedRef.current = true;
                 setFixedParticipantDetails(details);
             }
@@ -557,22 +562,56 @@ export default function ResultScreen({ route, navigation }) {
                                 </View>
                             )}
 
-                            {/* Vote status indicator - subtle, no vote tally */}
+                            {/* People mode: 전체 참여자 리스트 (fix) - 참여=초록체크, 미접속=회색아이콘 */}
                             {mode !== 'offline' && type === 'people' && (() => {
-                                const votedCount = finalVotes?.length || 0;
-                                const total = Math.max(totalParticipants || 0, onlineUsers?.length || 0, votedCount);
-                                if (total < 2 || (votedCount === 0 && !allVoted)) return null;
-                                const isAll = votedCount >= total;
+                                const fromParams = ensureArray(route.params?.participants).map(p => ({ name: typeof p === 'object' ? (p.name || p.text) : p, role: typeof p === 'object' ? p.role : null })).filter(u => u.name && u.name.trim());
+                                const fromJoined = ensureArray(rawJoinedNames).map(n => ({ name: String(n).trim(), role: null })).filter(u => u.name);
+                                const fromVotes = (finalVotes || []).map(v => ({ name: (v.userName || v.votedFor || '').trim(), role: null })).filter(u => u.name);
+                                const nameToItem = new Map(fromParams.map(u => [u.name.trim(), u]));
+                                [...fromJoined, ...fromVotes].forEach(u => { const k = u.name.trim(); if (k && !nameToItem.has(k)) nameToItem.set(k, u); });
+                                const fullList = Array.from(nameToItem.values());
+                                if (fullList.length < 2) return null;
+                                const hostName = route.params?.hostName;
+                                const isJoined = (u) => joinedNamesSet.has(norm(u.name || ''));
+                                const joined = fullList.filter(isJoined);
+                                const notJoined = fullList.filter(u => !isJoined(u));
+                                const hostJoined = joined.find(u => (hostName && norm(u.name || '') === norm(hostName)) || u.role === 'owner');
+                                const othersJoined = joined.filter(u => u !== hostJoined);
+                                const renderRow = (Icon, iconColor, items, suffix) => (
+                                    <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 6 }}>
+                                        <Icon color={iconColor} size={14} style={{ opacity: 0.9 }} />
+                                        <View style={{ flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', flex: 1, marginLeft: 6 }}>
+                                            {items.map((u, idx) => {
+                                                const name = u.name || '';
+                                                const isLast = idx === items.length - 1;
+                                                return (
+                                                    <React.Fragment key={name + '-' + idx}>
+                                                        <Text style={styles.completeIndicatorText}>{name}</Text>
+                                                        {isLast && suffix ? <Text style={styles.completeIndicatorText}> {suffix}</Text> : (idx < items.length - 1 ? <Text style={styles.completeIndicatorText}>, </Text> : null)}
+                                                    </React.Fragment>
+                                                );
+                                            })}
+                                        </View>
+                                    </View>
+                                );
                                 return (
                                     <View style={styles.completeIndicator}>
-                                        {isAll ? (
-                                            <CheckCircle2 color={Colors.success} size={14} style={{ marginRight: 6, opacity: 0.8 }} />
-                                        ) : (
-                                            <View style={{ width: 14, height: 14, marginRight: 6, borderRadius: 7, borderWidth: 1.5, borderColor: 'rgba(255,255,255,0.4)' }} />
-                                        )}
-                                        <Text style={styles.completeIndicatorText}>
-                                            {isAll ? t('result.all_complete') : t('result.voted_partial', { voted: votedCount, total })}
-                                        </Text>
+                                        <View style={{ flex: 1 }}>
+                                            {hostJoined && (
+                                                <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 6 }}>
+                                                    <CheckCircle2 color={Colors.success} size={14} style={{ opacity: 0.9 }} />
+                                                    <View style={{ flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', marginLeft: 6 }}>
+                                                        <Text style={styles.completeIndicatorText}>{hostJoined.name}</Text>
+                                                        <View style={{ marginLeft: 4, backgroundColor: `${Colors.accent}25`, borderColor: Colors.accent, borderWidth: 1, borderRadius: 4, paddingHorizontal: 4, paddingVertical: 1, flexDirection: 'row', alignItems: 'center' }}>
+                                                            <Crown color={Colors.accent} size={10} fill={`${Colors.accent}33`} style={{ marginRight: 2 }} />
+                                                            <Text style={{ color: Colors.accent, fontSize: 9, fontWeight: '900' }}>{t('common.host').toUpperCase()}</Text>
+                                                        </View>
+                                                    </View>
+                                                </View>
+                                            )}
+                                            {othersJoined.length > 0 && renderRow(CheckCircle2, Colors.success, othersJoined, t('result.participants_joined_suffix'))}
+                                            {notJoined.length > 0 && renderRow(CircleOff, 'rgba(255,255,255,0.35)', notJoined, t('common.not_connected'))}
+                                        </View>
                                     </View>
                                 );
                             })()}
@@ -632,50 +671,79 @@ export default function ResultScreen({ route, navigation }) {
 
                             <ScrollView style={{ maxHeight: 400 }}>
                                 {(() => {
-                                    const list = fixedParticipantDetails && fixedParticipantDetails.length > 0
-                                        ? fixedParticipantDetails
-                                        : onlineUsers.map(user => {
-                                            const vote = finalVotes.find(v => v.userId === user.id);
-                                            return {
-                                                name: user.name,
-                                                votedFor: vote ? vote.votedFor : null,
-                                                isMe: user.id === syncService.myId,
-                                                isOwner: user.role === 'owner' || (user.id === syncService.myId && role === 'owner')
-                                            };
-                                        });
+                                    const fromParams = ensureArray(route.params?.participants).map(p => ({ name: typeof p === 'object' ? (p.name || p.text) : p, role: typeof p === 'object' ? p.role : null })).filter(u => u.name && u.name.trim());
+                                    const fromJoined = ensureArray(rawJoinedNames).map(n => ({ name: String(n).trim(), role: null })).filter(u => u.name);
+                                    const fromVotes = (finalVotes || []).map(v => ({ name: (v.userName || v.votedFor || '').trim(), role: null })).filter(u => u.name);
+                                    const nameToItem = new Map(fromParams.map(u => [u.name.trim(), u]));
+                                    [...fromJoined, ...fromVotes].forEach(u => { const k = u.name.trim(); if (k && !nameToItem.has(k)) nameToItem.set(k, u); });
+                                    const fullList = Array.from(nameToItem.values());
+                                    const hostName = route.params?.hostName;
+                                    const list = fullList.map(p => {
+                                        const name = typeof p === 'object' ? (p.name || p.text || '') : String(p);
+                                        if (!name.trim()) return null;
+                                        const isOwner = hostName && norm(name) === norm(hostName);
+                                        const joined = joinedNamesSet.has(norm(name));
+                                        const vote = finalVotes.find(v => v.userName === name || v.votedFor === name);
+                                        const votedFor = joined ? (vote ? vote.votedFor : (type === 'people' ? t('result.watched') : null)) : null;
+                                        const isWatched = type === 'people' && joined && !vote;
+                                        const isNotConnected = !joined;
+                                        return {
+                                            name,
+                                            votedFor: isNotConnected ? null : votedFor,
+                                            isWatched,
+                                            isNotConnected,
+                                            isMe: syncService.myName === name,
+                                            isOwner
+                                        };
+                                    }).filter(Boolean);
+                                    if (list.length === 0) {
+                                        return <Text style={{ color: 'rgba(255,255,255,0.5)', textAlign: 'center', marginVertical: 20 }}>{t('roulette.no_participants').toUpperCase()}</Text>;
+                                    }
                                     return list.map((d, i) => {
-                                        const hasVote = d.votedFor && d.votedFor !== t('common.no_vote').toUpperCase();
+                                        const isWatched = d.isWatched || (d.votedFor === t('result.watched'));
+                                        const hasRealVote = d.votedFor && d.votedFor !== t('common.no_vote') && !isWatched;
+                                        const isNotConnected = d.isNotConnected;
+                                        const statusColor = isNotConnected ? 'rgba(255,255,255,0.35)' : (hasRealVote ? Colors.success : 'rgba(255,255,255,0.3)');
+                                        const statusText = isNotConnected ? t('common.not_connected') : (hasRealVote ? d.votedFor : (isWatched ? t('result.watched') : t('roulette.spinning')));
+                                        const dotColor = isNotConnected ? 'rgba(255,255,255,0.35)' : (hasRealVote ? Colors.success : Colors.primary);
                                         return (
-                                            <View key={d.name + '-' + i} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.05)' }}>
+                                            <View key={(d.name || '') + '-' + i} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.05)' }}>
                                                 <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
                                                     <View style={{
                                                         width: 8,
                                                         height: 8,
                                                         borderRadius: 4,
-                                                        backgroundColor: hasVote ? Colors.success : Colors.primary,
+                                                        backgroundColor: dotColor,
                                                         marginRight: 10,
-                                                        shadowColor: hasVote ? Colors.success : Colors.primary,
+                                                        shadowColor: dotColor,
                                                         shadowRadius: 4,
                                                         shadowOpacity: 0.5
                                                     }} />
                                                     <Text style={{ color: 'white', fontSize: 16, fontWeight: '500' }}>
                                                         {d.name} {d.isMe ? <Text style={{ fontSize: 11, color: Colors.primary }}> {t('common.me')}</Text> : ''}
                                                     </Text>
+                                                    {d.isOwner && (
+                                                        <View style={{ marginLeft: 8, backgroundColor: `${Colors.accent}25`, borderColor: Colors.accent, borderWidth: 1, borderRadius: 4, paddingHorizontal: 4, paddingVertical: 1, flexDirection: 'row', alignItems: 'center' }}>
+                                                            <Crown color={Colors.accent} size={10} fill={`${Colors.accent}33`} style={{ marginRight: 2 }} />
+                                                            <Text style={{ color: Colors.accent, fontSize: 9, fontWeight: '900' }}>{t('common.host').toUpperCase()}</Text>
+                                                        </View>
+                                                    )}
                                                 </View>
                                                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                                                     <View style={{
-                                                        backgroundColor: hasVote ? 'rgba(57, 255, 20, 0.1)' : 'rgba(255, 255, 255, 0.05)',
+                                                        backgroundColor: isNotConnected ? 'rgba(255,255,255,0.03)' : (hasRealVote ? 'rgba(57, 255, 20, 0.1)' : 'rgba(255, 255, 255, 0.05)'),
                                                         paddingHorizontal: 8,
                                                         paddingVertical: 4,
                                                         borderRadius: 4,
                                                         borderWidth: 1,
-                                                        borderColor: hasVote ? 'rgba(57, 255, 20, 0.3)' : 'rgba(255, 255, 255, 0.1)',
+                                                        borderColor: isNotConnected ? 'rgba(255,255,255,0.08)' : (hasRealVote ? 'rgba(57, 255, 20, 0.3)' : 'rgba(255, 255, 255, 0.1)'),
                                                         flexDirection: 'row',
                                                         alignItems: 'center'
                                                     }}>
-                                                        {hasVote && <CheckCircle2 size={12} color={Colors.success} style={{ marginRight: 4 }} />}
-                                                        <Text style={{ color: hasVote ? Colors.success : 'rgba(255,255,255,0.3)', fontSize: 11, fontWeight: 'bold' }}>
-                                                            {hasVote ? (d.votedFor || '').toUpperCase() : t('roulette.spinning').toUpperCase()}
+                                                        {hasRealVote && <CheckCircle2 size={12} color={Colors.success} style={{ marginRight: 4 }} />}
+                                                        {isNotConnected && <CircleOff size={12} color="rgba(255,255,255,0.35)" style={{ marginRight: 4 }} />}
+                                                        <Text style={{ color: statusColor, fontSize: 11, fontWeight: 'bold' }}>
+                                                            {(statusText || '').toString().toUpperCase()}
                                                         </Text>
                                                     </View>
                                                 </View>
@@ -683,9 +751,6 @@ export default function ResultScreen({ route, navigation }) {
                                         );
                                     });
                                 })()}
-                                {(!fixedParticipantDetails || fixedParticipantDetails.length === 0) && onlineUsers.length === 0 && (
-                                    <Text style={{ color: 'rgba(255,255,255,0.5)', textAlign: 'center', marginVertical: 20 }}>{t('roulette.no_participants').toUpperCase()}</Text>
-                                )}
                             </ScrollView>
                         </View>
                     </View>

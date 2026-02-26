@@ -164,6 +164,7 @@
         "gourmet_selection": "AUSWAHL",
         "force_result": "ERGEBNIS ERZWINGEN",
         "no_participants": "KEINE TEILNEHMER",
+        "no_menu_items": "Bitte fügen Sie zuerst Menüpunkte hinzu",
         "ready_shout": "READY !",
         "go_shout": "GO !",
         "voting_already_finished": "Die Abstimmung ist bereits beendet."
@@ -185,7 +186,9 @@
         "vote_result": "ABSTIMMUNGSERGEBNIS",
         "all_complete": "Abgestimmt",
         "voted_partial": "{{voted}}/{{total}} abgestimmt",
-        "participant_detail": "TEILNEHMERDETAIL"
+        "participant_detail": "TEILNEHMERDETAIL",
+        "participants_joined_suffix": "teilgenommen",
+        "watched": "Zuschauen"
     },
     "entry": {
         "offline_title": "OFFLINE",

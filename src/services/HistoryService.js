@@ -28,8 +28,14 @@ class HistoryService {
     }
 
     async getEntryById(id) {
-        const history = await this.getHistory();
-        return history.find(entry => entry.id === id);
+        try {
+            const history = await this.getHistory();
+            if (!Array.isArray(history)) return undefined;
+            return history.find(entry => entry && entry.id === id);
+        } catch (e) {
+            console.log('Error getting entry by id:', e);
+            return undefined;
+        }
     }
 
     async getHistory() {

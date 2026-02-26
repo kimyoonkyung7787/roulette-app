@@ -164,6 +164,7 @@
         "gourmet_selection": "選択",
         "force_result": "強制的に結果を確認",
         "no_participants": "参加者なし",
+        "no_menu_items": "まずメニューを追加してください",
         "ready_shout": "READY !",
         "go_shout": "GO !",
         "voting_already_finished": "投票はすでに終了しています。"
@@ -185,7 +186,9 @@
         "vote_result": "投票結果",
         "all_complete": "投票完了",
         "voted_partial": "{{voted}}/{{total}} 参加",
-        "participant_detail": "参加者詳細"
+        "participant_detail": "参加者詳細",
+        "participants_joined_suffix": "参加",
+        "watched": "視聴"
     },
     "entry": {
         "offline_title": "OFFLINE",
@@ -246,7 +249,7 @@
         "people_participant_step1_msg": "まず自分の名前を選択してください",
         "people_participant_step1_icon": "👤",
         "people_participant_step2_title": "少々お待ちください",
-        "people_participant_step2_msg": "ホストが先に投票する必要があります。\nその後ルーレットを回しましょう",
+        "people_participant_step2_msg": "ホストが代表で投票します。参加者にはルーレットと結果が自動で表示されます。",
         "people_participant_step2_icon": "⏳",
         "history_step_title": "ログを確認！",
         "history_step_msg": "以前のログを参照して、\n参加者/メニューリストを取り込めます",

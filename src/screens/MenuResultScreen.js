@@ -226,10 +226,10 @@ export default function MenuResultScreen({ route, navigation }) {
             return fixedParticipantDetails;
         }
         if (onlineUsers && onlineUsers.length > 0) {
-            return onlineUsers.map(user => {
+            return onlineUsers.map((user, idx) => {
                 const vote = finalVotes.find(v => v.userId === user.id);
                 return {
-                    id: user.id,
+                    id: user.id ?? `user-${idx}`,
                     name: user.name,
                     votedFor: vote ? vote.votedFor : null,
                     isMe: user.id === syncService.myId,
@@ -237,8 +237,8 @@ export default function MenuResultScreen({ route, navigation }) {
                 };
             });
         }
-        return finalVotes.map(v => ({
-            id: v.userId,
+        return finalVotes.map((v, idx) => ({
+            id: v.userId ?? `vote-${idx}`,
             name: v.userName || 'Unknown',
             votedFor: v.votedFor,
             isMe: v.userId === syncService.myId,
@@ -350,8 +350,8 @@ export default function MenuResultScreen({ route, navigation }) {
                             <View style={styles.sectionHeader}>
                                 <NeonText style={styles.sectionTitle}>{t('result.participant_detail')}</NeonText>
                             </View>
-                            {sortedParticipants.map((p) => (
-                                <View key={p.id} style={styles.participantRow}>
+                            {sortedParticipants.map((p, idx) => (
+                                <View key={p.id ?? `p-${idx}`} style={styles.participantRow}>
                                     <View style={styles.participantLeft}>
                                         <View style={[styles.statusDot, { backgroundColor: p.votedFor ? Colors.success : Colors.primary }]} />
                                         <Text style={styles.participantName} numberOfLines={1}>

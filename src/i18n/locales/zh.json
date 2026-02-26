@@ -164,6 +164,7 @@
         "gourmet_selection": "选择",
         "force_result": "强制查看结果",
         "no_participants": "无参与者",
+        "no_menu_items": "请先添加菜单项",
         "ready_shout": "READY !",
         "go_shout": "GO !",
         "voting_already_finished": "投票已经结束。"
@@ -185,7 +186,9 @@
         "vote_result": "投票结果",
         "all_complete": "投票完成",
         "voted_partial": "{{voted}}/{{total}} 已投票",
-        "participant_detail": "参与者详情"
+        "participant_detail": "参与者详情",
+        "participants_joined_suffix": "参与",
+        "watched": "观看"
     },
     "entry": {
         "offline_title": "OFFLINE",
@@ -246,7 +249,7 @@
         "people_participant_step1_msg": "请先选择自己的名字",
         "people_participant_step1_icon": "👤",
         "people_participant_step2_title": "请稍等",
-        "people_participant_step2_msg": "主持人需要先投票。\n之后再转动轮盘",
+        "people_participant_step2_msg": "主持人代表投票。参与者将自动看到轮盘和结果。",
         "people_participant_step2_icon": "⏳",
         "history_step_title": "查看记录！",
         "history_step_msg": "查看之前的记录，\n导入参与者/菜单列表",
