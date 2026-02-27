@@ -1,6 +1,7 @@
 import "./global.css";
 import "./src/i18n";
 import React, { useEffect } from 'react';
+import { Linking } from 'react-native';
 import { NavigationContainer, getStateFromPath } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import EntryScreen from './src/screens/EntryScreen';
@@ -13,6 +14,7 @@ import HistoryScreen from './src/screens/HistoryScreen';
 import OfflineInputScreen from './src/screens/OfflineInputScreen';
 import { Colors } from './src/theme/colors';
 import { feedbackService } from './src/services/FeedbackService';
+import { subscriptionService } from './src/services/SubscriptionService';
 
 const Stack = createNativeStackNavigator();
 
@@ -23,6 +25,27 @@ export default function App() {
     feedbackService.loadAssets()
       .then(() => console.log('🎵 App: Audio assets loaded successfully!'))
       .catch(err => console.error('🎵 App: Failed to load audio assets:', err));
+  }, []);
+
+  // PayPal 결제 완료 딥링크 처리 (rouletteapp://premium?orderId=XXX)
+  useEffect(() => {
+    const handleUrl = async (url) => {
+      if (!url || !url.includes('premium')) return;
+      try {
+        const orderIdMatch = url.match(/[?&]orderId=([^&]+)/);
+        const tokenMatch = url.match(/[?&]token=([^&]+)/);
+        const orderId = (orderIdMatch && orderIdMatch[1]) || (tokenMatch && tokenMatch[1]);
+        if (orderId) {
+          await subscriptionService.setPremium(true);
+          console.log('App: Premium activated via deep link');
+        }
+      } catch (e) {
+        console.warn('App: Deep link parse error', e);
+      }
+    };
+    const sub = Linking.addEventListener('url', ({ url }) => handleUrl(url));
+    Linking.getInitialURL().then((url) => url && handleUrl(url));
+    return () => sub.remove();
   }, []);
 
   const linking = {

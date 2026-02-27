@@ -266,5 +266,14 @@
         "history_step_title": "I want to use previously registered information",
         "history_step_msg": "View previous logs to\nimport participant/menu lists",
         "history_step_icon": "📜"
+    },
+    "paywall": {
+        "title": "Premium Upgrade",
+        "subtitle_host": "Upgrade to Premium to add 5+ participants.\nFree tier allows up to 4 participants.",
+        "subtitle_participant": "This room has reached the free limit (4 participants).\nAsk the host to upgrade to Premium to join.",
+        "feature_1": "Up to 10 participants",
+        "feature_2": "Secure payment via PayPal",
+        "pay_with_paypal": "Pay with PayPal",
+        "room_full_free": "This room has reached the free limit (4 participants). Ask the host to upgrade to Premium."
     }
 }

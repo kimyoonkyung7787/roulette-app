@@ -9,7 +9,9 @@ import { NeonText } from '../components/NeonText';
 import { UserPlus, Trash2, Play, History, CheckCircle2, ListChecks, Users, X, Loader, LogOut, Crown, Utensils, Coffee, Cookie, User, HelpCircle, Circle, Zap, Target, Home, RotateCw, Guitar, Pencil, Check, Share2, Search, MapPin, Store, Sparkles, FileText } from 'lucide-react-native';
 import { syncService } from '../services/SyncService';
 import { participantService } from '../services/ParticipantService';
+import { subscriptionService } from '../services/SubscriptionService';
 import { CyberAlert } from '../components/CyberAlert';
+import { PaywallModal } from '../components/PaywallModal';
 import { CoachMark } from '../components/CoachMark';
 import { useTranslation } from 'react-i18next';
 import i18n from '../i18n';
@@ -88,6 +90,8 @@ export default function NameInputScreen({ route, navigation }) {
     const [showMemoModal, setShowMemoModal] = useState(false);
     const [memoEditingIndex, setMemoEditingIndex] = useState(null);
     const [memoInputValue, setMemoInputValue] = useState('');
+
+    const [showPaywall, setShowPaywall] = useState(false);
 
     const [showRestaurantSearch, setShowRestaurantSearch] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
@@ -891,6 +895,18 @@ export default function NameInputScreen({ route, navigation }) {
     }, [role, activeTab, isLoaded, menuItems.length]);
 
 
+    // 호스트가 프리미엄이면 방 메타데이터 동기화 (결제 후 딥링크로 돌아왔을 때)
+    const hostPremiumSyncedRef = useRef(false);
+    useEffect(() => {
+        if (mode !== 'online' || role !== 'owner' || !roomId || !isLoaded || hostPremiumSyncedRef.current) return;
+        subscriptionService.isPremium().then((premium) => {
+            if (premium) {
+                hostPremiumSyncedRef.current = true;
+                syncService.setRoomHostPremium(roomId, true);
+            }
+        });
+    }, [mode, role, roomId, isLoaded]);
+
     // Save participants whenever they change (Only work in owner mode and once loaded)
     useEffect(() => {
         // We only save if there's actually something to save
@@ -1036,6 +1052,13 @@ export default function NameInputScreen({ route, navigation }) {
         if (!trimmedName) return;
 
         if (activeTab === 'people') {
+            if (mode === 'online' && role === 'owner') {
+                const premium = await subscriptionService.isPremium();
+                if (!premium && participants.length >= subscriptionService.getFreeMax()) {
+                    setShowPaywall(true);
+                    return;
+                }
+            }
             const updated = [...participants, { name: trimmedName, weight: 1 }];
             setParticipants(updated);
             if (role === 'owner') await syncService.setParticipants(updated);
@@ -1050,9 +1073,17 @@ export default function NameInputScreen({ route, navigation }) {
     };
 
     // Dedicated function for Modal to ensure it always adds to PEOPLE list regardless of activeTab
-    const addParticipantFromModal = () => {
+    const addParticipantFromModal = async () => {
         const trimmedName = name.trim();
         if (!trimmedName) return;
+
+        if (mode === 'online' && role === 'owner') {
+            const premium = await subscriptionService.isPremium();
+            if (!premium && participants.length >= subscriptionService.getFreeMax()) {
+                setShowPaywall(true);
+                return;
+            }
+        }
 
         // Force add to participants list (local only, sync deferred to confirm)
         const updated = [...participants, { name: trimmedName, weight: 1 }];
@@ -2719,6 +2750,19 @@ export default function NameInputScreen({ route, navigation }) {
                         title={alertConfig.title}
                         message={alertConfig.message}
                         onConfirm={() => setAlertConfig({ ...alertConfig, visible: false })}
+                    />
+
+                    <PaywallModal
+                        visible={showPaywall}
+                        onClose={() => setShowPaywall(false)}
+                        onSuccess={async () => {
+                            await subscriptionService.setPremium(true);
+                            if (role === 'owner' && roomId) {
+                                await syncService.setRoomHostPremium(roomId, true);
+                            }
+                            setShowPaywall(false);
+                        }}
+                        context="host"
                     />
 
                     <CyberAlert

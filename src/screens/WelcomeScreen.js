@@ -9,6 +9,7 @@ import { CyberBackground } from '../components/CyberBackground';
 import { Crown, ArrowRight, Home, Users, Utensils, LogIn } from 'lucide-react-native';
 import { CyberAlert } from '../components/CyberAlert';
 import { syncService } from '../services/SyncService';
+import { subscriptionService } from '../services/SubscriptionService';
 import { feedbackService } from '../services/FeedbackService';
 
 const { width } = Dimensions.get('window');
@@ -60,11 +61,13 @@ export default function WelcomeScreen({ route, navigation }) {
         const roomId = generateRoomId();
         const defaultCategory = 'coffee'; // Default category for simplified flow
         try {
+            const hostIsPremium = await subscriptionService.isPremium();
             // Pre-initialize room metadata so participants can identify mode
             await syncService.preInitRoom(roomId, {
                 category: defaultCategory,
                 spin_target: setupType,
-                phase: 'waiting'
+                phase: 'waiting',
+                hostIsPremium: !!hostIsPremium
             });
 
             await AsyncStorage.setItem('last_role', 'owner');
@@ -150,6 +153,19 @@ export default function WelcomeScreen({ route, navigation }) {
                 visible: true,
                 title: t('common.alert'),
                 message: t('welcome.room_not_found')
+            });
+            return;
+        }
+
+        // 무료 한도 체크: 방에 이미 4명이 있고 호스트가 프리미엄이 아니면 입장 불가
+        const presence = roomData.presence || {};
+        const currentCount = typeof presence === 'object' ? Object.keys(presence).length : 0;
+        const hostIsPremium = !!roomData.hostIsPremium;
+        if (!hostIsPremium && currentCount >= subscriptionService.getFreeMax()) {
+            setAlertConfig({
+                visible: true,
+                title: t('common.alert'),
+                message: t('paywall.room_full_free')
             });
             return;
         }

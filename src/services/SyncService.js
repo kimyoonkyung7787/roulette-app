@@ -582,6 +582,16 @@ class SyncService {
         }
     }
 
+    async setRoomHostPremium(roomId, isPremium) {
+        if (!db || !roomId) return;
+        try {
+            await update(ref(db, `rooms/${roomId}`), { hostIsPremium: !!isPremium });
+            console.log(`SyncService: Room ${roomId} hostIsPremium set to ${isPremium}`);
+        } catch (e) {
+            console.error('SyncService: Failed to set room hostIsPremium', e);
+        }
+    }
+
     async clearPresence() {
         if (this.myId && this.roomId && db) {
             try {
