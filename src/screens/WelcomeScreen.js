@@ -8,6 +8,7 @@ import { Colors } from '../theme/colors';
 import { CyberBackground } from '../components/CyberBackground';
 import { Crown, ArrowRight, Home, Users, Utensils, LogIn } from 'lucide-react-native';
 import { CyberAlert } from '../components/CyberAlert';
+import { AdBanner } from '../components/AdBanner';
 import { syncService } from '../services/SyncService';
 import { subscriptionService } from '../services/SubscriptionService';
 import { feedbackService } from '../services/FeedbackService';
@@ -323,6 +324,8 @@ export default function WelcomeScreen({ route, navigation }) {
                         </View>
                     </ScrollView>
                 </KeyboardAvoidingView>
+
+                <AdBanner />
 
                 <CyberAlert
                     visible={alertConfig.visible}

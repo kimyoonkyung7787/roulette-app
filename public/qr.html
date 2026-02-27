@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>룰렛 앱 - QR 코드</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: #0a0a0f;
+      color: #fff;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      text-align: center;
+    }
+    .card {
+      background: #1a1a2e;
+      border: 2px solid #00ffff;
+      border-radius: 24px;
+      padding: 32px;
+      max-width: 400px;
+    }
+    h1 { color: #00ffff; font-size: 20px; margin-bottom: 8px; }
+    p { color: #94a3b8; font-size: 14px; margin-bottom: 24px; }
+    .qr { margin: 20px 0; }
+    .qr img { max-width: 220px; height: auto; border-radius: 12px; }
+    .url {
+      background: rgba(0,0,0,0.3);
+      padding: 12px 16px;
+      border-radius: 12px;
+      font-size: 13px;
+      word-break: break-all;
+      color: #00ffff;
+      margin-top: 16px;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>🎰 룰렛 게임</h1>
+    <p>QR 코드를 스캔하여 앱 접속</p>
+    <div class="qr">
+      <img src="https://quickchart.io/qr?text=https://roulette-app-two.vercel.app&size=220&margin=2" alt="QR Code" />
+    </div>
+    <div class="url">https://roulette-app-two.vercel.app</div>
+  </div>
+</body>
+</html>

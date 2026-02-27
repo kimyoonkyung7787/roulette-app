@@ -7,6 +7,7 @@ import { CyberBackground } from '../components/CyberBackground';
 import { NeonText } from '../components/NeonText';
 import { UsersRound, Globe, ArrowRight, Target, Zap } from 'lucide-react-native';
 import { LanguageSelector } from '../components/LanguageSelector';
+import { AdBanner } from '../components/AdBanner';
 import { feedbackService } from '../services/FeedbackService';
 
 const { width } = Dimensions.get('window');
@@ -90,6 +91,7 @@ export default function EntryScreen({ navigation }) {
                         </TouchableOpacity>
                     </View>
                 </View>
+                <AdBanner />
             </SafeAreaView>
         </CyberBackground>
     );

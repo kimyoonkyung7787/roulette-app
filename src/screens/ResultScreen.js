@@ -11,6 +11,7 @@ import { syncService } from '../services/SyncService';
 import { useTranslation } from 'react-i18next';
 import { Share2, ListChecks, History, LogOut, Trophy, Loader, RefreshCw, X, Home, Zap, Cpu, Radio, Activity, Drum, Sparkle, HandMetal, Gavel, User, CheckCircle2, Crown, CircleOff } from 'lucide-react-native';
 import { Confetti } from '../components/Confetti';
+import { AdBanner } from '../components/AdBanner';
 
 export default function ResultScreen({ route, navigation }) {
     const { t } = useTranslation();
@@ -627,6 +628,8 @@ export default function ResultScreen({ route, navigation }) {
 
                     </View>
                 </ScrollView>
+
+                <AdBanner />
 
                 {role === 'owner' || mode === 'offline' ? (
                     <View style={styles.footer}>
