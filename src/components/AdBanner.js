@@ -8,7 +8,7 @@ const isWeb = Platform.OS === 'web';
 // AdSense (adsense.google.com에서 발급 후 교체)
 const ADSENSE_CLIENT_ID = typeof process !== 'undefined' && process.env?.EXPO_PUBLIC_ADSENSE_CLIENT_ID
     ? process.env.EXPO_PUBLIC_ADSENSE_CLIENT_ID
-    : 'ca-pub-0000000000000000';
+    : 'ca-pub-1704066118536203';
 const ADSENSE_SLOT = typeof process !== 'undefined' && process.env?.EXPO_PUBLIC_ADSENSE_SLOT
     ? process.env.EXPO_PUBLIC_ADSENSE_SLOT
     : '0000000000';
