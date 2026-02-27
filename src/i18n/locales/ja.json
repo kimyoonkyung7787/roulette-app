@@ -142,6 +142,7 @@
         "already_taken": "この名前は既に使用されています。",
         "host_selected": "この名前はホストにより予約されています。",
         "search_restaurant": "お店からメニューを取得",
+        "ai_menu": "AIメニュー",
         "search_placeholder": "お店の名前を検索",
         "search_button": "検索",
         "searching": "検索中...",

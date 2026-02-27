@@ -157,6 +157,7 @@ export default function NameInputScreen({ route, navigation }) {
                 restaurantName: name,
                 category: activeCategory,
                 address: restaurant?.roadAddress || restaurant?.address || '',
+                locale: i18n.language,
             };
             const resp = await fetch(`${getApiBaseUrl()}/api/generate-menu`, {
                 method: 'POST',
@@ -1700,7 +1701,7 @@ export default function NameInputScreen({ route, navigation }) {
                                     >
                                         <Store color={Colors.primary} size={12} style={{ marginRight: 5 }} />
                                         <Text style={{ color: Colors.primary, fontSize: 10, fontWeight: '900' }}>
-                                            AI 메뉴
+                                            {t('name_input.ai_menu')}
                                         </Text>
                                     </TouchableOpacity>
                                 );

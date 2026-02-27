@@ -17,7 +17,7 @@ export default async function handler(req, res) {
             return res.status(400).json({ error: 'Invalid JSON body' });
         }
     }
-    const { restaurantName, category, address } = body || {};
+    const { restaurantName, category, address, locale = 'en' } = body || {};
     const name = (restaurantName || '').toString().trim();
     if (!name) {
         return res.status(400).json({ error: 'Missing restaurantName', code: 'MISSING_NAME' });
@@ -28,14 +28,14 @@ export default async function handler(req, res) {
         return res.status(500).json({ error: 'Gemini API key not configured' });
     }
 
-    const categoryLabel = {
-        coffee: '카페/음료',
-        meal: '식사/레스토랑',
-        snack: '간식/디저트',
-        etc: '기타',
-    }[category] || '음식점';
+    const useKorean = (locale || '').toLowerCase() === 'ko';
 
-    const prompt = `당신은 한국 음식점 메뉴 전문가입니다.
+    const categoryLabel = useKorean
+        ? { coffee: '카페/음료', meal: '식사/레스토랑', snack: '간식/디저트', etc: '기타' }[category] || '음식점'
+        : { coffee: 'Cafe/Drinks', meal: 'Restaurant/Meal', snack: 'Snack/Dessert', etc: 'Other' }[category] || 'Restaurant';
+
+    const prompt = useKorean
+        ? `당신은 한국 음식점 메뉴 전문가입니다.
 다음 가게의 대표 메뉴 7~10개를 JSON 배열로 반환하세요.
 메뉴 이름만 간결하게 작성하세요 (가격 제외).
 실제로 해당 가게에서 팔 법한 메뉴를 추측하세요.
@@ -45,7 +45,17 @@ export default async function handler(req, res) {
 ${address ? `주소: ${address}` : ''}
 
 반드시 아래 JSON 형식으로만 응답하세요. 다른 텍스트는 포함하지 마세요:
-["메뉴1", "메뉴2", "메뉴3", ...]`;
+["메뉴1", "메뉴2", "메뉴3", ...]`
+        : `You are an expert on restaurant menus. Return 7-10 representative menu items for this store as a JSON array.
+Write only the menu names concisely (no prices).
+Guess menu items that this store would realistically sell.
+
+Store name: ${name}
+Category: ${categoryLabel}
+${address ? `Address: ${address}` : ''}
+
+Respond ONLY in the following JSON format. No other text:
+["Menu item 1", "Menu item 2", "Menu item 3", ...]`;
 
     try {
     const modelsToTry = ['gemini-2.5-flash', 'gemini-2.5-flash-lite', 'gemini-2.0-flash', 'gemini-1.5-flash', 'gemini-pro'];

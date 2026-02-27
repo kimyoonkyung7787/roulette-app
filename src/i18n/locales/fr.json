@@ -142,6 +142,7 @@
         "already_taken": "Ce nom est déjà pris.",
         "host_selected": "Ce nom est réservé par l'hôte.",
         "search_restaurant": "Obtenir le menu du magasin",
+        "ai_menu": "Menu IA",
         "search_placeholder": "Rechercher un restaurant",
         "search_button": "Rechercher",
         "searching": "Recherche en cours...",

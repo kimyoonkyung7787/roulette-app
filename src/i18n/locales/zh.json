@@ -142,6 +142,7 @@
         "already_taken": "此名称已被占用。",
         "host_selected": "此名称已被主机保留。",
         "search_restaurant": "从店铺获取菜单",
+        "ai_menu": "AI菜单",
         "search_placeholder": "搜索店铺名称",
         "search_button": "搜索",
         "searching": "搜索中...",

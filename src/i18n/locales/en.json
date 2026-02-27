@@ -142,6 +142,7 @@
         "already_taken": "This name is already taken by another participant.",
         "host_selected": "This name is reserved by the host.",
         "search_restaurant": "Get menu from store",
+        "ai_menu": "AI Menu",
         "search_placeholder": "Search restaurant name",
         "search_button": "Search",
         "searching": "Searching...",

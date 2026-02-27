@@ -142,6 +142,7 @@
         "already_taken": "यह नाम पहले ही लिया जा चुका है।",
         "host_selected": "यह नाम होस्ट द्वारा आरक्षित है।",
         "search_restaurant": "दुकान से मेनू प्राप्त करें",
+        "ai_menu": "AI मेनू",
         "search_placeholder": "रेस्तरां का नाम खोजें",
         "search_button": "खोजें",
         "searching": "खोज रहा है...",

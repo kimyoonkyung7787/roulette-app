@@ -142,6 +142,7 @@
         "already_taken": "이 이름은 이미 다른 참여자가 사용 중입니다.",
         "host_selected": "호스트가 선택한 이름입니다.",
         "search_restaurant": "가게에서 메뉴 가져오기",
+        "ai_menu": "AI 메뉴",
         "search_placeholder": "가게 이름을 검색하세요",
         "search_button": "검색",
         "searching": "검색 중...",

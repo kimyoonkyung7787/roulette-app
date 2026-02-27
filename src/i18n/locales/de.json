@@ -142,6 +142,7 @@
         "already_taken": "Dieser Name ist bereits vergeben.",
         "host_selected": "Dieser Name ist vom Gastgeber reserviert.",
         "search_restaurant": "Menü vom Geschäft holen",
+        "ai_menu": "KI-Menü",
         "search_placeholder": "Restaurantname suchen",
         "search_button": "Suchen",
         "searching": "Suche läuft...",
