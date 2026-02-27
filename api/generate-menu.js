@@ -47,6 +47,7 @@ ${address ? `주소: ${address}` : ''}
 반드시 아래 JSON 형식으로만 응답하세요. 다른 텍스트는 포함하지 마세요:
 ["메뉴1", "메뉴2", "메뉴3", ...]`
         : `You are an expert on restaurant menus. Return 7-10 representative menu items for this store as a JSON array.
+IMPORTANT: Write ALL menu item names in ENGLISH only. Do not use Korean or any other language.
 Write only the menu names concisely (no prices).
 Guess menu items that this store would realistically sell.
 
