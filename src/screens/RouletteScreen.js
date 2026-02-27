@@ -89,12 +89,14 @@ export default function RouletteScreen({ route, navigation }) {
     const participantsRef = useRef(participantsState);
     const menuItemsRef = useRef(menuItemsState);
     const onlineUsersRef = useRef([]);
+    const isFocusedRef = useRef(isFocused);
 
     // Keep refs in sync with state (onlineUsersRef = 최신 접속자, finalize 시 stale closure 방지)
     useEffect(() => { spinTargetRef.current = spinTarget; }, [spinTarget]);
     useEffect(() => { participantsRef.current = participantsState; }, [participantsState]);
     useEffect(() => { menuItemsRef.current = menuItemsState; }, [menuItemsState]);
     useEffect(() => { onlineUsersRef.current = onlineUsers; }, [onlineUsers]);
+    useEffect(() => { isFocusedRef.current = isFocused; }, [isFocused]);
 
     useEffect(() => {
         const backHandler = BackHandler.addEventListener('hardwareBackPress', () => true);
@@ -227,21 +229,30 @@ export default function RouletteScreen({ route, navigation }) {
                 const newCount = vts.length;
                 const prevCount = prevVotes.length;
 
-                // Auto-show participant status modal when vote count increases
+                // Auto-show participant status modal when vote count increases (중간 과정만, 마지막 투표 시에는 모달 없이 결과화면으로)
                 if (newCount > prevCount) {
-                    // Check if it was MY vote that just got added
-                    const hadMyVote = prevVotes.some(v => v.userId === syncService.myId);
-                    const hasMyVoteNow = vts.some(v => v.userId === syncService.myId);
-                    const isMyNewVote = !hadMyVote && hasMyVoteNow;
+                    const expectedCount = Math.max(participantsRef.current?.length || 0, onlineUsersRef.current?.length || 0);
+                    const isLastVote = expectedCount > 0 && newCount >= expectedCount;
 
-                    if (!isMyNewVote && !spinningRef.current) {
-                        // Clear any existing timer
-                        if (autoCloseTimer.current) clearTimeout(autoCloseTimer.current);
-                        setShowUsersModal(true);
-                        autoCloseTimer.current = setTimeout(() => {
-                            setShowUsersModal(false);
+                    if (!isLastVote) {
+                        const hadMyVote = prevVotes.some(v => v.userId === syncService.myId);
+                        const hasMyVoteNow = vts.some(v => v.userId === syncService.myId);
+                        const isMyNewVote = !hadMyVote && hasMyVoteNow;
+
+                        if (!isMyNewVote && !spinningRef.current) {
+                            if (autoCloseTimer.current) clearTimeout(autoCloseTimer.current);
+                            setShowUsersModal(true);
+                            autoCloseTimer.current = setTimeout(() => {
+                                setShowUsersModal(false);
+                                autoCloseTimer.current = null;
+                            }, 3000);
+                        }
+                    } else {
+                        setShowUsersModal(false);
+                        if (autoCloseTimer.current) {
+                            clearTimeout(autoCloseTimer.current);
                             autoCloseTimer.current = null;
-                        }, 5000);
+                        }
                     }
                 }
 
@@ -252,10 +263,11 @@ export default function RouletteScreen({ route, navigation }) {
             // Subscribe to final results to handle owner's force or collective completion
             unsubFinal = syncService.subscribeToFinalResults(finalData => {
                 if (finalData) {
-                    if (!isNavigating.current && isFocused) {
+                    if (!isNavigating.current && isFocusedRef.current) {
                         console.log('RouletteScreen: Final results received, navigating...');
                         isNavigating.current = true;
-                        const hostName = roomHostName || onlineUsers.find(u => u.role === 'owner')?.name || (role === 'owner' ? mySelectedName : (roomId.length <= 8 ? roomId : null));
+                        const latestOnline = onlineUsersRef.current || [];
+                        const hostName = roomHostName || latestOnline.find(u => u.role === 'owner')?.name || (role === 'owner' ? mySelectedName : (roomId.length <= 8 ? roomId : null));
 
                         const screenName = (mode === 'online' && finalData.type === 'menu') ? 'MenuResult' : 'Result';
                         navigation.navigate(screenName, {
@@ -297,7 +309,7 @@ export default function RouletteScreen({ route, navigation }) {
             if (unsubMenuItems) unsubMenuItems();
             if (autoCloseTimer.current) clearTimeout(autoCloseTimer.current);
         };
-    }, []);
+    }, [isFocused]);
 
     // Handle auto-spin if requested from NameInputScreen (e.g., "Who to pick" clicked)
     useEffect(() => {

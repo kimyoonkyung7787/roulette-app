@@ -191,7 +191,8 @@
         "voted_partial": "{{voted}}/{{total}} 참여",
         "participant_detail": "참여자 상세 결과",
         "participants_joined_suffix": "참여",
-        "watched": "시청"
+        "watched": "시청",
+        "host_restarted": "호스트가 다시 시작했어요. 대기화면으로 돌아갑니다."
     },
     "entry": {
         "offline_title": "오프라인",
@@ -230,6 +231,9 @@
         "owner_step4_title": "메뉴를 확인하세요!",
         "owner_step4_msg": "메뉴를 확인하고, 직접 선택하거나 룰렛을 돌려보세요",
         "owner_step4_icon": "🍽️",
+        "owner_step5_title": "강제로 결과 확인",
+        "owner_step5_msg": "참여자가 모두 들어오길 기다리지 않아도, 투표 결과 화면에서\n강제 버튼으로 바로 결과를 확인할 수 있어요",
+        "owner_step5_icon": "⚡",
         "participant_step1_title": "본인을 선택하세요",
         "participant_step1_msg": "목록에서 본인의 이름을 선택해 주세요",
         "participant_step1_icon": "👤",
@@ -246,7 +250,7 @@
         "people_owner_step2_msg": "방 번호를 공유해서 친구들을 초대할 수 있어요",
         "people_owner_step2_icon": "📤",
         "people_owner_step3_title": "룰렛을 돌려보세요!",
-        "people_owner_step3_msg": "모두 준비되면 룰렛을 돌려\n당첨자를 뽑아보세요",
+        "people_owner_step3_msg": "모두 준비되면 호스트가 대표로,\n룰렛을 돌려 당첨자를 뽑습니다",
         "people_owner_step3_icon": "🎰",
         "people_participant_step1_title": "본인을 선택하세요",
         "people_participant_step1_msg": "먼저 본인의 이름을 선택하세요",

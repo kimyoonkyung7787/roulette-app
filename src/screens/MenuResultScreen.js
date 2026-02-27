@@ -46,8 +46,10 @@ export default function MenuResultScreen({ route, navigation }) {
     const [allVoted, setAllVoted] = useState(false);
     const [onlineUsers, setOnlineUsers] = useState([]);
     const [showExitConfirm, setShowExitConfirm] = useState(false);
+    const [showHostRestartedAlert, setShowHostRestartedAlert] = useState(false);
     const [fixedParticipantDetails, setFixedParticipantDetails] = useState(null);
     const hasSavedRef = useRef(false);
+    const hostRestartedShownRef = useRef(false);
 
     const pulseAnim = useRef(new Animated.Value(0)).current;
     const iconBounceAnim = useRef(new Animated.Value(0)).current;
@@ -164,13 +166,15 @@ export default function MenuResultScreen({ route, navigation }) {
         }
     }, [tally, totalParticipants, isForced, winner, type, onlineUsers, finalVotes]);
 
-    // Participant reset sync
+    // Participant reset sync: when host retries, show message then navigate
+    // Use CyberAlert (Modal) instead of Alert.alert - Alert does NOT work on web (Firefox, IE, Chrome)
     useEffect(() => {
         let unsubFinal;
         if (role === 'participant') {
             unsubFinal = syncService.subscribeToFinalResults(finalData => {
-                if (!finalData) {
-                    navigation.navigate('NameInput', { roomId, role, category, initialTab: type });
+                if (!finalData && !hostRestartedShownRef.current) {
+                    hostRestartedShownRef.current = true;
+                    setShowHostRestartedAlert(true);
                 }
             });
         }
@@ -406,6 +410,18 @@ export default function MenuResultScreen({ route, navigation }) {
                     onCancel={() => setShowExitConfirm(false)}
                     confirmText={t('common.confirm')}
                     cancelText={t('common.cancel')}
+                    type="info"
+                />
+
+                <CyberAlert
+                    visible={showHostRestartedAlert}
+                    title={t('common.info')}
+                    message={t('result.host_restarted')}
+                    onConfirm={() => {
+                        setShowHostRestartedAlert(false);
+                        navigation.navigate('NameInput', { roomId, role, category, initialTab: type });
+                    }}
+                    confirmText={t('common.confirm')}
                     type="info"
                 />
 

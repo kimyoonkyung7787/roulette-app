@@ -154,7 +154,9 @@ export default function ResultScreen({ route, navigation }) {
     const [fixedParticipantDetails, setFixedParticipantDetails] = useState(null);
     const [showUsersModal, setShowUsersModal] = useState(false);
     const [showExitConfirm, setShowExitConfirm] = useState(false);
+    const [showHostRestartedAlert, setShowHostRestartedAlert] = useState(false);
     const hasSavedRef = useRef(false);
+    const hostRestartedShownRef = useRef(false);
     // Animations for Results
     const drumBeatAnim = useRef(new Animated.Value(0)).current;
     const trumpetBeatAnim = useRef(new Animated.Value(0)).current;
@@ -326,14 +328,13 @@ export default function ResultScreen({ route, navigation }) {
     useEffect(() => {
         let unsubFinal;
 
-        // Sync navigation for participants
+        // Sync navigation for participants: when host retries, show message then navigate
+        // Use CyberAlert (Modal) instead of Alert.alert - Alert does NOT work on web
         if (role === 'participant') {
-
             unsubFinal = syncService.subscribeToFinalResults(finalData => {
-                // If final results are cleared, return to lobby (unified reset)
-                if (!finalData) {
-                    console.log('ResultScreen: Final results cleared, returning to lobby');
-                    navigation.navigate('NameInput', { roomId, role, category, initialTab: type });
+                if (!finalData && !hostRestartedShownRef.current) {
+                    hostRestartedShownRef.current = true;
+                    setShowHostRestartedAlert(true);
                 }
             });
         }
@@ -774,6 +775,18 @@ export default function ResultScreen({ route, navigation }) {
                     onCancel={() => setShowExitConfirm(false)}
                     confirmText={t('common.confirm')}
                     cancelText={t('common.cancel')}
+                    type="info"
+                />
+
+                <CyberAlert
+                    visible={showHostRestartedAlert}
+                    title={t('common.info')}
+                    message={t('result.host_restarted')}
+                    onConfirm={() => {
+                        setShowHostRestartedAlert(false);
+                        navigation.navigate('NameInput', { roomId, role, category, initialTab: type });
+                    }}
+                    confirmText={t('common.confirm')}
                     type="info"
                 />
 

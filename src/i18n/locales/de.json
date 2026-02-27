@@ -108,6 +108,7 @@
         "select_option": "OPTION WÄHLEN",
         "add_menu_item": "Menüpunkt hinzufügen...",
         "participant_status": "TEILNEHMERSTATUS",
+        "spin_auto_start_hint": "Startet automatisch in 3 Sekunden",
         "voter": "Wähler",
         "winner": "GEWINNER",
         "waiting": "WARTEN...",
@@ -188,7 +189,8 @@
         "voted_partial": "{{voted}}/{{total}} abgestimmt",
         "participant_detail": "TEILNEHMERDETAIL",
         "participants_joined_suffix": "teilgenommen",
-        "watched": "Zuschauen"
+        "watched": "Zuschauen",
+        "host_restarted": "Host hat neu gestartet. Zurück zur Lobby."
     },
     "entry": {
         "offline_title": "OFFLINE",
@@ -227,6 +229,9 @@
         "owner_step4_title": "Menü prüfen!",
         "owner_step4_msg": "Menü prüfen, direkt auswählen oder das Roulette drehen",
         "owner_step4_icon": "🍽️",
+        "owner_step5_title": "Ergebnis erzwingen",
+        "owner_step5_msg": "Du musst nicht warten, bis alle da sind. Nutze den Erzwingen-Button auf dem Abstimmungsergebnis-Bildschirm, um die Abstimmung zu beenden und das Ergebnis jederzeit zu sehen.",
+        "owner_step5_icon": "⚡",
         "participant_step1_title": "Wähle dich aus",
         "participant_step1_msg": "Wähle deinen Namen aus der Liste",
         "participant_step1_icon": "👤",
@@ -243,7 +248,7 @@
         "people_owner_step2_msg": "Teile den Raumcode, um deine Freunde einzuladen",
         "people_owner_step2_icon": "📤",
         "people_owner_step3_title": "Drehe das Roulette!",
-        "people_owner_step3_msg": "Wenn alle bereit sind,\ndrehe und wähle einen Gewinner",
+        "people_owner_step3_msg": "Wenn alle bereit sind, dreht der Host das Roulette und wählt einen Gewinner",
         "people_owner_step3_icon": "🎰",
         "people_participant_step1_title": "Wähle dich aus",
         "people_participant_step1_msg": "Wähle zuerst deinen eigenen Namen",

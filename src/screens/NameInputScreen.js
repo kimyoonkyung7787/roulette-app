@@ -78,6 +78,8 @@ export default function NameInputScreen({ route, navigation }) {
     const spinButtonRef = useRef(null);
     const spinDelayTimerRef = useRef(null);
     const participantNavigateTimerRef = useRef(null);
+    const prevVotesRef = useRef([]);
+    const menuVoteModalTimerRef = useRef(null);
     const menuListRef = useRef(null);
     const participantInputRef = useRef(null);
     const historyRef = useRef(null);
@@ -98,9 +100,9 @@ export default function NameInputScreen({ route, navigation }) {
     const getApiBaseUrl = () => {
         if (Platform.OS === 'web') {
             const origin = window.location.origin;
-            // 로컬 개발: 프록시 사용 시 상대 URL (dev-proxy.js), 아니면 Vercel 직접 호출
+            // 로컬 개발: Expo 직접 실행 시 /api가 없어 HTML 반환 → Vercel API 직접 호출
             if (origin.includes('localhost') || origin.includes('127.0.0.1')) {
-                return ''; // 상대 URL → dev-proxy가 /api를 Vercel로 전달
+                return 'https://roulette-app-two.vercel.app';
             }
             return origin;
         }
@@ -118,7 +120,7 @@ export default function NameInputScreen({ route, navigation }) {
             const resp = await fetch(`${getApiBaseUrl()}/api/search-restaurant`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ query: q }),
+                body: JSON.stringify({ query: q, locale: i18n.language }),
             });
             const text = await resp.text();
             let data;
@@ -404,6 +406,34 @@ export default function NameInputScreen({ route, navigation }) {
                 }
             }
 
+            // Participant initial load: fetch current state so menu/participants show immediately (fixes empty screen)
+            if (role === 'participant') {
+                const currentCat = await syncService.getRoomCategory() || category || 'coffee';
+                setActiveCategory(currentCat);
+                categoryRef.current = currentCat;
+
+                const participantsList = await syncService.getParticipants();
+                if (participantsList && participantsList.length > 0) {
+                    setParticipants(participantsList);
+                }
+
+                // Load all categories into cache, then set current (matches host's menus/snack etc.)
+                const cats = ['coffee', 'meal', 'snack', 'etc'];
+                for (const cat of cats) {
+                    const catMenus = await syncService.getMenuByCategory(cat);
+                    if (catMenus && catMenus.length > 0) {
+                        menuCacheRef.current[cat] = catMenus;
+                    }
+                }
+                let menus = menuCacheRef.current[currentCat];
+                if (!menus || menus.length === 0) {
+                    menus = await syncService.getMenuItems();
+                }
+                if (menus && menus.length > 0) {
+                    setMenuItems(menus);
+                }
+            }
+
             // --- Subscriptions MUST happen after init (when roomPath is set) ---
 
             // Store unsubs
@@ -420,17 +450,14 @@ export default function NameInputScreen({ route, navigation }) {
             // Important: Host should NOT subscribe to their own updates to avoid overwriting local state while editing
             if (role === 'participant') {
                 unsubs.push(syncService.subscribeToParticipants(list => {
-                    if (list && list.length > 0) {
-                        console.log('NameInputScreen: Received participants update:', list.length, 'items');
-                        setParticipants(list);
-                    }
+                    const arr = list && Array.isArray(list) ? list : [];
+                    setParticipants(arr);
                 }));
 
+                // Always update menu items on sync (removes list.length>0 filter that caused empty screen)
                 unsubs.push(syncService.subscribeToMenuItems(list => {
-                    if (list && list.length > 0) {
-                        console.log('NameInputScreen: Received menu items update:', list.length, 'items');
-                        setMenuItems(list);
-                    }
+                    const arr = list && Array.isArray(list) ? list : [];
+                    setMenuItems(arr);
                 }));
             }
 
@@ -527,6 +554,7 @@ export default function NameInputScreen({ route, navigation }) {
                     { ref: shareIconRef, title: t('onboarding.owner_step2_title'), message: t('onboarding.owner_step2_msg'), icon: t('onboarding.owner_step2_icon') },
                     { ref: categoryTabsRef, title: t('onboarding.owner_step3_title'), message: t('onboarding.owner_step3_msg'), icon: t('onboarding.owner_step3_icon') },
                     { ref: menuListRef, title: t('onboarding.owner_step4_title'), message: t('onboarding.owner_step4_msg'), icon: t('onboarding.owner_step4_icon') },
+                    { ref: historyRef, title: t('onboarding.owner_step5_title'), message: t('onboarding.owner_step5_msg'), iconComponent: <Zap color={Colors.accent} size={28} fill={`${Colors.accent}33`} />, tooltipAtTop: true },
                 ];
             }
             return [
@@ -679,11 +707,56 @@ export default function NameInputScreen({ route, navigation }) {
         };
     }, [role, isFocused, isLoaded, roomPhase, spinTarget, finalResults, participants, hostName, onlineUsers, roomId, activeCategory]);
 
-    // Reset navigation flag when leaving screen
+    // 메뉴 모드: 참여자가 메뉴 선택 중일 때 다른 사람이 투표하면 참여자 상태 모달 자동 표시
+    useEffect(() => {
+        if (role !== 'participant' || activeTab !== 'menu' || roomPhase !== 'roulette' || spinTarget !== 'menu') return;
+        if (finalResults || participants.length < 2) return;
+
+        const prevVotes = prevVotesRef.current;
+        const newCount = votes.length;
+        const prevCount = prevVotes.length;
+        prevVotesRef.current = votes;
+
+        if (newCount > prevCount) {
+            const expectedCount = Math.max(participants.length, onlineUsers.length, 1);
+            const isLastVote = newCount >= expectedCount;
+            const hadMyVote = prevVotes.some(v => v.userId === syncService.myId);
+            const hasMyVoteNow = votes.some(v => v.userId === syncService.myId);
+            const isMyNewVote = !hadMyVote && hasMyVoteNow;
+
+            if (!isLastVote && !isMyNewVote) {
+                if (menuVoteModalTimerRef.current) clearTimeout(menuVoteModalTimerRef.current);
+                setShowUsersModal(true);
+                menuVoteModalTimerRef.current = setTimeout(() => {
+                    menuVoteModalTimerRef.current = null;
+                    setShowUsersModal(false);
+                }, 3000);
+            } else if (isLastVote) {
+                setShowUsersModal(false);
+                if (menuVoteModalTimerRef.current) {
+                    clearTimeout(menuVoteModalTimerRef.current);
+                    menuVoteModalTimerRef.current = null;
+                }
+            }
+        }
+    }, [votes, role, activeTab, roomPhase, spinTarget, finalResults, participants, onlineUsers]);
+
+    // Reset navigation flag when leaving; refresh data when participant returns (e.g. after host retry)
     useFocusEffect(
-        React.useCallback(() => () => {
-            isNavigatingRef.current = false;
-        }, [])
+        React.useCallback(() => {
+            if (role === 'participant' && isLoaded && syncService.roomId) {
+                (async () => {
+                    const currentCat = await syncService.getRoomCategory() || categoryRef.current || 'coffee';
+                    const menus = await syncService.getMenuItems();
+                    const fallback = await syncService.getMenuByCategory(currentCat);
+                    const toSet = (menus && menus.length > 0) ? menus : (fallback || []);
+                    if (toSet.length > 0) setMenuItems(toSet);
+                    const p = await syncService.getParticipants();
+                    if (p && p.length > 0) setParticipants(p);
+                })();
+            }
+            return () => { isNavigatingRef.current = false; };
+        }, [role, isLoaded])
     );
 
     // Safe reset of selection state when navigating back
@@ -785,9 +858,36 @@ export default function NameInputScreen({ route, navigation }) {
     useEffect(() => {
         if (activeTab !== 'menu' || !isLoaded) return;
         const cached = menuCacheRef.current[activeCategory];
-        setMenuItems(cached && Array.isArray(cached) ? [...cached] : []);
+        if (cached && Array.isArray(cached) && cached.length > 0) {
+            setMenuItems([...cached]);
+        } else if (role === 'participant') {
+            setMenuItems([]);
+            syncService.getMenuByCategory(activeCategory).then(menus => {
+                if (menus && menus.length > 0) {
+                    menuCacheRef.current[activeCategory] = menus;
+                    setMenuItems(menus);
+                }
+            });
+        } else {
+            setMenuItems([]);
+        }
         categoryRef.current = activeCategory;
-    }, [activeCategory, activeTab, isLoaded]);
+    }, [activeCategory, activeTab, isLoaded, role]);
+
+    // Fallback: when participant sees empty menu, retry fetch (fixes late-joiner or race)
+    useEffect(() => {
+        if (role !== 'participant' || activeTab !== 'menu' || !isLoaded || menuItems.length > 0) return;
+        const t = setTimeout(async () => {
+            const cat = categoryRef.current || await syncService.getRoomCategory() || 'coffee';
+            let menus = await syncService.getMenuItems();
+            if (!menus || menus.length === 0) menus = await syncService.getMenuByCategory(cat);
+            if (menus && menus.length > 0) {
+                menuCacheRef.current[cat] = menus;
+                setMenuItems(menus);
+            }
+        }, 500);
+        return () => clearTimeout(t);
+    }, [role, activeTab, isLoaded, menuItems.length]);
 
 
     // Save participants whenever they change (Only work in owner mode and once loaded)
@@ -1576,7 +1676,7 @@ export default function NameInputScreen({ route, navigation }) {
                                 })()}
                             </View>
 
-                            {activeTab === 'menu' && role === 'owner' && (activeCategory === 'meal' || activeCategory === 'snack') && i18n.language === 'ko' && (() => {
+                            {activeTab === 'menu' && role === 'owner' && (activeCategory === 'meal' || activeCategory === 'snack') && (() => {
                                 return (
                                     <TouchableOpacity
                                         onPress={() => {

@@ -191,7 +191,8 @@
         "voted_partial": "{{voted}}/{{total}} voted",
         "participant_detail": "PARTICIPANT DETAIL",
         "participants_joined_suffix": "participated",
-        "watched": "WATCHED"
+        "watched": "WATCHED",
+        "host_restarted": "Host has restarted. Returning to lobby."
     },
     "entry": {
         "offline_title": "OFFLINE",
@@ -234,6 +235,9 @@
         "owner_step4_title": "Check the Menu!",
         "owner_step4_msg": "Review the menu, pick directly or spin the roulette",
         "owner_step4_icon": "🍽️",
+        "owner_step5_title": "Force Result",
+        "owner_step5_msg": "You don't have to wait for everyone to join. Use the force button on the voting result screen to end the vote and see the result anytime.",
+        "owner_step5_icon": "⚡",
         "participant_step1_title": "Select Yourself",
         "participant_step1_msg": "Choose your name from the list",
         "participant_step1_icon": "👤",
@@ -250,7 +254,7 @@
         "people_owner_step2_msg": "Share the room code to invite your friends",
         "people_owner_step2_icon": "📤",
         "people_owner_step3_title": "Spin the Roulette!",
-        "people_owner_step3_msg": "When everyone's ready,\nspin to pick a winner",
+        "people_owner_step3_msg": "When everyone's ready, the host will spin the roulette on behalf of everyone to pick a winner",
         "people_owner_step3_icon": "🎰",
         "people_participant_step1_title": "Select Yourself",
         "people_participant_step1_msg": "First, select your own name",

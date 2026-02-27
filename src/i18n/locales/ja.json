@@ -108,6 +108,7 @@
         "select_option": "オプションを選択",
         "add_menu_item": "メニュー項目を追加...",
         "participant_status": "参加ステータス",
+        "spin_auto_start_hint": "3秒後に自動的に開始されます",
         "voter": "投票者",
         "winner": "当選者",
         "waiting": "待機中...",
@@ -188,7 +189,8 @@
         "voted_partial": "{{voted}}/{{total}} 参加",
         "participant_detail": "参加者詳細",
         "participants_joined_suffix": "参加",
-        "watched": "視聴"
+        "watched": "視聴",
+        "host_restarted": "ホストが再開しました。ロビーに戻ります。"
     },
     "entry": {
         "offline_title": "OFFLINE",
@@ -227,6 +229,9 @@
         "owner_step4_title": "メニューを確認！",
         "owner_step4_msg": "メニューを確認して、直接選択するかルーレットを回しましょう",
         "owner_step4_icon": "🍽️",
+        "owner_step5_title": "強制で結果確認",
+        "owner_step5_msg": "参加者が全員揃わなくても、投票結果画面の強制ボタンでいつでも結果を確認できます",
+        "owner_step5_icon": "⚡",
         "participant_step1_title": "自分を選択",
         "participant_step1_msg": "リストから自分の名前を選んでください",
         "participant_step1_icon": "👤",
@@ -243,7 +248,7 @@
         "people_owner_step2_msg": "ルームコードを共有して友達を招待できます",
         "people_owner_step2_icon": "📤",
         "people_owner_step3_title": "ルーレットを回そう！",
-        "people_owner_step3_msg": "全員揃ったら\nルーレットを回して当選者を決めましょう",
+        "people_owner_step3_msg": "全員揃ったらホストが代表でルーレットを回して当選者を決めます",
         "people_owner_step3_icon": "🎰",
         "people_participant_step1_title": "自分を選択",
         "people_participant_step1_msg": "まず自分の名前を選択してください",

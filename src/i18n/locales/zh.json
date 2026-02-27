@@ -108,6 +108,7 @@
         "select_option": "选择选项",
         "add_menu_item": "添加菜单项...",
         "participant_status": "参与状态",
+        "spin_auto_start_hint": "3秒后自动开始",
         "voter": "投票人",
         "winner": "获奖者",
         "waiting": "等待中...",
@@ -188,7 +189,8 @@
         "voted_partial": "{{voted}}/{{total}} 已投票",
         "participant_detail": "参与者详情",
         "participants_joined_suffix": "参与",
-        "watched": "观看"
+        "watched": "观看",
+        "host_restarted": "主持人已重新开始。正在返回大厅。"
     },
     "entry": {
         "offline_title": "OFFLINE",
@@ -227,6 +229,9 @@
         "owner_step4_title": "查看菜单！",
         "owner_step4_msg": "确认菜单，直接选择或转动轮盘吧",
         "owner_step4_icon": "🍽️",
+        "owner_step5_title": "强制查看结果",
+        "owner_step5_msg": "即使参与者未全部进入，也可在投票结果界面使用强制按钮随时查看结果",
+        "owner_step5_icon": "⚡",
         "participant_step1_title": "选择自己",
         "participant_step1_msg": "从列表中选择你的名字",
         "participant_step1_icon": "👤",
@@ -243,7 +248,7 @@
         "people_owner_step2_msg": "分享房间号邀请好友加入",
         "people_owner_step2_icon": "📤",
         "people_owner_step3_title": "转动轮盘！",
-        "people_owner_step3_msg": "所有人准备好后\n转动轮盘选出幸运儿",
+        "people_owner_step3_msg": "所有人准备好后，主持人将代表大家转动轮盘选出幸运儿",
         "people_owner_step3_icon": "🎰",
         "people_participant_step1_title": "选择自己",
         "people_participant_step1_msg": "请先选择自己的名字",

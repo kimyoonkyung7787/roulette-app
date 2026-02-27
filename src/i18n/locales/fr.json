@@ -108,6 +108,7 @@
         "select_option": "SÉLECTIONNER L'OPTION",
         "add_menu_item": "Ajouter un plat...",
         "participant_status": "ÉTAT DES PARTICIPANTS",
+        "spin_auto_start_hint": "Démarrage automatique dans 3 secondes",
         "voter": "Électeur",
         "winner": "GAGNANT",
         "waiting": "EN ATTENTE...",
@@ -188,7 +189,8 @@
         "voted_partial": "{{voted}}/{{total}} ont voté",
         "participant_detail": "DÉTAIL DES PARTICIPANTS",
         "participants_joined_suffix": "participé",
-        "watched": "Regarder"
+        "watched": "Regarder",
+        "host_restarted": "L'hôte a redémarré. Retour au lobby."
     },
     "entry": {
         "offline_title": "OFFLINE",
@@ -227,6 +229,9 @@
         "owner_step4_title": "Consultez le menu !",
         "owner_step4_msg": "Vérifiez le menu, choisissez directement ou lancez la roulette",
         "owner_step4_icon": "🍽️",
+        "owner_step5_title": "Forcer le résultat",
+        "owner_step5_msg": "Pas besoin d'attendre que tout le monde soit là. Utilisez le bouton forcer sur l'écran des résultats de vote pour terminer et voir le résultat à tout moment.",
+        "owner_step5_icon": "⚡",
         "participant_step1_title": "Sélectionnez-vous",
         "participant_step1_msg": "Choisissez votre nom dans la liste",
         "participant_step1_icon": "👤",
@@ -243,7 +248,7 @@
         "people_owner_step2_msg": "Partagez le code de salle pour inviter vos amis",
         "people_owner_step2_icon": "📤",
         "people_owner_step3_title": "Lancez la roulette !",
-        "people_owner_step3_msg": "Quand tout le monde est prêt,\nlancez pour choisir un gagnant",
+        "people_owner_step3_msg": "Quand tout le monde est prêt, l'hôte lancera la roulette pour choisir un gagnant",
         "people_owner_step3_icon": "🎰",
         "people_participant_step1_title": "Sélectionnez-vous",
         "people_participant_step1_msg": "Commencez par sélectionner votre nom",

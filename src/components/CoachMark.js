@@ -148,7 +148,12 @@ export const CoachMark = ({ steps, visible, onComplete, onSkip }) => {
     const { width: sw, height: sh } = screenDimensions;
 
     const getTooltipPosition = () => {
-        if (!targetLayout) return { top: sh / 2 - 60, left: 24, right: 24 };
+        const step = steps[currentStep];
+        const tooltipAtTop = step?.tooltipAtTop === true;
+        if (!targetLayout) {
+            if (tooltipAtTop) return { top: Math.min(100, sh * 0.15), left: 24, right: 24 };
+            return { top: sh / 2 - 60, left: 24, right: 24 };
+        }
 
         const spotBottom = targetLayout.y + targetLayout.height + SPOTLIGHT_PADDING;
         const spotTop = targetLayout.y - SPOTLIGHT_PADDING;
@@ -287,9 +292,9 @@ export const CoachMark = ({ steps, visible, onComplete, onSkip }) => {
                         }
                     ]}>
                         <View style={styles.tooltipCard}>
-                            {step.icon && (
+                            {(step.iconComponent || step.icon) && (
                                 <View style={styles.tooltipIconRow}>
-                                    <Text style={styles.tooltipEmoji}>{step.icon}</Text>
+                                    {step.iconComponent ? step.iconComponent : <Text style={styles.tooltipEmoji}>{step.icon}</Text>}
                                 </View>
                             )}
 

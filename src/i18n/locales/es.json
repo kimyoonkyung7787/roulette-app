@@ -108,6 +108,7 @@
         "select_option": "SELECCIONAR OPCIÓN",
         "add_menu_item": "Agregar plato...",
         "participant_status": "ESTADO DE PARTICIPANTES",
+        "spin_auto_start_hint": "Se iniciará automáticamente en 3 segundos",
         "voter": "Votante",
         "winner": "GANADOR",
         "waiting": "ESPERANDO...",
@@ -188,7 +189,8 @@
         "voted_partial": "{{voted}}/{{total}} votaron",
         "participant_detail": "DETALLE DE PARTICIPANTE",
         "participants_joined_suffix": "participaron",
-        "watched": "Viendo"
+        "watched": "Viendo",
+        "host_restarted": "El anfitrión ha reiniciado. Volviendo al lobby."
     },
     "entry": {
         "offline_title": "OFFLINE",
@@ -227,6 +229,9 @@
         "owner_step4_title": "¡Revisa el menú!",
         "owner_step4_msg": "Revisa el menú, elige directamente o gira la ruleta",
         "owner_step4_icon": "🍽️",
+        "owner_step5_title": "Forzar resultado",
+        "owner_step5_msg": "No tienes que esperar a que todos entren. Usa el botón de forzar en la pantalla de resultados de votación para terminar y ver el resultado cuando quieras.",
+        "owner_step5_icon": "⚡",
         "participant_step1_title": "Selecciónate",
         "participant_step1_msg": "Elige tu nombre de la lista",
         "participant_step1_icon": "👤",
@@ -243,7 +248,7 @@
         "people_owner_step2_msg": "Comparte el código de sala para invitar a tus amigos",
         "people_owner_step2_icon": "📤",
         "people_owner_step3_title": "¡Gira la ruleta!",
-        "people_owner_step3_msg": "Cuando todos estén listos,\ngira para elegir un ganador",
+        "people_owner_step3_msg": "Cuando todos estén listos, el anfitrión girará la ruleta para elegir un ganador",
         "people_owner_step3_icon": "🎰",
         "people_participant_step1_title": "Selecciónate",
         "people_participant_step1_msg": "Primero, selecciona tu propio nombre",
