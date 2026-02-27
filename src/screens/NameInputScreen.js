@@ -530,7 +530,7 @@ export default function NameInputScreen({ route, navigation }) {
             try {
                 const countStr = await AsyncStorage.getItem(key);
                 const count = countStr ? parseInt(countStr, 10) : 0;
-                if (count < 3) {
+                if (count < 2) {
                     setTimeout(() => setShowCoachMark(true), 800);
                 }
             } catch (e) { /* ignore */ }
@@ -948,7 +948,14 @@ export default function NameInputScreen({ route, navigation }) {
             const { type, list, participants: restoredParticipants, category: restoredCategory } = route.params.restoredData;
             console.log(`NameInputScreen: Restoring ${type} from history... (current mode: ${mode})`);
 
-            if (type === 'people') {
+            if (type === 'participants_only') {
+                const normalizedList = (restoredParticipants || []).map(p => ({
+                    name: typeof p === 'object' ? (p.name || p.text || '') : String(p),
+                    weight: p.weight ?? 1
+                }));
+                setParticipants(normalizedList);
+                syncService.setParticipants(normalizedList);
+            } else if (type === 'people') {
                 const normalizedList = list.map(p => {
                     const itemName = typeof p === 'object' ? (p.name || p.text || '') : p;
                     return { name: itemName, weight: p.weight ?? 1 };

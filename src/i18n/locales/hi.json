@@ -211,7 +211,8 @@
     "history": {
         "title": "लॉग इतिहास",
         "no_data": "कोई लॉग नहीं मिला",
-        "restore": "RESTORE SETTINGS"
+        "restore": "RESTORE SETTINGS",
+        "restore_participants": "प्रतिभागियों को पुनर्स्थापित करें"
     },
     "onboarding": {
         "skip": "छोड़ें",

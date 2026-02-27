@@ -213,7 +213,8 @@
     "history": {
         "title": "기록 로그",
         "no_data": "기록을 찾을 수 없습니다",
-        "restore": "설정 복구"
+        "restore": "전체설정 복구",
+        "restore_participants": "참여자 복구"
     },
     "onboarding": {
         "skip": "건너뛰기",

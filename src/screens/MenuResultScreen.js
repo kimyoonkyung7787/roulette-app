@@ -33,7 +33,10 @@ export default function MenuResultScreen({ route, navigation }) {
         finalVotes: rawFinalVotes = [],
         type = 'menu',
         category = 'coffee',
-        originalItems = []
+        originalItems = [],
+        participants: rawParticipants = [],
+        joinedNames: rawJoinedNames = [],
+        hostName: hostNameFromParams
     } = route.params || {};
 
     // Firebase/Chrome: finalVotes가 객체로 올 수 있음 → 항상 배열로 정규화
@@ -42,6 +45,8 @@ export default function MenuResultScreen({ route, navigation }) {
         : (rawFinalVotes && typeof rawFinalVotes === 'object')
             ? Object.values(rawFinalVotes)
             : [];
+    const ensureArray = (v) => Array.isArray(v) ? v : (v && typeof v === 'object' ? Object.values(v) : []);
+    const norm = (s) => String(s || '').trim().replace(/\s+/g, '');
 
     const [allVoted, setAllVoted] = useState(false);
     const [onlineUsers, setOnlineUsers] = useState([]);
@@ -126,23 +131,34 @@ export default function MenuResultScreen({ route, navigation }) {
                     .then(() => setTimeout(() => setAllVoted(true), 100))
                     .catch(err => console.error('MenuResultScreen: Fanfare failed:', err));
 
-                let details = [];
-                const hostNameFromParams = route.params?.hostName;
+                // 피플모드처럼 전체 참여자(미접속 포함) 리스트 표시
+                const participants = ensureArray(rawParticipants);
+                const joinedNames = ensureArray(rawJoinedNames);
+                const joinedSet = new Set(joinedNames.map(n => norm(String(n))));
+                const getName = (p) => typeof p === 'object' ? (p.name || p.text || '') : String(p);
+                const fromParams = participants.map(p => ({ name: getName(p) })).filter(u => u.name && u.name.trim());
+                const fromJoined = joinedNames.map(n => ({ name: String(n).trim() })).filter(u => u.name);
+                const fromVotes = (finalVotes || []).map(v => ({ name: (v.userName || v.votedFor || '').trim() })).filter(u => u.name);
+                const detailNameToItem = new Map(fromParams.map(u => [norm(u.name), u]));
+                [...fromJoined, ...fromVotes].forEach(u => { const k = norm(u.name); if (k && !detailNameToItem.has(k)) detailNameToItem.set(k, { name: u.name }); });
+                const fullParticipantsForDetails = Array.from(detailNameToItem.values());
 
-                if (onlineUsers && onlineUsers.length > 0) {
-                    details = onlineUsers.map(user => {
-                        const vote = finalVotes.find(v => v.userId === user.id);
-                        let isUserOwner = hostNameFromParams ? (user.name === hostNameFromParams) : false;
-                        if (!isUserOwner) isUserOwner = user.role === 'owner';
-                        if (!isUserOwner && user.id === syncService.myId && role === 'owner') isUserOwner = true;
-                        if (!isUserOwner && user.name === roomId) isUserOwner = true;
+                let details = [];
+                if (fullParticipantsForDetails.length > 0) {
+                    details = fullParticipantsForDetails.map(p => {
+                        const name = (p.name || '').trim();
+                        if (!name) return null;
+                        const joined = joinedSet.has(norm(name));
+                        const vote = finalVotes.find(v => v.userName === name);
+                        const isUserOwner = (hostNameFromParams && norm(name) === norm(hostNameFromParams)) || name === roomId;
                         return {
-                            name: user.name,
-                            votedFor: vote ? vote.votedFor : t('common.no_vote').toUpperCase(),
-                            isMe: user.id === syncService.myId,
+                            name,
+                            votedFor: joined ? (vote ? vote.votedFor : t('common.no_vote').toUpperCase()) : t('common.not_connected').toUpperCase(),
+                            isNotConnected: !joined,
+                            isMe: syncService.myName === name,
                             isOwner: isUserOwner
                         };
-                    });
+                    }).filter(Boolean);
                 } else {
                     details = finalVotes.map(v => ({
                         name: v.userName || 'Unknown',
@@ -156,7 +172,7 @@ export default function MenuResultScreen({ route, navigation }) {
                 historyService.addWinner(winner, type, details, originalList, roomId, category);
                 hasSavedRef.current = true;
                 setFixedParticipantDetails(details.map((d, i) => ({
-                    id: d.name + '-' + i,
+                    id: (d.name || '') + '-' + i,
                     name: d.name,
                     votedFor: d.votedFor,
                     isMe: d.isMe,
@@ -164,7 +180,7 @@ export default function MenuResultScreen({ route, navigation }) {
                 })));
             }
         }
-    }, [tally, totalParticipants, isForced, winner, type, onlineUsers, finalVotes]);
+    }, [tally, totalParticipants, isForced, winner, type, onlineUsers, finalVotes, rawParticipants, rawJoinedNames]);
 
     // Participant reset sync: when host retries, show message then navigate
     // Use CyberAlert (Modal) instead of Alert.alert - Alert does NOT work on web (Firefox, IE, Chrome)
@@ -229,6 +245,31 @@ export default function MenuResultScreen({ route, navigation }) {
         if (fixedParticipantDetails && fixedParticipantDetails.length > 0) {
             return fixedParticipantDetails;
         }
+        // 피플모드처럼 전체 참여자(미접속 포함) 표시
+        const participants = ensureArray(rawParticipants);
+        const joinedNames = ensureArray(rawJoinedNames);
+        const joinedSet = new Set(joinedNames.map(n => norm(String(n))));
+        const getName = (p) => typeof p === 'object' ? (p.name || p.text || '') : String(p);
+        const fromParams = participants.map(p => ({ name: getName(p) })).filter(u => u.name && u.name.trim());
+        const fromJoined = joinedNames.map(n => ({ name: String(n).trim() })).filter(u => u.name);
+        const fromVotes = (finalVotes || []).map(v => ({ name: (v.userName || '').trim() })).filter(u => u.name);
+        const detailNameToItem = new Map(fromParams.map(u => [norm(u.name), u]));
+        [...fromJoined, ...fromVotes].forEach(u => { const k = norm(u.name); if (k && !detailNameToItem.has(k)) detailNameToItem.set(k, { name: u.name }); });
+        const fullList = Array.from(detailNameToItem.values());
+        if (fullList.length > 0) {
+            return fullList.map((p, idx) => {
+                const name = (p.name || '').trim();
+                const joined = joinedSet.has(norm(name));
+                const vote = finalVotes.find(v => v.userName === name);
+                return {
+                    id: name + '-' + idx,
+                    name,
+                    votedFor: joined ? (vote ? vote.votedFor : null) : t('common.not_connected'),
+                    isMe: syncService.myName === name,
+                    isOwner: (hostNameFromParams && norm(name) === norm(hostNameFromParams)) || name === roomId || (syncService.myId && syncService.myName === name && role === 'owner')
+                };
+            });
+        }
         if (onlineUsers && onlineUsers.length > 0) {
             return onlineUsers.map((user, idx) => {
                 const vote = finalVotes.find(v => v.userId === user.id);
@@ -275,7 +316,7 @@ export default function MenuResultScreen({ route, navigation }) {
                                 <TouchableOpacity onPress={handleShare} style={{ padding: 4 }} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
                                     <Share2 color={Colors.accent} size={24} />
                                 </TouchableOpacity>
-                                <TouchableOpacity onPress={() => navigation.navigate('History', { role, roomId, mode, category })} style={{ padding: 4 }}>
+                                <TouchableOpacity onPress={() => navigation.navigate('History', { role, roomId, mode, category, activeTab: 'menu' })} style={{ padding: 4 }}>
                                     <History color={Colors.primary} size={24} />
                                 </TouchableOpacity>
                                 <TouchableOpacity onPress={() => setShowExitConfirm(true)} style={{ padding: 4 }}>

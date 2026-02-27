@@ -462,7 +462,7 @@ export default function ResultScreen({ route, navigation }) {
                                         <ListChecks color={Colors.success} size={24} />
                                     </TouchableOpacity>
                                 )}
-                                <TouchableOpacity onPress={() => navigation.navigate('History', { role, roomId, mode, category })} style={{ padding: 4 }}>
+                                <TouchableOpacity onPress={() => navigation.navigate('History', { role, roomId, mode, category, activeTab: 'people' })} style={{ padding: 4 }}>
                                     <History color={Colors.primary} size={24} />
                                 </TouchableOpacity>
                                 {mode !== 'offline' && (

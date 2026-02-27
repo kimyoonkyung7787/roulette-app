@@ -211,7 +211,8 @@
     "history": {
         "title": "HISTORIAL DE REGISTROS",
         "no_data": "NO SE ENCONTRARON REGISTROS",
-        "restore": "RESTORE SETTINGS"
+        "restore": "RESTORE SETTINGS",
+        "restore_participants": "RESTAURAR PARTICIPANTES"
     },
     "onboarding": {
         "skip": "Omitir",

@@ -211,7 +211,8 @@
     "history": {
         "title": "HISTORIQUE DES JOURNAUX",
         "no_data": "AUCUN JOURNAL TROUVÉ",
-        "restore": "RESTORE SETTINGS"
+        "restore": "RESTORE SETTINGS",
+        "restore_participants": "RESTAURER LES PARTICIPANTS"
     },
     "onboarding": {
         "skip": "Passer",

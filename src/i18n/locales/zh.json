@@ -211,7 +211,8 @@
     "history": {
         "title": "记录历史",
         "no_data": "未找到记录日志",
-        "restore": "RESTORE SETTINGS"
+        "restore": "RESTORE SETTINGS",
+        "restore_participants": "恢复参与者"
     },
     "onboarding": {
         "skip": "跳过",

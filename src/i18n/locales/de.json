@@ -211,7 +211,8 @@
     "history": {
         "title": "PROTOKOLLVERLAUF",
         "no_data": "KEINE PROTOKOLLE GEFUNDEN",
-        "restore": "RESTORE SETTINGS"
+        "restore": "RESTORE SETTINGS",
+        "restore_participants": "TEILNEHMER WIEDERHERSTELLEN"
     },
     "onboarding": {
         "skip": "Überspringen",

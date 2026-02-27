@@ -217,7 +217,8 @@
     "history": {
         "title": "LOG HISTORY",
         "no_data": "NO DATA LOGS FOUND",
-        "restore": "RESTORE SETTINGS"
+        "restore": "RESTORE SETTINGS",
+        "restore_participants": "RESTORE PARTICIPANTS"
     },
     "onboarding": {
         "skip": "Skip",

@@ -92,11 +92,56 @@ export default function HistoryScreen({ route, navigation }) {
         });
     };
 
+    const handleRestoreParticipants = (item) => {
+        let participantsList = null;
+        if (item.type === 'people' && item.originalList && item.originalList.length > 0) {
+            participantsList = item.originalList.map((p, i) => {
+                const name = typeof p === 'object' ? (p.name || p.text || '') : String(p);
+                return { name, weight: p.weight ?? 1 };
+            });
+        } else if (item.type === 'menu' && item.details && item.details.length > 0) {
+            const seen = {};
+            participantsList = item.details
+                .map(d => ({ name: d.name, weight: 1 }))
+                .filter(p => {
+                    if (seen[p.name]) return false;
+                    seen[p.name] = true;
+                    return true;
+                });
+        }
+        if (!participantsList || participantsList.length === 0) return;
+
+        const restoredData = {
+            type: 'participants_only',
+            participants: participantsList,
+            timestamp: Date.now()
+        };
+        navigation.reset({
+            index: 1,
+            routes: [
+                { name: 'Welcome' },
+                {
+                    name: 'NameInput',
+                    params: {
+                        roomId,
+                        role,
+                        mode,
+                        category: category || 'coffee',
+                        initialTab: currentTab || 'people',
+                        restoredData
+                    }
+                }
+            ]
+        });
+    };
+
     const renderItem = ({ item }) => {
         const date = new Date(item.timestamp);
         const dateString = date.toLocaleDateString();
         const timeString = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
         const canRestore = (role === 'owner' || mode === 'offline') && item.originalList && item.originalList.length > 0;
+        const hasParticipants = (item.type === 'people' && item.originalList?.length > 0) || (item.type === 'menu' && item.details?.length > 0);
+        const canRestoreParticipants = mode === 'online' && role === 'owner' && hasParticipants;
 
         return (
             <View style={[styles.historyItem, { borderLeftColor: item.type === 'menu' ? Colors.secondary : Colors.primary, flexDirection: 'column', alignItems: 'stretch' }]}>
@@ -141,24 +186,42 @@ export default function HistoryScreen({ route, navigation }) {
 
                 {/* Button and Details column */}
                 <View>
-                    {canRestore && (
-                        <TouchableOpacity
-                            onPress={() => handleRestore(item)}
-                            style={{
-                                marginTop: 15,
-                                backgroundColor: 'rgba(57, 255, 20, 0.1)',
-                                padding: 10,
-                                borderRadius: 6,
-                                borderWidth: 1,
-                                borderColor: Colors.success,
-                                alignSelf: 'flex-start'
-                            }}
-                        >
-                            <Text style={{ color: Colors.success, fontSize: 11, fontWeight: 'bold' }}>
-                                {t('history.restore').toUpperCase()}
-                            </Text>
-                        </TouchableOpacity>
-                    )}
+                    <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 15 }}>
+                        {canRestore && (
+                            <TouchableOpacity
+                                onPress={() => handleRestore(item)}
+                                style={{
+                                    backgroundColor: Colors.success,
+                                    paddingVertical: 6,
+                                    paddingHorizontal: 10,
+                                    borderRadius: 6,
+                                    borderWidth: 1,
+                                    borderColor: Colors.success,
+                                }}
+                            >
+                                <Text style={{ color: '#050505', fontSize: 11, fontWeight: 'bold' }}>
+                                    {t('history.restore')}
+                                </Text>
+                            </TouchableOpacity>
+                        )}
+                        {canRestoreParticipants && (
+                            <TouchableOpacity
+                                onPress={() => handleRestoreParticipants(item)}
+                                style={{
+                                    backgroundColor: Colors.primary,
+                                    paddingVertical: 6,
+                                    paddingHorizontal: 10,
+                                    borderRadius: 6,
+                                    borderWidth: 1,
+                                    borderColor: Colors.primary,
+                                }}
+                            >
+                                <Text style={{ color: '#050505', fontSize: 11, fontWeight: 'bold' }}>
+                                    {t('history.restore_participants')}
+                                </Text>
+                            </TouchableOpacity>
+                        )}
+                    </View>
 
                     {/* Check if details exist and render them - SKIP for offline items */}
                     {item.roomId !== 'offline' && item.details && item.details.length > 0 && (
@@ -187,7 +250,15 @@ export default function HistoryScreen({ route, navigation }) {
                                             </View>
                                         )}
                                     </View>
-                                    <Text style={{ color: Colors.secondary, fontSize: 11, fontWeight: 'bold' }}>
+                                    <Text style={{
+                                        color: (detail.isNotConnected || detail.votedFor === t('common.not_connected') || detail.votedFor === t('common.not_connected').toUpperCase())
+                                            ? 'rgba(255,255,255,0.7)'
+                                            : Colors.secondary,
+                                        fontSize: 11,
+                                        fontWeight: (detail.isNotConnected || detail.votedFor === t('common.not_connected') || detail.votedFor === t('common.not_connected').toUpperCase())
+                                            ? 'normal'
+                                            : 'bold'
+                                    }}>
                                         {detail.votedFor}
                                     </Text>
                                 </View>

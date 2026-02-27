@@ -211,7 +211,8 @@
     "history": {
         "title": "履歴ログ",
         "no_data": "履歴が見つかりません",
-        "restore": "RESTORE SETTINGS"
+        "restore": "RESTORE SETTINGS",
+        "restore_participants": "参加者復元"
     },
     "onboarding": {
         "skip": "スキップ",

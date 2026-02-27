@@ -211,7 +211,8 @@
     "history": {
         "title": "سجل العمليات",
         "no_data": "لم يتم العثور على سجلات",
-        "restore": "RESTORE SETTINGS"
+        "restore": "RESTORE SETTINGS",
+        "restore_participants": "استعادة المشاركين"
     },
     "onboarding": {
         "skip": "تخطي",
