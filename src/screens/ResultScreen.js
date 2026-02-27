@@ -805,7 +805,7 @@ const styles = StyleSheet.create({
         flex: 1,
         paddingHorizontal: 24,
         alignItems: 'center',
-        paddingBottom: 20,
+        paddingBottom: 48,
         width: '100%',
         maxWidth: 500,
         alignSelf: 'center',
@@ -912,8 +912,8 @@ const styles = StyleSheet.create({
     footer: {
         width: '100%',
         paddingHorizontal: 24,
-        paddingBottom: 20,
-        paddingTop: 10,
+        paddingBottom: 12,
+        paddingTop: 6,
         backgroundColor: 'transparent',
     },
     retryButton: {
@@ -923,7 +923,7 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         borderWidth: 1.5,
         borderColor: Colors.primary,
-        paddingVertical: 10,
+        paddingVertical: 8,
         borderRadius: 16,
         backgroundColor: 'transparent',
     },
