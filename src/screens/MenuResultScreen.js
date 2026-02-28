@@ -54,6 +54,7 @@ export default function MenuResultScreen({ route, navigation }) {
     const [showHostRestartedAlert, setShowHostRestartedAlert] = useState(false);
     const [showHostEndedAlert, setShowHostEndedAlert] = useState(false);
     const [fixedParticipantDetails, setFixedParticipantDetails] = useState(null);
+    const hasSavedRef = useRef(false);
     const onlineUsersRef = useRef([]);
     const lastFinalDataRef = useRef(route.params || null); // Track last known valid data
     const isInitialMountRef = useRef(true); // Flag to skip initial null during mount
