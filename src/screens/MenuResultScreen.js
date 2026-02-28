@@ -54,7 +54,9 @@ export default function MenuResultScreen({ route, navigation }) {
     const [showHostRestartedAlert, setShowHostRestartedAlert] = useState(false);
     const [showHostEndedAlert, setShowHostEndedAlert] = useState(false);
     const [fixedParticipantDetails, setFixedParticipantDetails] = useState(null);
-    const hasSavedRef = useRef(false);
+    const onlineUsersRef = useRef([]);
+    const lastFinalDataRef = useRef(route.params || null); // Track last known valid data
+    const isInitialMountRef = useRef(true); // Flag to skip initial null during mount
     const hostRestartedShownRef = useRef(false);
 
     const pulseAnim = useRef(new Animated.Value(0)).current;
@@ -191,19 +193,34 @@ export default function MenuResultScreen({ route, navigation }) {
         let unsubRoomDeleted;
         let alertShown = false;
 
+        // Give extra time for navigation/data sync to settle before listening for "restarts"
+        const mountTimer = setTimeout(() => {
+            if (isMounted) isInitialMountRef.current = false;
+        }, 1500);
+
         if (role === 'participant') {
             unsubFinal = syncService.subscribeToFinalResults((finalData) => {
-                if (!finalData && !hostRestartedShownRef.current && !alertShown) {
+                // Ignore if still mounting or if data hasn't actually changed from present to null
+                if (isInitialMountRef.current) {
+                    if (finalData) lastFinalDataRef.current = finalData;
+                    return;
+                }
+
+                if (!finalData && lastFinalDataRef.current && !hostRestartedShownRef.current && !alertShown) {
                     // Firebase optimistic update race condition prevention:
                     // If room is deleted, subscribeToRoomDeleted will fire almost simultaneously.
-                    // We wait 300ms. If alertShown is still false, it means it's a retry, not an exit.
+                    // We wait 400ms. If alertShown is still false, it means it's a retry, not an exit.
                     setTimeout(() => {
-                        if (!isMounted || alertShown) return; // Prevent side effects on unmounted
+                        if (!isMounted || alertShown) return;
 
                         alertShown = true;
                         hostRestartedShownRef.current = true;
                         setShowHostRestartedAlert(true);
-                    }, 300);
+                    }, 400);
+                }
+
+                if (finalData) {
+                    lastFinalDataRef.current = finalData;
                 }
             });
 
@@ -219,7 +236,8 @@ export default function MenuResultScreen({ route, navigation }) {
             });
         }
         return () => {
-            isMounted = false; // Cleanup component state logic
+            isMounted = false;
+            clearTimeout(mountTimer);
             if (unsubFinal) unsubFinal();
             if (unsubRoomDeleted) unsubRoomDeleted();
         };

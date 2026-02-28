@@ -160,6 +160,8 @@ export default function ResultScreen({ route, navigation }) {
     const [alertConfig, setAlertConfig] = useState({ visible: false, title: '', message: '', onConfirm: null });
     const hasSavedRef = useRef(false);
     const hostRestartedShownRef = useRef(false);
+    const lastFinalDataRef = useRef(route.params || null); // Track last known valid data
+    const isInitialMountRef = useRef(true); // Flag to skip initial null during mount
     // Animations for Results
     const drumBeatAnim = useRef(new Animated.Value(0)).current;
     const trumpetBeatAnim = useRef(new Animated.Value(0)).current;
@@ -329,49 +331,56 @@ export default function ResultScreen({ route, navigation }) {
     }, [tally, totalParticipants, isForced, winner, type, onlineUsers, finalVotes]);
 
     useEffect(() => {
-        let isMounted = true; // Guard component unmount side-effects during async
+        let isMounted = true;
         let unsubFinal;
-        let alertShown = false; // Shared flag to prevent multiple alerts
+        let unsubRoomDeleted;
+        let alertShown = false;
+        let mountTimer;
 
-        // Sync navigation for participants: when host retries, show message then navigate
-        // Use CyberAlert (Modal) instead of Alert.alert - Alert does NOT work on web
         if (role === 'participant') {
-            unsubFinal = syncService.subscribeToFinalResults((finalData) => {
-                if (!finalData && !hostRestartedShownRef.current && !alertShown) {
-                    // Firebase optimistic update race condition prevention:
-                    // If room is deleted, subscribeToRoomDeleted will fire almost simultaneously.
-                    // We wait 300ms. If alertShown is still false, it means it's a retry, not an exit.
-                    setTimeout(() => {
-                        if (!isMounted || alertShown) return; // Component unmounted or room deleted alert already fired
+            // Give extra time for navigation/data sync to settle before listening for "restarts"
+            mountTimer = setTimeout(() => {
+                if (isMounted) isInitialMountRef.current = false;
+            }, 1500);
 
+            unsubFinal = syncService.subscribeToFinalResults((finalData) => {
+                if (isInitialMountRef.current) {
+                    if (finalData) lastFinalDataRef.current = finalData;
+                    return;
+                }
+
+                if (!finalData && lastFinalDataRef.current && !hostRestartedShownRef.current && !alertShown) {
+                    setTimeout(() => {
+                        if (!isMounted || alertShown) return;
                         alertShown = true;
                         hostRestartedShownRef.current = true;
                         setShowHostRestartedAlert(true);
-                    }, 300);
+                    }, 400);
+                }
+
+                if (finalData) {
+                    lastFinalDataRef.current = finalData;
                 }
             });
-        }
 
-        // Listen for room deletion (when host exits completely)
-        let unsubRoomDeleted;
-        if (role === 'participant') {
             unsubRoomDeleted = syncService.subscribeToRoomDeleted(() => {
                 if (!isMounted) return;
-
                 if (!alertShown) {
                     alertShown = true;
+                    setShowHostRestartedAlert(false);
                     setShowHostEndedAlert(true);
                 }
             });
         }
 
         return () => {
-            isMounted = false; // Block state updates on unmounted component
+            isMounted = false;
             console.log('ResultScreen: Cleaning up subscriptions');
+            if (mountTimer) clearTimeout(mountTimer);
             if (unsubFinal) unsubFinal();
             if (unsubRoomDeleted) unsubRoomDeleted();
         };
-    }, [role, roomId, navigation, t]); // Added navigation and t to dependencies
+    }, [role, roomId, navigation, t]);
 
     useEffect(() => {
         if (mode === 'offline') return;
