@@ -14,10 +14,10 @@ class ParticipantService {
     async getParticipants() {
         try {
             const jsonValue = await AsyncStorage.getItem(PARTICIPANTS_KEY);
-            return jsonValue != null ? JSON.parse(jsonValue) : [{ name: '참여자 1', weight: 1 }, { name: '참여자 2', weight: 1 }];
+            return jsonValue != null ? JSON.parse(jsonValue) : [{ name: 'Participant 1', weight: 1 }, { name: 'Participant 2', weight: 1 }];
         } catch (e) {
             console.error('Error getting participants:', e);
-            return [{ name: '참여자 1', weight: 1 }, { name: '참여자 2', weight: 1 }];
+            return [{ name: 'Participant 1', weight: 1 }, { name: 'Participant 2', weight: 1 }];
         }
     }
 }

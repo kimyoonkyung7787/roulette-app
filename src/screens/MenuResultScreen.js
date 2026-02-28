@@ -9,7 +9,7 @@ import { feedbackService } from '../services/FeedbackService';
 import { historyService } from '../services/HistoryService';
 import { syncService } from '../services/SyncService';
 import { useTranslation } from 'react-i18next';
-import { Share2, History, LogOut, RefreshCw, CheckCircle2, Crown, Coffee, UtensilsCrossed, Cookie, Package } from 'lucide-react-native';
+import { Share2, History, LogOut, RefreshCw, CheckCircle2, CircleOff, Crown, Coffee, UtensilsCrossed, Cookie, Package } from 'lucide-react-native';
 import { Confetti } from '../components/Confetti';
 
 const CATEGORY_ICONS = {
@@ -52,6 +52,7 @@ export default function MenuResultScreen({ route, navigation }) {
     const [onlineUsers, setOnlineUsers] = useState([]);
     const [showExitConfirm, setShowExitConfirm] = useState(false);
     const [showHostRestartedAlert, setShowHostRestartedAlert] = useState(false);
+    const [showHostEndedAlert, setShowHostEndedAlert] = useState(false);
     const [fixedParticipantDetails, setFixedParticipantDetails] = useState(null);
     const hasSavedRef = useRef(false);
     const hostRestartedShownRef = useRef(false);
@@ -185,16 +186,43 @@ export default function MenuResultScreen({ route, navigation }) {
     // Participant reset sync: when host retries, show message then navigate
     // Use CyberAlert (Modal) instead of Alert.alert - Alert does NOT work on web (Firefox, IE, Chrome)
     useEffect(() => {
+        let isMounted = true;
         let unsubFinal;
+        let unsubRoomDeleted;
+        let alertShown = false;
+
         if (role === 'participant') {
-            unsubFinal = syncService.subscribeToFinalResults(finalData => {
-                if (!finalData && !hostRestartedShownRef.current) {
-                    hostRestartedShownRef.current = true;
-                    setShowHostRestartedAlert(true);
+            unsubFinal = syncService.subscribeToFinalResults((finalData) => {
+                if (!finalData && !hostRestartedShownRef.current && !alertShown) {
+                    // Firebase optimistic update race condition prevention:
+                    // If room is deleted, subscribeToRoomDeleted will fire almost simultaneously.
+                    // We wait 300ms. If alertShown is still false, it means it's a retry, not an exit.
+                    setTimeout(() => {
+                        if (!isMounted || alertShown) return; // Prevent side effects on unmounted
+
+                        alertShown = true;
+                        hostRestartedShownRef.current = true;
+                        setShowHostRestartedAlert(true);
+                    }, 300);
+                }
+            });
+
+            // Listen for room deletion (when host exits completely)
+            unsubRoomDeleted = syncService.subscribeToRoomDeleted(() => {
+                if (!isMounted) return;
+
+                if (!alertShown) {
+                    alertShown = true;
+                    setShowHostRestartedAlert(false);
+                    setShowHostEndedAlert(true);
                 }
             });
         }
-        return () => { if (unsubFinal) unsubFinal(); };
+        return () => {
+            isMounted = false; // Cleanup component state logic
+            if (unsubFinal) unsubFinal();
+            if (unsubRoomDeleted) unsubRoomDeleted();
+        };
     }, [role, roomId]);
 
     // Online users subscription
@@ -266,7 +294,8 @@ export default function MenuResultScreen({ route, navigation }) {
                     name,
                     votedFor: joined ? (vote ? vote.votedFor : null) : t('common.not_connected'),
                     isMe: syncService.myName === name,
-                    isOwner: (hostNameFromParams && norm(name) === norm(hostNameFromParams)) || name === roomId || (syncService.myId && syncService.myName === name && role === 'owner')
+                    isOwner: (hostNameFromParams && norm(name) === norm(hostNameFromParams)) || name === roomId || (syncService.myId && syncService.myName === name && role === 'owner'),
+                    isNotConnected: !joined
                 };
             });
         }
@@ -278,7 +307,8 @@ export default function MenuResultScreen({ route, navigation }) {
                     name: user.name,
                     votedFor: vote ? vote.votedFor : null,
                     isMe: user.id === syncService.myId,
-                    isOwner: user.role === 'owner' || (user.id === syncService.myId && role === 'owner')
+                    isOwner: user.role === 'owner' || (user.id === syncService.myId && role === 'owner'),
+                    isNotConnected: false
                 };
             });
         }
@@ -287,7 +317,8 @@ export default function MenuResultScreen({ route, navigation }) {
             name: v.userName || 'Unknown',
             votedFor: v.votedFor,
             isMe: v.userId === syncService.myId,
-            isOwner: v.userId === syncService.myId && role === 'owner'
+            isOwner: v.userId === syncService.myId && role === 'owner',
+            isNotConnected: false
         }));
     })();
 
@@ -395,31 +426,52 @@ export default function MenuResultScreen({ route, navigation }) {
                             <View style={styles.sectionHeader}>
                                 <NeonText style={styles.sectionTitle}>{t('result.participant_detail')}</NeonText>
                             </View>
-                            {sortedParticipants.map((p, idx) => (
-                                <View key={p.id ?? `p-${idx}`} style={styles.participantRow}>
-                                    <View style={styles.participantLeft}>
-                                        <View style={[styles.statusDot, { backgroundColor: p.votedFor ? Colors.success : Colors.primary }]} />
-                                        <Text style={styles.participantName} numberOfLines={1}>
-                                            {p.name}
-                                        </Text>
-                                        {p.isMe && (
-                                            <Text style={styles.meBadge}>{t('common.me')}</Text>
-                                        )}
-                                        {p.isOwner && (
-                                            <Crown color={Colors.accent} size={10} fill={`${Colors.accent}33`} style={{ marginLeft: 4 }} />
-                                        )}
+                            {sortedParticipants.map((p, idx) => {
+                                const isNoVote = p.votedFor === t('common.no_vote') || p.votedFor === t('common.no_vote').toUpperCase();
+                                const isNotConnected = p.isNotConnected || p.votedFor === t('common.not_connected') || p.votedFor === t('common.not_connected').toUpperCase();
+                                const isInactive = isNotConnected || isNoVote;
+                                const hasRealVote = p.votedFor && !isInactive;
+
+                                return (
+                                    <View key={p.id ?? `p-${idx}`} style={styles.participantRow}>
+                                        <View style={styles.participantLeft}>
+                                            <View style={[styles.statusDot, { backgroundColor: isInactive ? 'rgba(255,255,255,0.35)' : (hasRealVote ? Colors.success : Colors.primary) }]} />
+                                            <Text style={styles.participantName} numberOfLines={1}>
+                                                {p.name}
+                                            </Text>
+                                            {p.isMe && (
+                                                <Text style={styles.meBadge}>{t('common.me')}</Text>
+                                            )}
+                                            {p.isOwner && (
+                                                <View style={{
+                                                    backgroundColor: `${Colors.accent}20`,
+                                                    borderColor: Colors.accent,
+                                                    borderWidth: 1,
+                                                    borderRadius: 4,
+                                                    paddingHorizontal: 4,
+                                                    paddingVertical: 0,
+                                                    marginLeft: 6,
+                                                    flexDirection: 'row',
+                                                    alignItems: 'center',
+                                                }}>
+                                                    <Crown color={Colors.accent} size={10} fill={`${Colors.accent}33`} style={{ marginRight: 2 }} />
+                                                    <Text style={{ color: Colors.accent, fontSize: 10, fontWeight: '900' }}>{t('common.host').toUpperCase()}</Text>
+                                                </View>
+                                            )}
+                                        </View>
+                                        <View style={[styles.voteBadge, {
+                                            backgroundColor: isInactive ? 'rgba(255, 255, 255, 0.03)' : (hasRealVote ? 'rgba(57, 255, 20, 0.1)' : 'rgba(255, 255, 255, 0.05)'),
+                                            borderColor: isInactive ? 'rgba(255, 255, 255, 0.08)' : (hasRealVote ? 'rgba(57, 255, 20, 0.3)' : 'rgba(255, 255, 255, 0.1)'),
+                                        }]}>
+                                            {hasRealVote && <CheckCircle2 size={11} color={Colors.success} style={{ marginRight: 4 }} />}
+                                            {isInactive && <CircleOff size={11} color="rgba(255,255,255,0.35)" style={{ marginRight: 4 }} />}
+                                            <Text style={[styles.voteBadgeText, { color: isInactive ? 'rgba(255,255,255,0.35)' : (hasRealVote ? Colors.success : 'rgba(255,255,255,0.3)') }]}>
+                                                {p.votedFor ? p.votedFor.toUpperCase() : t('result.voting_in_progress').toUpperCase()}
+                                            </Text>
+                                        </View>
                                     </View>
-                                    <View style={[styles.voteBadge, {
-                                        backgroundColor: p.votedFor ? 'rgba(57, 255, 20, 0.1)' : 'rgba(255, 255, 255, 0.05)',
-                                        borderColor: p.votedFor ? 'rgba(57, 255, 20, 0.3)' : 'rgba(255, 255, 255, 0.1)',
-                                    }]}>
-                                        {p.votedFor && <CheckCircle2 size={11} color={Colors.success} style={{ marginRight: 4 }} />}
-                                        <Text style={[styles.voteBadgeText, { color: p.votedFor ? Colors.success : 'rgba(255,255,255,0.3)' }]}>
-                                            {p.votedFor ? p.votedFor.toUpperCase() : t('result.voting_in_progress').toUpperCase()}
-                                        </Text>
-                                    </View>
-                                </View>
-                            ))}
+                                )
+                            })}
                             {sortedParticipants.length === 0 && (
                                 <Text style={{ color: 'rgba(255,255,255,0.4)', textAlign: 'center', paddingVertical: 16, fontSize: 12 }}>
                                     {t('result.waiting_for_others')}
@@ -442,9 +494,12 @@ export default function MenuResultScreen({ route, navigation }) {
                 <CyberAlert
                     visible={showExitConfirm}
                     title={t('common.alert')}
-                    message={t('common.exit_confirm')}
+                    message={role === 'owner' ? t('common.host_exit_confirm') : t('common.exit_confirm')}
                     onConfirm={async () => {
                         setShowExitConfirm(false);
+                        if (role === 'owner') {
+                            await syncService.removeRoom(roomId);
+                        }
                         await syncService.clearPresence();
                         navigation.reset({ index: 0, routes: [{ name: 'Welcome' }] });
                     }}
@@ -461,6 +516,18 @@ export default function MenuResultScreen({ route, navigation }) {
                     onConfirm={() => {
                         setShowHostRestartedAlert(false);
                         navigation.navigate('NameInput', { roomId, role, category, initialTab: type });
+                    }}
+                    confirmText={t('common.confirm')}
+                    type="info"
+                />
+
+                <CyberAlert
+                    visible={showHostEndedAlert}
+                    title={t('common.info')}
+                    message={t('result.host_ended_room')}
+                    onConfirm={() => {
+                        setShowHostEndedAlert(false);
+                        navigation.reset({ index: 0, routes: [{ name: 'Welcome' }] });
                     }}
                     confirmText={t('common.confirm')}
                     type="info"

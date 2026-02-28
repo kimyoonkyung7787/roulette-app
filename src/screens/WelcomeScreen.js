@@ -59,7 +59,29 @@ export default function WelcomeScreen({ route, navigation }) {
     };
 
     const startNewSession = async (setupType) => {
-        const roomId = generateRoomId();
+        let roomId = generateRoomId();
+        let roomData = await syncService.getRoomData(roomId);
+        let attempts = 0;
+
+        // 중복 방지: 이미 사용 중인 방 번호라면 다시 생성 (최대 10회 재시도)
+        while (roomData && attempts < 10) {
+            console.log(`WelcomeScreen: RoomID ${roomId} already exists, generating a new one...`);
+            roomId = generateRoomId();
+            roomData = await syncService.getRoomData(roomId);
+            attempts++;
+        }
+
+        // 10회 이상 실패 시 (극히 드문 경우) 생성을 중단하고 안내 메시지 표시
+        if (roomData) {
+            console.error('WelcomeScreen: Failed to generate a unique Room ID after 10 attempts.');
+            setAlertConfig({
+                visible: true,
+                title: t('common.alert'),
+                message: t('welcome.room_creation_failed', { defaultValue: '방 생성에 실패했습니다. 다시 시도해 주세요.' })
+            });
+            return;
+        }
+
         const defaultCategory = 'coffee'; // Default category for simplified flow
         try {
             const hostIsPremium = await subscriptionService.isPremium();

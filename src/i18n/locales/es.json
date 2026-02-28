@@ -16,8 +16,9 @@
         "room": "SALA",
         "local": "Local",
         "select_language": "SELECCIONAR IDIOMA",
-        "weight": "Weight",
+        "weight": "Peso",
         "exit_confirm": "¿Quieres salir?",
+        "host_exit_confirm": "Si sales de la sala, se eliminará toda la sala.\n¿Estás seguro de que quieres salir?",
         "cancel": "Cancelar",
         "confirm": "Confirmar",
         "item": "Item",
@@ -30,7 +31,9 @@
         "no_vote": "Sin voto",
         "invite_title": "",
         "invite_message": "🎮 Invitación a juego de ruleta -\n{{name}} te ha invitado a un juego.\n\n🆔 ID de la sala : {{roomId}}\n\n🚀 ¡Haz clic en el enlace para unirte ahora!",
-        "link_copied": "¡Enlace de invitación copiado!"
+        "link_copied": "¡Enlace de invitación copiado!",
+        "hot": "Caliente",
+        "ice": "Frío"
     },
     "categories": {
         "coffee": "CAFÉ",
@@ -40,40 +43,40 @@
     },
     "popular_items": {
         "coffee": [
-            "Americano",
-            "Café Latte",
-            "Latte de Vainilla",
+            "Latte",
             "Capuchino",
-            "Caramel Macchiato",
-            "Cold Brew",
+            "Americano",
             "Espresso",
-            "Matcha Latte",
-            "Limonada",
+            "Moca",
+            "Flat White",
+            "Macchiato",
+            "Cold Brew",
+            "Ade de frutas",
             "Batido"
         ],
         "meal": [
-            "Pizza",
-            "Hamburguesa con Patatas",
-            "Sushi",
-            "Pasta",
-            "Pollo Frito",
-            "Tacos",
-            "Parrillada",
-            "Arroz con Pollo",
-            "Ceviche",
-            "Ensalada"
+            "Paella Valenciana",
+            "Tacos al Pastor",
+            "Tortilla de Patatas",
+            "Enchiladas Suizas",
+            "Gazpacho",
+            "Quesadillas",
+            "Burritos de Carne",
+            "Ceviche de Pescado",
+            "Empanadas de Carne",
+            "Lomo Saltado"
         ],
         "snack": [
-            "Palomitas",
-            "Nachos",
-            "Helado",
-            "Donas",
-            "Galletas",
-            "Papas Fritas",
-            "Churros",
-            "Brownies",
-            "Magdalenas",
-            "Frutas"
+            "Churros con Chocolate",
+            "Patatas Bravas",
+            "Guacamole con Totopos",
+            "Alfajores",
+            "Tacos de Canasta",
+            "Empanadillas",
+            "Aceitunas",
+            "Jamón Ibérico",
+            "Croquetas",
+            "Turrón"
         ],
         "etc": [
             "Otro 1",
@@ -101,7 +104,8 @@
         "who_pays": "¿QUIÉN PAGA?",
         "who_pays_desc": "Gira para elegir a uno del grupo",
         "what_to_eat": "¿QUÉ COMER?",
-        "what_to_eat_desc": "Agreguen menús y decidan juntos"
+        "what_to_eat_desc": "¿No puedes decidir? Deja que la ruleta elija",
+        "room_creation_failed": "Error al crear la sala. Por favor, inténtalo de nuevo en un momento."
     },
     "name_input": {
         "add_participant": "Añadir participante...",
@@ -127,7 +131,7 @@
         "wait_for_host": "Por favor espere a que el anfitrión termine de configurar",
         "wait_for_host_spin": "Esperando a que el anfitrión gire la ruleta",
         "participants_ready_spin": "{{current}}/{{total}} listos - Girar",
-        "selected": "SELECTED",
+        "selected": "SELECCIONADO",
         "please_select_name": "Por favor seleccione su nombre",
         "game_in_progress": "Juego en progreso...",
         "select_name_to_join": "Seleccione nombre para unirse",
@@ -152,7 +156,9 @@
         "apply_menu": "Aplicar este menú",
         "search_error": "Error durante la búsqueda",
         "menu_gen_error": "Error al generar el menú",
-        "min_menu_error": "Se necesitan al menos 2 elementos"
+        "min_menu_error": "Se necesitan al menos 2 elementos",
+        "memo_label": "Añadir opción (opcional)",
+        "memo_placeholder": "p. ej. fresa, mango"
     },
     "roulette": {
         "spin_center": "GIRAR",
@@ -191,13 +197,14 @@
         "participant_detail": "DETALLE DE PARTICIPANTE",
         "participants_joined_suffix": "participaron",
         "watched": "Viendo",
+        "host_ended_room": "El anfitrión ha finalizado la sala.\nVolviendo al lobby.",
         "host_restarted": "El anfitrión ha reiniciado. Volviendo al lobby."
     },
     "entry": {
         "offline_title": "OFFLINE",
-        "offline_desc": "Reunidos juntos.\n¡Una persona gira para ganar!",
+        "offline_desc": "Juega cara a cara.\n¡Un dispositivo, todos giran!",
         "online_title": "ONLINE",
-        "online_desc": "Reunión remota.\n¡Todos giran para ganar!",
+        "online_desc": "Juega de forma remota.\n¡Invita amigos a través del enlace!",
         "select_mode": "SELECT GAME MODE",
         "game_center": "CENTRO DE JUEGOS",
         "who_pays_desc": "Gira para elegir a uno del grupo",
@@ -211,7 +218,7 @@
     "history": {
         "title": "HISTORIAL DE REGISTROS",
         "no_data": "NO SE ENCONTRARON REGISTROS",
-        "restore": "RESTORE SETTINGS",
+        "restore": "RESTAURAR AJUSTES",
         "restore_participants": "RESTAURAR PARTICIPANTES"
     },
     "onboarding": {
@@ -261,5 +268,14 @@
         "history_step_title": "¡Revisa los registros!",
         "history_step_msg": "Consulta registros anteriores para\nimportar listas de participantes/menú",
         "history_step_icon": "📜"
+    },
+    "paywall": {
+        "title": "Mejora a Premium",
+        "subtitle_host": "Para añadir más de 5 participantes, necesitas Premium.\nLa versión gratuita permite hasta 4 participantes.",
+        "subtitle_participant": "Esta sala ha alcanzado el límite gratuito (4 personas).\nSolicita al anfitrión que mejore a Premium para unirte.",
+        "feature_1": "Hasta 10 participantes",
+        "feature_2": "Pago seguro mediante PayPal",
+        "pay_with_paypal": "Pagar con PayPal",
+        "room_full_free": "Esta sala ha alcanzado el límite gratuito (4 personas). Solicita al anfitrión que mejore a Premium."
     }
 }

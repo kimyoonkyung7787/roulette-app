@@ -16,8 +16,9 @@
         "room": "RAUM",
         "local": "Lokal",
         "select_language": "SPRACHE WÄHLEN",
-        "weight": "Weight",
+        "weight": "Gewicht",
         "exit_confirm": "Möchten Sie beenden?",
+        "host_exit_confirm": "Wenn Sie den Raum verlassen, wird der gesamte Raum gelöscht.\nMöchten Sie wirklich beenden?",
         "cancel": "Abbrechen",
         "confirm": "Bestätigen",
         "item": "Item",
@@ -30,7 +31,9 @@
         "no_vote": "Keine Stimme",
         "invite_title": "",
         "invite_message": "🎮 Roulette-Spiel Einladung -\n{{name}} hat dich zu einem Spiel eingeladen.\n\n🆔 Raum-ID : {{roomId}}\n\n🚀 Klicke auf den Link, um jetzt beizutreten!!!",
-        "link_copied": "Einladungslink in die Zwischenablage kopiert!"
+        "link_copied": "Einladungslink in die Zwischenablage kopiert!",
+        "hot": "Heiß",
+        "ice": "Eis"
     },
     "categories": {
         "coffee": "KAFFEE",
@@ -40,40 +43,40 @@
     },
     "popular_items": {
         "coffee": [
-            "Americano",
-            "Caffè Latte",
-            "Vanilla Latte",
+            "Latte",
             "Cappuccino",
-            "Karamell Macchiato",
-            "Cold Brew",
+            "Americano",
             "Espresso",
-            "Matcha Latte",
+            "Mocha",
+            "Flat White",
+            "Macchiato",
+            "Cold Brew",
             "Fruchtlimonade",
             "Smoothie"
         ],
         "meal": [
-            "Pizza",
-            "Burger & Pommes",
-            "Sushi",
-            "Pasta",
-            "Gebratenes Hähnchen",
-            "Schnitzel",
-            "Döner",
-            "Currywurst",
-            "Bratwurst",
-            "Salat"
+            "Wiener Schnitzel",
+            "Thüringer Bratwurst",
+            "Sauerbraten",
+            "Currywurst mit Pommes",
+            "Kässpätzle",
+            "Rinderrouladen",
+            "Schweinehaxe",
+            "Linseneintopf",
+            "Maultaschen",
+            "Königsberger Klopse"
         ],
         "snack": [
-            "Popcorn",
-            "Nachos",
-            "Eiscreme",
-            "Donuts",
-            "Kekse",
+            "Brezel",
+            "Apfelstrudel",
+            "Schwarzwälder Kirschtorte",
             "Kartoffelchips",
-            "Brezeln",
-            "Brownies",
-            "Muffins",
-            "Kuchen"
+            "Gummibärchen",
+            "Franzbrötchen",
+            "Leberkäse",
+            "Nussecke",
+            "Berliner Pfannkuchen",
+            "Salzstangen"
         ],
         "etc": [
             "Sonstige 1",
@@ -99,9 +102,10 @@
         "create_by_people": "NACH PERSONEN",
         "create_by_menu": "NACH MENÜ",
         "who_pays": "WER ZAHLT?",
-        "who_pays_desc": "Drehen, um jemanden aus der Gruppe auszuwählen",
+        "who_pays_desc": "Drehen, um eine Person auszuwählen",
         "what_to_eat": "WAS ESSEN WIR?",
-        "what_to_eat_desc": "Menüs hinzufügen und gemeinsam entscheiden"
+        "what_to_eat_desc": "Unentschlossen? Lass das Roulette wählen",
+        "room_creation_failed": "Erstellung des Raums fehlgeschlagen. Bitte versuchen Sie es in Kürze erneut."
     },
     "name_input": {
         "add_participant": "Teilnehmer hinzufügen...",
@@ -127,7 +131,7 @@
         "wait_for_host": "Bitte warten Sie, bis der Host die Einrichtung abgeschlossen hat",
         "wait_for_host_spin": "Warten Sie, bis der Host das Roulette dreht",
         "participants_ready_spin": "{{current}}/{{total}} bereit - Drehen",
-        "selected": "SELECTED",
+        "selected": "AUSGEWÄHLT",
         "please_select_name": "Bitte wählen Sie Ihren Namen",
         "game_in_progress": "Spiel läuft...",
         "select_name_to_join": "Namen wählen zum Beitreten",
@@ -152,7 +156,9 @@
         "apply_menu": "Dieses Menü anwenden",
         "search_error": "Fehler bei der Suche",
         "menu_gen_error": "Menügenerierung fehlgeschlagen",
-        "min_menu_error": "Mindestens 2 Menüpunkte erforderlich"
+        "min_menu_error": "Mindestens 2 Menüpunkte erforderlich",
+        "memo_label": "Option hinzufügen (optional)",
+        "memo_placeholder": "z.B. Erdbeere, Mango"
     },
     "roulette": {
         "spin_center": "DREHEN",
@@ -191,13 +197,14 @@
         "participant_detail": "TEILNEHMERDETAIL",
         "participants_joined_suffix": "teilgenommen",
         "watched": "Zuschauen",
+        "host_ended_room": "Der Host hat den Raum beendet.\nZurück zur Lobby.",
         "host_restarted": "Host hat neu gestartet. Zurück zur Lobby."
     },
     "entry": {
         "offline_title": "OFFLINE",
-        "offline_desc": "Zusammen versammelt.\nEine Person dreht, um zu gewinnen!",
+        "offline_desc": "Spiele von Angesicht zu Angesicht.\nEin Gerät für alle!",
         "online_title": "ONLINE",
-        "online_desc": "Aus der Ferne versammelt.\nAlle drehen, um zu gewinnen!",
+        "online_desc": "Spiele aus der Ferne.\nLade Freunde per Link ein!",
         "select_mode": "SELECT GAME MODE",
         "game_center": "GAMECENTER",
         "who_pays_desc": "Drehen, um jemanden aus der Gruppe auszuwählen",
@@ -211,7 +218,7 @@
     "history": {
         "title": "PROTOKOLLVERLAUF",
         "no_data": "KEINE PROTOKOLLE GEFUNDEN",
-        "restore": "RESTORE SETTINGS",
+        "restore": "EINSTELLUNGEN WIEDERHERSTELLEN",
         "restore_participants": "TEILNEHMER WIEDERHERSTELLEN"
     },
     "onboarding": {
@@ -261,5 +268,14 @@
         "history_step_title": "Logs prüfen!",
         "history_step_msg": "Vorherige Logs anzeigen, um\nTeilnehmer-/Menülisten zu importieren",
         "history_step_icon": "📜"
+    },
+    "paywall": {
+        "title": "Premium-Upgrade",
+        "subtitle_host": "Um mehr als 5 Teilnehmer hinzuzufügen, ist Premium erforderlich.\nDie kostenlose Version erlaubt bis zu 4 Teilnehmer.",
+        "subtitle_participant": "Dieser Raum hat das kostenlose Limit (4 Personen) erreicht.\nBitten Sie den Host um ein Upgrade auf Premium, um beizutreten.",
+        "feature_1": "Bis zu 10 Teilnehmer",
+        "feature_2": "Sichere Zahlung über PayPal",
+        "pay_with_paypal": "Mit PayPal bezahlen",
+        "room_full_free": "Dieser Raum hat das kostenlose Limit (4 Personen) erreicht. Bitte bitten Sie den Host um ein Premium-Upgrade."
     }
 }

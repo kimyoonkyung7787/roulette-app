@@ -54,7 +54,7 @@ export default function RouletteScreen({ route, navigation }) {
     const { mySelectedName, roomId = 'default', mode = 'online', role = 'participant', category = 'coffee', votedItem = null, originalItems = [] } = route.params || {};
     const participants = normalizeData(route.params?.participants);
     const menuItems = normalizeData(route.params?.menuItems);
-    
+
     const [participantsState, setParticipantsState] = useState(participants);
     const [menuItemsState, setMenuItemsState] = useState(menuItems);
     const [spinTarget, setSpinTarget] = useState(route.params?.spinTarget || 'people'); // Initialize from params
@@ -70,11 +70,14 @@ export default function RouletteScreen({ route, navigation }) {
     const [onlineUsers, setOnlineUsers] = useState([]);
     const [showUsersModal, setShowUsersModal] = useState(false);
     const [showExitConfirm, setShowExitConfirm] = useState(false);
+    const [showHostEndedAlert, setShowHostEndedAlert] = useState(false);
+    const [showHostRestartedAlert, setShowHostRestartedAlert] = useState(false);
     const [remoteSpinState, setRemoteSpinState] = useState(null);
     const [votes, setVotes] = useState([]);
     const isNavigating = useRef(false);
     const prevVotesRef = useRef([]);
     const isInitialVoteLoad = useRef(true);
+    const prevPhaseRef = useRef(null);
     const autoCloseTimer = useRef(null);
     const spinningRef = useRef(false);
     const [roomHostName, setRoomHostName] = useState(route.params?.hostName);
@@ -166,7 +169,8 @@ export default function RouletteScreen({ route, navigation }) {
     }, [votedItem, currentList, spinning]);
 
     useEffect(() => {
-        let unsubUsers, unsubSpin, unsubVotes, unsubFinal, unsubParticipants, unsubMenuItems, unsubHostName;
+        let isMounted = true; // Use isMounted flag to prevent state updates after unmount
+        let unsubUsers, unsubSpin, unsubVotes, unsubFinal, unsubParticipants, unsubMenuItems, unsubHostName, unsubRoomDeleted, unsubPhase;
 
         const initSync = async () => {
             if (mode === 'offline') {
@@ -205,6 +209,16 @@ export default function RouletteScreen({ route, navigation }) {
                 if (name) setRoomHostName(name);
             });
 
+            // Listen for room deletion (when host exits completely)
+            unsubRoomDeleted = syncService.subscribeToRoomDeleted(() => {
+                if (!isMounted) return; // Guard
+
+                // If it's a participant and the room is deleted
+                if (role !== 'owner' && !showHostEndedAlert) {
+                    setShowHostEndedAlert(true);
+                }
+            });
+
             // Subscribe to spin state from others
             unsubSpin = syncService.subscribeToSpinState(state => {
                 setRemoteSpinState(state);
@@ -213,6 +227,16 @@ export default function RouletteScreen({ route, navigation }) {
                 if (state && !state.isSpinning) {
                     setSpinning(false);
                 }
+            });
+
+            // Subscribe to room phase
+            unsubPhase = syncService.subscribeToRoomPhase(phase => {
+                if (phase === 'waiting' && prevPhaseRef.current === 'roulette') {
+                    if (role !== 'owner' && !isNavigating.current) {
+                        setShowHostRestartedAlert(true);
+                    }
+                }
+                prevPhaseRef.current = phase;
             });
 
             // Subscribe to votes
@@ -261,9 +285,14 @@ export default function RouletteScreen({ route, navigation }) {
             });
 
             // Subscribe to final results to handle owner's force or collective completion
+            // NOTE: isFocusedRef check removed — participants may arrive at RouletteScreen
+            // AFTER host has already finalized (race condition on last vote).
+            // The subscription fires on initial value too, so this also handles late arrivals.
             unsubFinal = syncService.subscribeToFinalResults(finalData => {
+                if (!isMounted) return; // Guard
+
                 if (finalData) {
-                    if (!isNavigating.current && isFocusedRef.current) {
+                    if (!isNavigating.current) {
                         console.log('RouletteScreen: Final results received, navigating...');
                         isNavigating.current = true;
                         const latestOnline = onlineUsersRef.current || [];
@@ -294,11 +323,12 @@ export default function RouletteScreen({ route, navigation }) {
                 hasAutoSpun.current = true;
                 const timer = setTimeout(() => {
                     startSpinAnimation(false);
-                }, 800);
-                return () => clearTimeout(timer);
+                }, 1000);
+                autoCloseTimer.current = timer;
             }
         }
         return () => {
+            isMounted = false; // Flag unmounted
             console.log('RouletteScreen: Cleaning up subscriptions');
             if (unsubUsers) unsubUsers();
             if (unsubSpin) unsubSpin();
@@ -307,6 +337,8 @@ export default function RouletteScreen({ route, navigation }) {
             if (unsubParticipants) unsubParticipants();
             if (unsubHostName) unsubHostName();
             if (unsubMenuItems) unsubMenuItems();
+            if (unsubRoomDeleted) unsubRoomDeleted();
+            if (unsubPhase) unsubPhase();
             if (autoCloseTimer.current) clearTimeout(autoCloseTimer.current);
         };
     }, [isFocused]);
@@ -345,6 +377,9 @@ export default function RouletteScreen({ route, navigation }) {
     }, [remoteSpinState, isFocused, spinning, onlineUsers, votes]);
 
     // Check if everyone has voted (menu 모드만 - people 모드는 옵션 A로 vote 없음)
+    // NOTE: Both owner AND participant can trigger finalize now.
+    // This prevents the case where the host already navigated to MenuResult
+    // before the participant's RouletteScreen could detect all votes.
     useEffect(() => {
         if (spinTarget !== 'menu') return;
         if (!isFocused || spinning || isNavigating.current || votes.length === 0) return;
@@ -352,14 +387,13 @@ export default function RouletteScreen({ route, navigation }) {
         const expectedVoterCount = Math.max(participantsState.length, onlineUsers.length);
 
         if (votes.length >= expectedVoterCount && expectedVoterCount > 0) {
-            console.log(`RouletteScreen: All ${expectedVoterCount} participants voted. Finalizing...`);
+            console.log(`RouletteScreen: All ${expectedVoterCount} participants voted. Finalizing... (role: ${role})`);
             processFinalResult(false);
         }
     }, [votes, participantsState, spinning, isNavigating.current, spinTarget, onlineUsers]);
 
     const processFinalResult = async (isManualForce = false) => {
         if (isNavigating.current) return;
-        if (role !== 'owner' && !isManualForce) return;
 
         // CRITICAL: Ensure MY vote is in the list before finalizing
         const hasMyVote = votes.some(v => v.userId === syncService.myId);
@@ -429,23 +463,29 @@ export default function RouletteScreen({ route, navigation }) {
                 joinedNames
             };
 
-            if (role === 'owner') {
-                try {
+            // Both owner and participant can finalize.
+            // Check if already finalized (host may have done it first).
+            try {
+                const existingFinal = await syncService.getFinalResults?.();
+                if (!existingFinal) {
+                    // Nobody has finalized yet — do it now
                     await syncService.finalizeGame(resultData);
-                    console.log('RouletteScreen: Owner finalize SUCCESS');
-
-                    // Navigate owner immediately
-                    const ownerScreenName = (mode === 'online' && spinTarget === 'menu') ? 'MenuResult' : 'Result';
-                    navigation.navigate(ownerScreenName, {
-                        ...resultData,
-                        roomId,
-                        role,
-                        category
-                    });
-                } catch (err) {
-                    console.error('RouletteScreen: Owner finalize FAILED:', err);
-                    isNavigating.current = false;
+                    console.log(`RouletteScreen: ${role} finalize SUCCESS`);
+                } else {
+                    console.log(`RouletteScreen: final_results already exists (likely host finalized first), skipping write`);
                 }
+
+                // Navigate to result screen
+                const screenName = (mode === 'online' && spinTarget === 'menu') ? 'MenuResult' : 'Result';
+                navigation.navigate(screenName, {
+                    ...(existingFinal || resultData),
+                    roomId,
+                    role,
+                    category
+                });
+            } catch (err) {
+                console.error(`RouletteScreen: ${role} finalize FAILED:`, err);
+                isNavigating.current = false;
             }
         } catch (err) {
             console.error('RouletteScreen: Finalization error:', err);
@@ -1130,6 +1170,7 @@ export default function RouletteScreen({ route, navigation }) {
                                         }
                                         try { feedbackService.playClick(); } catch (e) { }
                                         await syncService.removeMyVote();
+
                                         navigation.navigate('NameInput', {
                                             roomId, role, category,
                                             resetSelection: true,
@@ -1176,28 +1217,29 @@ export default function RouletteScreen({ route, navigation }) {
 
                                             {/* RE PICK button - shown when user has voted but votedItem not set (menu 모드만) */}
                                             {votes.find(v => v.userId === syncService.myId) && !spinning && (
-                                        <TouchableOpacity
-                                            onPress={async () => {
-                                                const expectedVoterCount = Math.max(participantsState.length, onlineUsers.length);
-                                                const roomData = await syncService.getRoomData(roomId);
-                                                if (roomData?.final_results || (votes.length >= expectedVoterCount && expectedVoterCount > 0)) {
-                                                    Alert.alert(t('common.alert'), t('roulette.voting_already_finished'));
-                                                    return;
-                                                }
-                                                try { feedbackService.playClick(); } catch (e) { }
-                                                await syncService.removeMyVote();
-                                                navigation.navigate('NameInput', {
-                                                    roomId, role, category,
-                                                    resetSelection: true,
-                                                    initialTab: spinTarget
-                                                });
-                                            }}
-                                            activeOpacity={0.8}
-                                            style={[styles.reselectButton, { marginBottom: role === 'owner' && votes.length > 0 ? 10 : 0 }]}
-                                        >
-                                            <HandMetal color={Colors.primary} size={20} strokeWidth={2.5} style={{ marginRight: 8 }} />
-                                            <Text style={styles.reselectText}>{t('common.re_pick').toUpperCase()}</Text>
-                                        </TouchableOpacity>
+                                                <TouchableOpacity
+                                                    onPress={async () => {
+                                                        const expectedVoterCount = Math.max(participantsState.length, onlineUsers.length);
+                                                        const roomData = await syncService.getRoomData(roomId);
+                                                        if (roomData?.final_results || (votes.length >= expectedVoterCount && expectedVoterCount > 0)) {
+                                                            Alert.alert(t('common.alert'), t('roulette.voting_already_finished'));
+                                                            return;
+                                                        }
+                                                        try { feedbackService.playClick(); } catch (e) { }
+                                                        await syncService.removeMyVote();
+
+                                                        navigation.navigate('NameInput', {
+                                                            roomId, role, category,
+                                                            resetSelection: true,
+                                                            initialTab: spinTarget
+                                                        });
+                                                    }}
+                                                    activeOpacity={0.8}
+                                                    style={[styles.reselectButton, { marginBottom: role === 'owner' && votes.length > 0 ? 10 : 0 }]}
+                                                >
+                                                    <HandMetal color={Colors.primary} size={20} strokeWidth={2.5} style={{ marginRight: 8 }} />
+                                                    <Text style={styles.reselectText}>{t('common.re_pick').toUpperCase()}</Text>
+                                                </TouchableOpacity>
                                             )}
                                         </>
                                     )}
@@ -1281,7 +1323,22 @@ export default function RouletteScreen({ route, navigation }) {
                                             </View>
                                             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                                                 {onlineUser ? (
-                                                    userVote ? (
+                                                    (spinTarget === 'people' && !(pName === (roomHostName || route.params?.hostName) || onlineUser?.role === 'owner')) ? (
+                                                        <View style={{
+                                                            backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                                                            paddingHorizontal: 8,
+                                                            paddingVertical: 4,
+                                                            borderRadius: 4,
+                                                            borderWidth: 1,
+                                                            borderColor: 'rgba(255, 255, 255, 0.1)',
+                                                            flexDirection: 'row',
+                                                            alignItems: 'center'
+                                                        }}>
+                                                            <Text style={{ color: '#888', fontSize: 11, fontWeight: 'normal' }}>
+                                                                {t('result.watched').toUpperCase()}
+                                                            </Text>
+                                                        </View>
+                                                    ) : userVote ? (
                                                         <View style={{
                                                             backgroundColor: 'rgba(57, 255, 20, 0.1)',
                                                             paddingHorizontal: 8,
@@ -1333,7 +1390,7 @@ export default function RouletteScreen({ route, navigation }) {
                 <CyberAlert
                     visible={showExitConfirm}
                     title={t('common.alert')}
-                    message={t('common.exit_confirm')}
+                    message={role === 'owner' && mode !== 'offline' ? t('common.host_exit_confirm') : t('common.exit_confirm')}
                     onConfirm={async () => {
                         setShowExitConfirm(false);
                         if (mode === 'offline') {
@@ -1342,6 +1399,9 @@ export default function RouletteScreen({ route, navigation }) {
                                 routes: [{ name: 'OfflineInput', params: { items: originalItems } }]
                             });
                         } else {
+                            if (role === 'owner') {
+                                await syncService.removeRoom(roomId);
+                            }
                             await syncService.clearPresence();
                             navigation.reset({ index: 0, routes: [{ name: 'Welcome' }] });
                         }
@@ -1349,6 +1409,30 @@ export default function RouletteScreen({ route, navigation }) {
                     onCancel={() => setShowExitConfirm(false)}
                     confirmText={t('common.confirm')}
                     cancelText={t('common.cancel')}
+                    type="info"
+                />
+
+                <CyberAlert
+                    visible={showHostEndedAlert}
+                    title={t('common.info')}
+                    message={t('result.host_ended_room')}
+                    onConfirm={() => {
+                        setShowHostEndedAlert(false);
+                        navigation.reset({ index: 0, routes: [{ name: 'Welcome' }] });
+                    }}
+                    confirmText={t('common.confirm')}
+                    type="info"
+                />
+
+                <CyberAlert
+                    visible={showHostRestartedAlert}
+                    title={t('common.info')}
+                    message={t('result.host_restarted')}
+                    onConfirm={() => {
+                        setShowHostRestartedAlert(false);
+                        navigation.navigate('NameInput', { roomId, role, category, initialTab: spinTarget });
+                    }}
+                    confirmText={t('common.confirm')}
                     type="info"
                 />
             </SafeAreaView>

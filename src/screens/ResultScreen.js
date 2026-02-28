@@ -155,7 +155,9 @@ export default function ResultScreen({ route, navigation }) {
     const [fixedParticipantDetails, setFixedParticipantDetails] = useState(null);
     const [showUsersModal, setShowUsersModal] = useState(false);
     const [showExitConfirm, setShowExitConfirm] = useState(false);
+    const [showHostEndedAlert, setShowHostEndedAlert] = useState(false);
     const [showHostRestartedAlert, setShowHostRestartedAlert] = useState(false);
+    const [alertConfig, setAlertConfig] = useState({ visible: false, title: '', message: '', onConfirm: null });
     const hasSavedRef = useRef(false);
     const hostRestartedShownRef = useRef(false);
     // Animations for Results
@@ -292,7 +294,7 @@ export default function ResultScreen({ route, navigation }) {
                         const name = (p.name || '').trim();
                         if (!name) return null;
                         const joined = joinedSet.has(norm(name));
-                        const vote = finalVotes.find(v => v.userName === name || v.votedFor === name);
+                        const vote = finalVotes.find(v => v.userName === name);
                         const isUserOwner = (hostNameFromParams && norm(name) === norm(hostNameFromParams)) || name === roomId;
                         return {
                             name,
@@ -327,24 +329,49 @@ export default function ResultScreen({ route, navigation }) {
     }, [tally, totalParticipants, isForced, winner, type, onlineUsers, finalVotes]);
 
     useEffect(() => {
+        let isMounted = true; // Guard component unmount side-effects during async
         let unsubFinal;
+        let alertShown = false; // Shared flag to prevent multiple alerts
 
         // Sync navigation for participants: when host retries, show message then navigate
         // Use CyberAlert (Modal) instead of Alert.alert - Alert does NOT work on web
         if (role === 'participant') {
-            unsubFinal = syncService.subscribeToFinalResults(finalData => {
-                if (!finalData && !hostRestartedShownRef.current) {
-                    hostRestartedShownRef.current = true;
-                    setShowHostRestartedAlert(true);
+            unsubFinal = syncService.subscribeToFinalResults((finalData) => {
+                if (!finalData && !hostRestartedShownRef.current && !alertShown) {
+                    // Firebase optimistic update race condition prevention:
+                    // If room is deleted, subscribeToRoomDeleted will fire almost simultaneously.
+                    // We wait 300ms. If alertShown is still false, it means it's a retry, not an exit.
+                    setTimeout(() => {
+                        if (!isMounted || alertShown) return; // Component unmounted or room deleted alert already fired
+
+                        alertShown = true;
+                        hostRestartedShownRef.current = true;
+                        setShowHostRestartedAlert(true);
+                    }, 300);
+                }
+            });
+        }
+
+        // Listen for room deletion (when host exits completely)
+        let unsubRoomDeleted;
+        if (role === 'participant') {
+            unsubRoomDeleted = syncService.subscribeToRoomDeleted(() => {
+                if (!isMounted) return;
+
+                if (!alertShown) {
+                    alertShown = true;
+                    setShowHostEndedAlert(true);
                 }
             });
         }
 
         return () => {
+            isMounted = false; // Block state updates on unmounted component
             console.log('ResultScreen: Cleaning up subscriptions');
             if (unsubFinal) unsubFinal();
+            if (unsubRoomDeleted) unsubRoomDeleted();
         };
-    }, [role, roomId]);
+    }, [role, roomId, navigation, t]); // Added navigation and t to dependencies
 
     useEffect(() => {
         if (mode === 'offline') return;
@@ -476,23 +503,25 @@ export default function ResultScreen({ route, navigation }) {
                             </View>
                         </View>
                         {/* Trophy or In-Progress Icon */}
-                        <View style={styles.trophyContainer}>
-                            {allVoted ? (
-                                <>
-                                    <Trophy color={Colors.accent} size={80} strokeWidth={1} />
-                                    <View style={styles.trophyGlow} />
-                                </>
-                            ) : (
-                                <Animated.View style={{ transform: [{ scale: drumPulseAnim.interpolate({ inputRange: [0, 1], outputRange: [1, 1.25] }) }], alignItems: 'center', justifyContent: 'center' }}>
-                                    <Image
-                                        source={{ uri: 'https://raw.githubusercontent.com/googlefonts/noto-emoji/main/png/128/emoji_u1f941.png' }}
-                                        style={{ width: 80, height: 80, aspectRatio: 1 }}
-                                        resizeMode="contain"
-                                    />
-                                    <View style={styles.loaderGlow} />
-                                </Animated.View>
-                            )}
-                        </View>
+                        {type !== 'people' && (
+                            <View style={styles.trophyContainer}>
+                                {allVoted ? (
+                                    <>
+                                        <Trophy color={Colors.accent} size={80} strokeWidth={1} />
+                                        <View style={styles.trophyGlow} />
+                                    </>
+                                ) : (
+                                    <Animated.View style={{ transform: [{ scale: drumPulseAnim.interpolate({ inputRange: [0, 1], outputRange: [1, 1.25] }) }], alignItems: 'center', justifyContent: 'center' }}>
+                                        <Image
+                                            source={{ uri: 'https://raw.githubusercontent.com/googlefonts/noto-emoji/main/png/128/emoji_u1f941.png' }}
+                                            style={{ width: 80, height: 80, aspectRatio: 1 }}
+                                            resizeMode="contain"
+                                        />
+                                        <View style={styles.loaderGlow} />
+                                    </Animated.View>
+                                )}
+                            </View>
+                        )}
 
                         <View style={styles.resultBox}>
                             <Text style={styles.label}>
@@ -542,9 +571,11 @@ export default function ResultScreen({ route, navigation }) {
                                         <ConfettiExplosion />
                                         <Animated.Image
                                             source={{
-                                                uri: mode === 'online'
-                                                    ? 'https://raw.githubusercontent.com/googlefonts/noto-emoji/main/png/128/emoji_u1f941.png' // Drum for online
-                                                    : 'https://raw.githubusercontent.com/googlefonts/noto-emoji/main/png/128/emoji_u1f3ba.png' // Trumpet for offline
+                                                uri: type === 'people'
+                                                    ? 'https://raw.githubusercontent.com/googlefonts/noto-emoji/main/png/128/emoji_u1f3c6.png' // Trophy for people
+                                                    : mode === 'online'
+                                                        ? 'https://raw.githubusercontent.com/googlefonts/noto-emoji/main/png/128/emoji_u1f941.png' // Drum for online
+                                                        : 'https://raw.githubusercontent.com/googlefonts/noto-emoji/main/png/128/emoji_u1f3ba.png' // Trumpet for offline
                                             }}
                                             style={[
                                                 styles.celebrationImage,
@@ -687,7 +718,7 @@ export default function ResultScreen({ route, navigation }) {
                                         if (!name.trim()) return null;
                                         const isOwner = hostName && norm(name) === norm(hostName);
                                         const joined = joinedNamesSet.has(norm(name));
-                                        const vote = finalVotes.find(v => v.userName === name || v.votedFor === name);
+                                        const vote = finalVotes.find(v => v.userName === name);
                                         const votedFor = joined ? (vote ? vote.votedFor : (type === 'people' ? t('result.watched') : null)) : null;
                                         const isWatched = type === 'people' && joined && !vote;
                                         const isNotConnected = !joined;
@@ -746,7 +777,7 @@ export default function ResultScreen({ route, navigation }) {
                                                     }}>
                                                         {hasRealVote && <CheckCircle2 size={12} color={Colors.success} style={{ marginRight: 4 }} />}
                                                         {isNotConnected && <CircleOff size={12} color="rgba(255,255,255,0.35)" style={{ marginRight: 4 }} />}
-                                                        <Text style={{ color: statusColor, fontSize: 11, fontWeight: 'bold' }}>
+                                                        <Text style={{ color: statusColor, fontSize: 11, fontWeight: hasRealVote ? 'bold' : 'normal' }}>
                                                             {(statusText || '').toString().toUpperCase()}
                                                         </Text>
                                                     </View>
@@ -762,7 +793,7 @@ export default function ResultScreen({ route, navigation }) {
                 <CyberAlert
                     visible={showExitConfirm}
                     title={t('common.alert')}
-                    message={t('common.exit_confirm')}
+                    message={role === 'owner' && mode !== 'offline' ? t('common.host_exit_confirm') : t('common.exit_confirm')}
                     onConfirm={async () => {
                         setShowExitConfirm(false);
                         if (mode === 'offline') {
@@ -771,6 +802,9 @@ export default function ResultScreen({ route, navigation }) {
                                 routes: [{ name: 'OfflineInput', params: { items: originalItems } }]
                             });
                         } else {
+                            if (role === 'owner') {
+                                await syncService.removeRoom(roomId);
+                            }
                             await syncService.clearPresence();
                             navigation.reset({ index: 0, routes: [{ name: 'Welcome' }] });
                         }
@@ -782,12 +816,27 @@ export default function ResultScreen({ route, navigation }) {
                 />
 
                 <CyberAlert
+                    visible={showHostEndedAlert}
+                    title={t('common.info')}
+                    message={t('result.host_ended_room')}
+                    onConfirm={() => {
+                        setShowHostEndedAlert(false);
+                        navigation.reset({ index: 0, routes: [{ name: 'Welcome' }] });
+                    }}
+                    confirmText={t('common.confirm')}
+                    type="info"
+                />
+
+                <CyberAlert
                     visible={showHostRestartedAlert}
                     title={t('common.info')}
                     message={t('result.host_restarted')}
                     onConfirm={() => {
                         setShowHostRestartedAlert(false);
-                        navigation.navigate('NameInput', { roomId, role, category, initialTab: type });
+                        navigation.reset({
+                            index: 0,
+                            routes: [{ name: 'NameInput', params: { roomId, role, category, initialTab: type } }]
+                        });
                     }}
                     confirmText={t('common.confirm')}
                     type="info"

@@ -16,8 +16,9 @@
         "room": "SALLE",
         "local": "Local",
         "select_language": "CHOISIR LA LANGUE",
-        "weight": "Weight",
+        "weight": "Poids",
         "exit_confirm": "Voulez-vous quitter ?",
+        "host_exit_confirm": "Si vous quittez la salle, toute la salle sera supprimée.\nVoulez-vous vraiment quitter ?",
         "cancel": "Annuler",
         "confirm": "Confirmer",
         "item": "Item",
@@ -30,7 +31,9 @@
         "no_vote": "Pas de vote",
         "invite_title": "",
         "invite_message": "🎮 Invitation au jeu de la roulette -\n{{name}} vous a invité à un jeu.\n\n🆔 ID de salle : {{roomId}}\n\n🚀 Cliquez sur le lien pour rejoindre maintenant !!!",
-        "link_copied": "Lien copié dans le presse-papiers !"
+        "link_copied": "Lien copié dans le presse-papiers !",
+        "hot": "Chaud",
+        "ice": "Froid"
     },
     "categories": {
         "coffee": "CAFÉ",
@@ -40,40 +43,40 @@
     },
     "popular_items": {
         "coffee": [
-            "Americano",
             "Café Latte",
-            "Latte Vanille",
             "Cappuccino",
-            "Caramel Macchiato",
-            "Cold Brew",
+            "Americano",
             "Espresso",
-            "Matcha Latte",
-            "Limonade",
+            "Café Mocha",
+            "Flat White",
+            "Macchiato",
+            "Cold Brew",
+            "Limonade aux fruits",
             "Smoothie"
         ],
         "meal": [
-            "Pizza",
-            "Burger Frites",
-            "Sushi",
-            "Pâtes",
-            "Poulet Frit",
-            "Tacos",
             "Steak Frites",
-            "Quiche",
-            "Couscous",
-            "Salade"
+            "Quiche Lorraine",
+            "Coq au Vin",
+            "Ratatouille Niçoise",
+            "Boeuf Bourguignon",
+            "Galette Complète",
+            "Confit de Canard",
+            "Soupe à l'Oignon",
+            "Salade Niçoise",
+            "Croque Monsieur"
         ],
         "snack": [
-            "Pop-corn",
-            "Nachos",
-            "Glace",
-            "Beignets",
-            "Biscuits",
-            "Chips",
-            "Crêpes",
-            "Brownies",
             "Macarons",
-            "Gaufres"
+            "Croissant au Beurre",
+            "Pain au Chocolat",
+            "Éclair au Chocolat",
+            "Crêpe Sucrée",
+            "Madeleines",
+            "Canelés",
+            "Quatre-Quarts",
+            "Fromage et Pain",
+            "Tartelette aux Fruits"
         ],
         "etc": [
             "Autre 1",
@@ -99,9 +102,10 @@
         "create_by_people": "PAR PERSONNES",
         "create_by_menu": "PAR MENU",
         "who_pays": "QUI PAIE ?",
-        "who_pays_desc": "Tournez pour choisir quelqu'un du groupe",
+        "who_pays_desc": "Tournez pour choisir une personne",
         "what_to_eat": "QUE MANGER ?",
-        "what_to_eat_desc": "Ajoutez des menus et décidez ensemble"
+        "what_to_eat_desc": "Indécis ? Laissez la roulette choisir",
+        "room_creation_failed": "Échec de la création de la salle. Veuillez réessayer dans un instant."
     },
     "name_input": {
         "add_participant": "Ajouter un participant...",
@@ -127,7 +131,7 @@
         "wait_for_host": "Veuillez attendre que l'hôte ait fini de configurer",
         "wait_for_host_spin": "En attente que l'hôte lance la roulette",
         "participants_ready_spin": "{{current}}/{{total}} prêts - Lancer",
-        "selected": "SELECTED",
+        "selected": "SÉLECTIONNÉ",
         "please_select_name": "Veuillez sélectionner votre nom",
         "game_in_progress": "Jeu en cours...",
         "select_name_to_join": "Sélectionnez un nom pour rejoindre",
@@ -152,7 +156,9 @@
         "apply_menu": "Appliquer ce menu",
         "search_error": "Erreur lors de la recherche",
         "menu_gen_error": "Échec de la génération du menu",
-        "min_menu_error": "Au moins 2 éléments requis"
+        "min_menu_error": "Au moins 2 éléments requis",
+        "memo_label": "Ajouter une option (facultatif)",
+        "memo_placeholder": "ex. fraise, mangue"
     },
     "roulette": {
         "spin_center": "TOURNER",
@@ -191,13 +197,14 @@
         "participant_detail": "DÉTAIL DES PARTICIPANTS",
         "participants_joined_suffix": "participé",
         "watched": "Regarder",
+        "host_ended_room": "L'hôte a mis fin à la salle.\nRetour au lobby.",
         "host_restarted": "L'hôte a redémarré. Retour au lobby."
     },
     "entry": {
         "offline_title": "OFFLINE",
-        "offline_desc": "Rassemblés ensemble.\nUne personne tourne pour gagner !",
+        "offline_desc": "Jouez en face à face.\nUn seul appareil pour tous !",
         "online_title": "ONLINE",
-        "online_desc": "Rassemblement à distance.\nTout le monde tourne pour gagner !",
+        "online_desc": "Jouez à distance.\nInvitez vos amis via un lien !",
         "select_mode": "SELECT GAME MODE",
         "game_center": "CENTRE DE JEUX",
         "who_pays_desc": "Tournez pour choisir quelqu'un du groupe",
@@ -211,7 +218,7 @@
     "history": {
         "title": "HISTORIQUE DES JOURNAUX",
         "no_data": "AUCUN JOURNAL TROUVÉ",
-        "restore": "RESTORE SETTINGS",
+        "restore": "RESTAURER LES PARAMÈTRES",
         "restore_participants": "RESTAURER LES PARTICIPANTS"
     },
     "onboarding": {
@@ -261,5 +268,14 @@
         "history_step_title": "Consultez les logs !",
         "history_step_msg": "Consultez les logs précédents pour\nimporter des listes de participants/menus",
         "history_step_icon": "📜"
+    },
+    "paywall": {
+        "title": "Mise à niveau Premium",
+        "subtitle_host": "Pour ajouter plus de 5 participants, le Premium est requis.\nLa version gratuite permet jusqu'à 4 participants.",
+        "subtitle_participant": "Cette salle a atteint la limite gratuite (4 personnes).\nDemandez à l'hôte de passer au Premium pour rejoindre.",
+        "feature_1": "Jusqu'à 10 participants",
+        "feature_2": "Paiement sécurisé via PayPal",
+        "pay_with_paypal": "Payer avec PayPal",
+        "room_full_free": "Cette salle a atteint la limite gratuite (4 personnes). Veuillez demander à l'hôte de passer au Premium."
     }
 }

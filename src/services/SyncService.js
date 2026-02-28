@@ -44,6 +44,7 @@ class SyncService {
         this.roomId = null;
         this.roomPath = null;
         this.isInitialized = false;
+        this._connectedUnsubscribe = null; // Track the .info/connected listener
     }
 
     async init(userName = null, roomId = 'default', role = 'participant') {
@@ -83,8 +84,14 @@ class SyncService {
             const myPresenceRef = ref(db, `${this.roomPath}/presence/${this.myId}`);
             const connectedRef = ref(db, '.info/connected');
 
+            // Clean up previous connected listener to avoid duplicate presence writes
+            if (this._connectedUnsubscribe) {
+                this._connectedUnsubscribe();
+                this._connectedUnsubscribe = null;
+            }
+
             // Listen for connection once and maintain presence
-            onValue(connectedRef, (snapshot) => {
+            this._connectedUnsubscribe = onValue(connectedRef, (snapshot) => {
                 const connected = snapshot.val();
                 if (connected === true) {
                     console.log(`SyncService: Writing presence for ${this.myName} in room ${this.roomId}`);
@@ -97,6 +104,23 @@ class SyncService {
                             lastActive: serverTimestamp()
                         });
                     });
+
+                    // [REMOVED App Close/Kill Scenario] 
+                    // We no longer delete the entire room strictly on host socket disconnect. 
+                    // Brief network interruptions or backgrounding the app on mobile caused 
+                    // 'onDisconnect' to fire and instantly kick out all participants with a 
+                    // "Host ended room" alert, despite the host still actively playing.
+                    // Instead, we rely on the host's explicit "handleExit" -> syncService.removeRoom()
+
+                    // [NEW] 5-Minute Grace Period
+                    // When the host disconnects, set a timestamp. 
+                    if (this.role === 'owner') {
+                        const hostDisconnectedRef = ref(db, `${this.roomPath}/hostDisconnectedAt`);
+                        // Set the generic server time of disconnect
+                        onDisconnect(hostDisconnectedRef).set(serverTimestamp()).catch(e => console.warn('SyncService: Failed to attach hostDisconnected', e));
+                        // Clear the disconnect timestamp immediately returning from background
+                        set(hostDisconnectedRef, null);
+                    }
                 }
             });
         } catch (err) {
@@ -119,7 +143,7 @@ class SyncService {
     subscribeToOnlineCount(callback) {
         if (!db) {
             callback(0);
-            return () => {};
+            return () => { };
         }
         return onValue(ref(db, `${this.roomPath}/presence`), (snapshot) => {
             if (!snapshot || typeof snapshot.numChildren !== 'function') {
@@ -135,7 +159,7 @@ class SyncService {
     subscribeToOnlineUsers(callback) {
         if (!db) {
             callback([]);
-            return () => {};
+            return () => { };
         }
         return onValue(ref(db, `${this.roomPath}/presence`), (snapshot) => {
             const users = [];
@@ -169,10 +193,69 @@ class SyncService {
         }
     }
 
+    subscribeToRoomDeleted(callback) {
+        if (!db || !this.roomPath) {
+            return () => { };
+        }
+
+        let fired = false;
+        let initialLoad = true; // Skip the very first snapshot (initial data load)
+
+        const fireOnce = () => {
+            if (fired) return;
+            fired = true;
+            callback();
+        };
+
+        // 1. Explicit Removal: Listen specifically to hostName to avoid downloading the entire room on every change
+        const unsubscribeName = onValue(ref(db, `${this.roomPath}/hostName`), (snapshot) => {
+            if (initialLoad) {
+                // On initial load, just record whether hostName exists - don't fire
+                initialLoad = false;
+                return;
+            }
+            if (!snapshot.exists()) {
+                console.log(`SyncService: Room ${this.roomId} has been deleted (hostName missing).`);
+                fireOnce();
+            }
+        });
+
+        // 2. Grace Period Timeout: 5-minute margin when host disconnects unexpectedly
+        let disconnectTimeout = null;
+        const unsubscribeDisconnect = onValue(ref(db, `${this.roomPath}/hostDisconnectedAt`), (snapshot) => {
+            const disconnectedAt = snapshot.val();
+            if (disconnectedAt) {
+                // If there's an active timer, don't restart it repeatedly
+                if (disconnectTimeout) return;
+
+                const gracePeriodMs = 5 * 60 * 1000; // 5 minutes
+                console.log('SyncService: Host disconnected. Starting 5-minute grace period timer...');
+
+                disconnectTimeout = setTimeout(() => {
+                    console.log(`SyncService: Host has been disconnected for 5 minutes. Treating room as deleted.`);
+                    fireOnce();
+                }, gracePeriodMs);
+            } else {
+                // Host has reconnected (timestamp deleted)
+                if (disconnectTimeout) {
+                    console.log('SyncService: Host reconnected. 5-minute grace period cancelled.');
+                    clearTimeout(disconnectTimeout);
+                    disconnectTimeout = null;
+                }
+            }
+        });
+
+        return () => {
+            unsubscribeName();
+            unsubscribeDisconnect();
+            if (disconnectTimeout) clearTimeout(disconnectTimeout);
+        };
+    }
+
     subscribeToCategory(callback) {
         if (!db) {
             callback('coffee');
-            return () => {};
+            return () => { };
         }
         return onValue(ref(db, `${this.roomPath}/category`), (snapshot) => {
             const category = snapshot.val() || 'coffee';
@@ -184,7 +267,7 @@ class SyncService {
     subscribeToHostName(callback) {
         if (!db) {
             callback(null);
-            return () => {};
+            return () => { };
         }
         return onValue(ref(db, `${this.roomPath}/hostName`), (snapshot) => {
             const hostName = snapshot.val();
@@ -214,10 +297,20 @@ class SyncService {
         }
     }
 
+    async getRoomPhase() {
+        if (!db || !this.roomPath) return null;
+        try {
+            const snapshot = await get(ref(db, `${this.roomPath}/phase`));
+            return snapshot.exists() ? snapshot.val() : null;
+        } catch (e) {
+            return null;
+        }
+    }
+
     subscribeToRoomPhase(callback) {
         if (!db) {
             callback('waiting');
-            return () => {};
+            return () => { };
         }
         return onValue(ref(db, `${this.roomPath}/phase`), (snapshot) => {
             const phase = snapshot.val() || 'waiting';
@@ -255,7 +348,7 @@ class SyncService {
     subscribeToParticipants(callback) {
         if (!db) {
             callback([]);
-            return () => {};
+            return () => { };
         }
         return onValue(ref(db, `${this.roomPath}/participants`), (snapshot) => {
             const participants = this._normalizeArray(snapshot.val());
@@ -289,7 +382,7 @@ class SyncService {
     subscribeToMenuItems(callback) {
         if (!db) {
             callback([]);
-            return () => {};
+            return () => { };
         }
         return onValue(ref(db, `${this.roomPath}/menu_items`), (snapshot) => {
             const menuItems = this._normalizeArray(snapshot.val());
@@ -391,7 +484,7 @@ class SyncService {
     subscribeToSpinTarget(callback) {
         if (!db) {
             callback('people');
-            return () => {};
+            return () => { };
         }
         return onValue(ref(db, `${this.roomPath}/spin_target`), (snapshot) => {
             const target = snapshot.val() || 'people';
@@ -403,7 +496,7 @@ class SyncService {
     subscribeToSpinState(callback) {
         if (!db) {
             callback(null);
-            return () => {};
+            return () => { };
         }
         return onValue(ref(db, `${this.roomPath}/spin_state`), (snapshot) => {
             callback(snapshot.val());
@@ -468,7 +561,7 @@ class SyncService {
     subscribeToVotes(callback) {
         if (!db) {
             callback([]);
-            return () => {};
+            return () => { };
         }
         return onValue(ref(db, `${this.roomPath}/votes`), (snapshot) => {
             const votes = [];
@@ -534,11 +627,22 @@ class SyncService {
     subscribeToFinalResults(callback) {
         if (!db) {
             callback(null);
-            return () => {};
+            return () => { };
         }
         return onValue(ref(db, `${this.roomPath}/final_results`), (snapshot) => {
             callback(snapshot.val());
         });
+    }
+
+    async getFinalResults() {
+        if (!db) return null;
+        try {
+            const snapshot = await get(ref(db, `${this.roomPath}/final_results`));
+            return snapshot.exists() ? snapshot.val() : null;
+        } catch (e) {
+            console.error('SyncService: Failed to get final results:', e);
+            return null;
+        }
     }
 
     async clearFinalResults() {
@@ -572,6 +676,16 @@ class SyncService {
         }
     }
 
+    async removeRoom(roomId) {
+        if (!db || !roomId) return;
+        try {
+            await set(ref(db, `rooms/${roomId}`), null);
+            console.log(`SyncService: Completely removed room ${roomId}`);
+        } catch (e) {
+            console.error('SyncService: Failed to remove room:', e);
+        }
+    }
+
     async preInitRoom(roomId, data) {
         if (!db) return;
         try {
@@ -597,18 +711,30 @@ class SyncService {
             try {
                 console.log(`SyncService: Manually clearing presence for ${this.myName || this.myId} in room ${this.roomId}`);
 
-                // 1. Remove from Firebase presence immediately
+                // 0. Stop the .info/connected listener FIRST to prevent it from re-writing presence
+                if (this._connectedUnsubscribe) {
+                    this._connectedUnsubscribe();
+                    this._connectedUnsubscribe = null;
+                }
+
+                // 1. Cancel any pending onDisconnect to avoid ghost writes
                 const presenceRef = ref(db, `${this.roomPath}/presence/${this.myId}`);
+                try {
+                    await onDisconnect(presenceRef).cancel();
+                } catch (e) {
+                    console.warn('SyncService: Failed to cancel onDisconnect:', e);
+                }
+
+                // 2. Remove from Firebase presence immediately
                 await set(presenceRef, null);
 
-                // 2. Clear local memory state
+                // 3. Clear local memory state
                 this.myName = null;
 
-                // 3. Optional: Clear persisted display name if they should re-pick next time
+                // 4. Clear persisted display name so they re-pick next time
                 // Keep the my_user_id though, as that's their unique device ID
                 await AsyncStorage.removeItem('my_display_name');
 
-                // 4. Force a small delay to ensure Firebase processes the removal before next action if needed
                 return true;
             } catch (err) {
                 console.error('SyncService: Failed to clear presence:', err);
@@ -616,6 +742,44 @@ class SyncService {
             }
         }
         return false;
+    }
+
+    /**
+     * Clean up stale/ghost presence entries that don't match any participant in the room.
+     * Should be called by the host when entering the room.
+     * @param {string[]} participantNames - The list of valid participant names
+     */
+    async cleanupStalePresence(participantNames) {
+        if (!db || !this.roomPath) return;
+        try {
+            const presenceSnapshot = await get(ref(db, `${this.roomPath}/presence`));
+            if (!presenceSnapshot.exists()) return;
+
+            const nameLookup = new Set((participantNames || []).map(n => (n || '').trim().toLowerCase()));
+            const removePromises = [];
+
+            presenceSnapshot.forEach(child => {
+                const userData = child.val();
+                const userName = (userData?.name || '').trim().toLowerCase();
+                const userId = child.key;
+
+                // Skip our own presence
+                if (userId === this.myId) return;
+
+                // If this user's name is not in the participants list, remove their presence
+                if (!nameLookup.has(userName) || userName === 'unknown user' || userName === '') {
+                    console.log(`SyncService: Removing stale presence: "${userData?.name}" (id: ${userId})`);
+                    removePromises.push(set(ref(db, `${this.roomPath}/presence/${userId}`), null));
+                }
+            });
+
+            if (removePromises.length > 0) {
+                await Promise.all(removePromises);
+                console.log(`SyncService: Cleaned up ${removePromises.length} stale presence entries`);
+            }
+        } catch (e) {
+            console.error('SyncService: Failed to cleanup stale presence:', e);
+        }
     }
 }
 

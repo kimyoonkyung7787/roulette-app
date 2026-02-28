@@ -17,7 +17,8 @@
         "local": "LOCAL",
         "select_language": "SELECT LANGUAGE",
         "weight": "Weight",
-        "exit_confirm": "Do you want to exit?",
+        "exit_confirm": "Are you sure you want to exit?",
+        "host_exit_confirm": "If you leave the room, the entire room will be deleted.\nAre you sure you want to exit?",
         "cancel": "Cancel",
         "confirm": "Confirm",
         "item": "Item",
@@ -30,7 +31,9 @@
         "no_vote": "NO VOTE",
         "invite_title": "",
         "invite_message": "🎮 Roulette Game Invite -\n{{name}} has invited you to a game.\n\n🆔 Room ID : {{roomId}}\n\n🚀 Click the link to join now!!!",
-        "link_copied": "Invite link copied to clipboard!"
+        "link_copied": "Invite link copied to clipboard!",
+        "hot": "Hot",
+        "ice": "Ice"
     },
     "categories": {
         "coffee": "COFFEE",
@@ -40,40 +43,40 @@
     },
     "popular_items": {
         "coffee": [
-            "Americano",
             "Cafe Latte",
-            "Vanilla Latte",
             "Cappuccino",
-            "Caramel Macchiato",
-            "Cold Brew",
+            "Americano",
             "Espresso",
-            "Green Tea Latte",
+            "Cafe Mocha",
+            "Flat White",
+            "Macchiato",
+            "Cold Brew",
             "Fruit Ade",
             "Smoothie"
         ],
         "meal": [
-            "Pizza",
-            "Burger & Fries",
-            "Sushi",
-            "Pasta",
+            "Cheese Burger",
+            "Pepperoni Pizza",
+            "Sirloin Steak",
+            "Pasta Carbonara",
             "Fried Chicken",
-            "Tacos",
-            "Steak",
-            "Fried Rice",
-            "Ramen",
-            "Salad"
+            "Beef Tacos",
+            "Sushi Roll",
+            "Caesar Salad",
+            "Fish and Chips",
+            "Club Sandwich"
         ],
         "snack": [
-            "Popcorn",
-            "Nachos",
-            "Ice Cream",
-            "Donuts",
-            "Cookies",
             "Potato Chips",
+            "Chocolate Chip Cookies",
+            "Glazed Donuts",
+            "Movie Popcorn",
             "Pretzels",
+            "Ice Cream Cone",
             "Brownies",
             "Muffins",
-            "Granola Bar"
+            "Beef Jerky",
+            "Nachos"
         ],
         "etc": [
             "ETC 1",
@@ -101,7 +104,8 @@
         "who_pays": "WHO PAYS?",
         "who_pays_desc": "Spin to pick one from the group",
         "what_to_eat": "WHAT TO EAT?",
-        "what_to_eat_desc": "Add menus and decide together"
+        "what_to_eat_desc": "Can't decide? Let the roulette choose",
+        "room_creation_failed": "Failed to create a room. Please try again in a moment."
     },
     "name_input": {
         "add_participant": "Add participant...",
@@ -126,6 +130,7 @@
         "waiting_for_host": "Waiting for host...",
         "wait_for_host": "Please wait for the host to finish setting up",
         "wait_for_host_spin": "Waiting for host to spin the roulette",
+        "participants_joining_spin": "{{current}}/{{total}} joining - Spin",
         "participants_ready_spin": "{{current}}/{{total}} ready - Spin",
         "selected": "SELECTED",
         "please_select_name": "Please select your name",
@@ -193,13 +198,14 @@
         "participant_detail": "PARTICIPANT DETAIL",
         "participants_joined_suffix": "participated",
         "watched": "WATCHED",
-        "host_restarted": "Host has restarted. Returning to lobby."
+        "host_ended_room": "The host has ended the room.\nReturning to the lobby.",
+        "host_restarted": "The host has restarted the game.\nReturning to menu."
     },
     "entry": {
         "offline_title": "OFFLINE",
-        "offline_desc": "Gathered together.\nOne person spins to win!",
+        "offline_desc": "Play face-to-face.\nOne device, everyone spins!",
         "online_title": "ONLINE",
-        "online_desc": "Remote gathering.\nEveryone spins to win!",
+        "online_desc": "Play remotely.\nInvite friends via link!",
         "select_mode": "SELECT MODE",
         "game_center": "GAME CENTER",
         "create_by_menu": "By Menu",

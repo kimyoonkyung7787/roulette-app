@@ -7,6 +7,7 @@ import { CyberBackground } from '../components/CyberBackground';
 import { historyService } from '../services/HistoryService';
 import { History as HistoryIcon, ArrowLeft, Trash2, Crown } from 'lucide-react-native';
 import { useTranslation } from 'react-i18next';
+import i18n from '../i18n';
 
 export default function HistoryScreen({ route, navigation }) {
     const { t } = useTranslation();
@@ -137,8 +138,9 @@ export default function HistoryScreen({ route, navigation }) {
 
     const renderItem = ({ item }) => {
         const date = new Date(item.timestamp);
-        const dateString = date.toLocaleDateString();
-        const timeString = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        const timeLocale = i18n.language === 'ko' ? 'ko-KR' : 'en-US';
+        const dateString = date.toLocaleDateString(i18n.language);
+        const timeString = date.toLocaleTimeString(timeLocale, { hour: '2-digit', minute: '2-digit', second: '2-digit' });
         const canRestore = (role === 'owner' || mode === 'offline') && item.originalList && item.originalList.length > 0;
         const hasParticipants = (item.type === 'people' && item.originalList?.length > 0) || (item.type === 'menu' && item.details?.length > 0);
         const canRestoreParticipants = mode === 'online' && role === 'owner' && hasParticipants;
@@ -251,13 +253,8 @@ export default function HistoryScreen({ route, navigation }) {
                                         )}
                                     </View>
                                     <Text style={{
-                                        color: (detail.isNotConnected || detail.votedFor === t('common.not_connected') || detail.votedFor === t('common.not_connected').toUpperCase())
-                                            ? 'rgba(255,255,255,0.7)'
-                                            : Colors.secondary,
-                                        fontSize: 11,
-                                        fontWeight: (detail.isNotConnected || detail.votedFor === t('common.not_connected') || detail.votedFor === t('common.not_connected').toUpperCase())
-                                            ? 'normal'
-                                            : 'bold'
+                                        color: 'rgba(255,255,255,0.7)',
+                                        fontSize: 11
                                     }}>
                                         {detail.votedFor}
                                     </Text>

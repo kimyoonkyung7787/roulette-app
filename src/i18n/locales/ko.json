@@ -18,6 +18,7 @@
         "select_language": "언어 선택",
         "weight": "가중치",
         "exit_confirm": "종료하시겠습니까?",
+        "host_exit_confirm": "방을 나가면 방 전체가 삭제됩니다.\n나가시겠습니까?",
         "cancel": "취소",
         "confirm": "확인",
         "item": "항목",
@@ -30,7 +31,9 @@
         "no_vote": "미투표",
         "invite_title": "",
         "invite_message": "🎮 Roulette Game Invite -\n{{name}}님이 룰렛 게임에 초대했습니다.\n\n🆔 방번호 : {{roomId}}\n\n🚀 링크를 클릭해서 바로 참여하세요!!!",
-        "link_copied": "초대 링크가 복사되었습니다!"
+        "link_copied": "초대 링크가 복사되었습니다!",
+        "hot": "핫",
+        "ice": "아이스"
     },
     "categories": {
         "coffee": "커피",
@@ -40,40 +43,40 @@
     },
     "popular_items": {
         "coffee": [
-            "아메리카노",
             "카페라떼",
-            "바닐라라떼",
             "카푸치노",
-            "카라멜마끼아또",
-            "콜드브루",
+            "아메리카노",
             "에스프레소",
-            "녹차라떼",
+            "카페모카",
+            "플랫화이트",
+            "마키아또",
+            "콜드브루",
             "과일에이드",
             "스무디"
         ],
         "meal": [
             "김치찌개",
             "된장찌개",
+            "불고기",
             "비빔밥",
+            "제육볶음",
             "돈까스",
-            "햄버거",
             "짜장면",
             "짬뽕",
-            "피자",
-            "초밥",
-            "치킨"
+            "김밥",
+            "삼겹살"
         ],
         "snack": [
             "떡볶이",
-            "핫도그",
-            "아이스크림",
-            "크로플",
-            "치킨너겟",
-            "타코야끼",
-            "마카롱",
-            "붕어빵/호떡",
+            "튀김",
+            "순대",
+            "붕어빵",
+            "호떡",
+            "꽈배기",
+            "닭강정",
             "샌드위치",
-            "과자"
+            "핫도그",
+            "조각케이크"
         ],
         "etc": [
             "기타 1",
@@ -99,9 +102,10 @@
         "create_by_people": "인원 입력",
         "create_by_menu": "메뉴 입력",
         "who_pays": "누가 쏠까?",
-        "who_pays_desc": "참여자 중 한 명을 룰렛으로 뽑아요",
+        "who_pays_desc": "참여자 중 한 명을 뽑습니다",
         "what_to_eat": "뭐 먹지?",
-        "what_to_eat_desc": "메뉴를 등록하고 다 같이 정해요"
+        "what_to_eat_desc": "뭐 먹을지 고민될 때 룰렛이 골라줍니다",
+        "room_creation_failed": "방 생성에 실패했습니다. 잠시 후 다시 시도해 주세요."
     },
     "name_input": {
         "add_participant": "참여자 추가...",
@@ -126,6 +130,7 @@
         "waiting_for_host": "호스트를 기다리는 중...",
         "wait_for_host": "호스트의 설정 완료를 기다려주세요",
         "wait_for_host_spin": "호스트가 룰렛을 돌릴 때까지 대기",
+        "participants_joining_spin": "{{current}}/{{total}} 참여 중 - 돌리기",
         "participants_ready_spin": "{{current}}/{{total}} 참여 완료 - 돌리기",
         "selected": "SELECTED",
         "please_select_name": "당신의 이름을 선택해 주세요",
@@ -193,13 +198,14 @@
         "participant_detail": "참여자 상세 결과",
         "participants_joined_suffix": "참여",
         "watched": "시청",
-        "host_restarted": "호스트가 다시 시작했어요. 대기화면으로 돌아갑니다."
+        "host_ended_room": "호스트가 방을 종료했습니다.\n대기화면으로 돌아갑니다.",
+        "host_restarted": "호스트가 게임을 다시 시작했습니다.\n메뉴로 돌아갑니다."
     },
     "entry": {
         "offline_title": "오프라인",
-        "offline_desc": "한자리에 모인 친구들과\n함께 돌리고 즐겨요!",
+        "offline_desc": "기기 하나로 다같이 플레이!\n돌려서 내기를 정하세요.",
         "online_title": "온라인",
-        "online_desc": "친구들과 멀리 있어도\n실시간으로 함께 즐겨요!",
+        "online_desc": "멀리 있어도 함께!\n링크로 친구들을 초대하세요.",
         "select_mode": "게임 모드 선택",
         "game_center": "게임 센터",
         "who_pays_desc": "참여자 중 한 명을 룰렛으로 뽑아요",
@@ -213,7 +219,7 @@
     "history": {
         "title": "기록 로그",
         "no_data": "기록을 찾을 수 없습니다",
-        "restore": "전체설정 복구",
+        "restore": "설정 복구",
         "restore_participants": "참여자 복구"
     },
     "onboarding": {

@@ -16,8 +16,9 @@
         "room": "ルーム",
         "local": "ローカル",
         "select_language": "言語選択",
-        "weight": "Weight",
+        "weight": "重み",
         "exit_confirm": "終了しますか？",
+        "host_exit_confirm": "退出するとルーム全体が削除されます。\n終了しますか？",
         "cancel": "キャンセル",
         "confirm": "確認",
         "item": "Item",
@@ -30,7 +31,9 @@
         "no_vote": "未投票",
         "invite_title": "",
         "invite_message": "🎮 ルーレットゲームの招待 -\n{{name}} さんから招待されました。\n\n🆔 ルームID : {{roomId}}\n\n🚀 リンクをクリックして今すぐ参加！！！",
-        "link_copied": "リンクをコピーしました！"
+        "link_copied": "招待リンクをコピーしました!",
+        "hot": "ホット",
+        "ice": "アイス"
     },
     "categories": {
         "coffee": "コーヒー",
@@ -40,40 +43,40 @@
     },
     "popular_items": {
         "coffee": [
-            "アメリカーノ",
             "カフェラテ",
-            "バニララテ",
             "カプチーノ",
-            "キャラメルマキアート",
-            "コールドブリュー",
+            "アメリカーノ",
             "エスプレッソ",
-            "抹茶ラテ",
+            "カフェモカ",
+            "フラットホワイト",
+            "マキアート",
+            "コールドブリュー",
             "フルーツエード",
             "スムージー"
         ],
         "meal": [
-            "ラーメン",
-            "寿司",
-            "とんかつ",
-            "焼肉",
-            "パスタ",
-            "ピザ",
-            "ハンバーガー",
+            "醤油ラーメン",
+            "握り寿司",
+            "牛丼",
             "カレーライス",
-            "うどん",
-            "焼きそば"
+            "とんかつ",
+            "天ぷら蕎麦",
+            "お好み焼き",
+            "親子丼",
+            "刺身定食",
+            "焼肉"
         ],
         "snack": [
             "たこ焼き",
-            "唐揚げ",
-            "アイスクリーム",
-            "ドーナツ",
-            "スナック菓子",
-            "ケーキ",
+            "たい焼き",
+            "お団子",
+            "メロンパン",
+            "せんべい",
+            "抹茶アイス",
+            "ポッキー",
+            "どら焼き",
             "ポテトチップス",
-            "クレープ",
-            "マカロン",
-            "ブラウニー"
+            "ショートケーキ"
         ],
         "etc": [
             "その他 1",
@@ -99,9 +102,10 @@
         "create_by_people": "人で作成",
         "create_by_menu": "メニューで作成",
         "who_pays": "誰が支払う？",
-        "who_pays_desc": "参加者から1人をルーレットで選ぶ",
+        "who_pays_desc": "ルーレットを回して一人を選ぶ",
         "what_to_eat": "何を食べる？",
-        "what_to_eat_desc": "メニューを登録して皆で決める"
+        "what_to_eat_desc": "迷っているならルーレットにお任せ",
+        "room_creation_failed": "ルームの作成に失敗しました。しばらくしてからもう一度お試しください。"
     },
     "name_input": {
         "add_participant": "参加者を追加...",
@@ -127,7 +131,7 @@
         "wait_for_host": "ホストの設定完了をお待ちください",
         "wait_for_host_spin": "ホストがルーレットを回すまでお待ちください",
         "participants_ready_spin": "{{current}}/{{total}} 参加完了 - 回す",
-        "selected": "SELECTED",
+        "selected": "選択済み",
         "please_select_name": "名前を選択してください",
         "game_in_progress": "ゲーム進行中...",
         "select_name_to_join": "名前を選択して参加",
@@ -152,7 +156,9 @@
         "apply_menu": "このメニューを適用",
         "search_error": "検索中にエラーが発生しました",
         "menu_gen_error": "メニュー生成に失敗しました",
-        "min_menu_error": "メニューは2つ以上必要です"
+        "min_menu_error": "メニューは2つ以上必要です",
+        "memo_label": "オプション追加 (任意)",
+        "memo_placeholder": "例: いちご, マンゴー"
     },
     "roulette": {
         "spin_center": "回転",
@@ -191,13 +197,14 @@
         "participant_detail": "参加者詳細",
         "participants_joined_suffix": "参加",
         "watched": "視聴",
+        "host_ended_room": "ホストがルームを終了しました。\nロビーに戻ります。",
         "host_restarted": "ホストが再開しました。ロビーに戻ります。"
     },
     "entry": {
         "offline_title": "OFFLINE",
-        "offline_desc": "同じ場所に集まった友達と\n一緒に回して楽しもう！",
+        "offline_desc": "顔を合わせてプレイ。\n1つの端末でみんなで回そう！",
         "online_title": "ONLINE",
-        "online_desc": "離れた場所にいる友達とも\nリアルタイムで一緒に楽しもう！",
+        "online_desc": "リモートでプレイ。\nリンクから友達を招待しよう！",
         "select_mode": "SELECT GAME MODE",
         "game_center": "ゲームセンター",
         "who_pays_desc": "参加者から1人をルーレットで選ぶ",
@@ -211,7 +218,7 @@
     "history": {
         "title": "履歴ログ",
         "no_data": "履歴が見つかりません",
-        "restore": "RESTORE SETTINGS",
+        "restore": "設定を復元",
         "restore_participants": "参加者復元"
     },
     "onboarding": {
@@ -261,5 +268,14 @@
         "history_step_title": "ログを確認！",
         "history_step_msg": "以前のログを参照して、\n参加者/メニューリストを取り込めます",
         "history_step_icon": "📜"
+    },
+    "paywall": {
+        "title": "プレミアムアップグレード",
+        "subtitle_host": "5人以上で参加するにはプレミアムが必要です。\n無料版は最大4人まで可能です。",
+        "subtitle_participant": "このルームは無料制限（4人）に達しました。\nホストがプレミアムにアップグレードすると参加できます。",
+        "feature_1": "最大10人まで参加可能",
+        "feature_2": "PayPalによる安全な決済",
+        "pay_with_paypal": "PayPalで決済する",
+        "room_full_free": "このルームは無料制限（4人）に達しました。ホストにプレミアムアップグレードを依頼してください。"
     }
 }

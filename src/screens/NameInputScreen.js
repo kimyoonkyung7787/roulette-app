@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useRef } from 'react';
-import { View, TextInput, TouchableOpacity, FlatList, Text, Modal, ScrollView, Platform, Alert, StyleSheet, LayoutAnimation, UIManager, Share, Animated } from 'react-native';
+import { View, TextInput, TouchableOpacity, FlatList, Text, Modal, ScrollView, Platform, Alert, StyleSheet, LayoutAnimation, UIManager, Share, Animated, Keyboard } from 'react-native';
 import { useIsFocused, useFocusEffect } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Colors } from '../theme/colors';
@@ -71,6 +71,7 @@ export default function NameInputScreen({ route, navigation }) {
     const [backupMySelectedName, setBackupMySelectedName] = useState(null);
     const participantRefs = useRef([]);
     const modalScrollRef = useRef(null);
+    const manualUncheckedRef = useRef(false);
 
     const [showCoachMark, setShowCoachMark] = useState(false);
     const shareRef = useRef(null);
@@ -86,6 +87,7 @@ export default function NameInputScreen({ route, navigation }) {
     const participantInputRef = useRef(null);
     const historyRef = useRef(null);
     const isRestoredFromHistoryRef = useRef(false);
+    const roomDeletedShownRef = useRef(false);
 
     const [showMemoModal, setShowMemoModal] = useState(false);
     const [memoEditingIndex, setMemoEditingIndex] = useState(null);
@@ -98,6 +100,27 @@ export default function NameInputScreen({ route, navigation }) {
     const [searchResults, setSearchResults] = useState([]);
     const [isSearching, setIsSearching] = useState(false);
     const [isGeneratingMenu, setIsGeneratingMenu] = useState(false);
+    const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
+
+    useEffect(() => {
+        const keyboardDidShowListener = Keyboard.addListener(
+            Platform.OS === 'android' ? 'keyboardDidShow' : 'keyboardWillShow',
+            () => {
+                setIsKeyboardVisible(true);
+            }
+        );
+        const keyboardDidHideListener = Keyboard.addListener(
+            Platform.OS === 'android' ? 'keyboardDidHide' : 'keyboardWillHide',
+            () => {
+                setIsKeyboardVisible(false);
+            }
+        );
+
+        return () => {
+            keyboardDidHideListener.remove();
+            keyboardDidShowListener.remove();
+        };
+    }, []);
     const [generatedMenus, setGeneratedMenus] = useState(null);
     const [selectedRestaurant, setSelectedRestaurant] = useState(null);
 
@@ -310,26 +333,37 @@ export default function NameInputScreen({ route, navigation }) {
                         setParticipants(defaultParticipants);
                         await syncService.setParticipants(defaultParticipants);
 
-                        // AUTO-SELECT for owner if not set
-                        if (role === 'owner' && !mySelectedName && !syncService.myName) {
-                            const firstGuestName = defaultParticipants[0].name;
-                            setMySelectedName(firstGuestName);
-                            await syncService.setIdentity(firstGuestName);
+                        // Determine owner logic
+                        if (role === 'owner') {
+                            if (!mySelectedName && !syncService.myName) {
+                                const firstGuestName = defaultParticipants[0].name;
+                                setMySelectedName(firstGuestName);
+                                await syncService.setIdentity(firstGuestName);
+                                await syncService.setHostName(firstGuestName);
+                            } else {
+                                const currentName = mySelectedName || syncService.myName;
+                                if (currentName) await syncService.setHostName(currentName);
+                            }
                         }
                     } else {
                         setParticipants(sanitizedParticipants);
                         await syncService.setParticipants(sanitizedParticipants);
 
-                        // AUTO-SELECT for owner if not set
-                        if (role === 'owner' && !mySelectedName && !syncService.myName) {
-                            const firstGuestName = typeof sanitizedParticipants[0] === 'object'
-                                ? (sanitizedParticipants[0].name || sanitizedParticipants[0].text)
-                                : sanitizedParticipants[0];
+                        // Determine owner logic
+                        if (role === 'owner') {
+                            if (!mySelectedName && !syncService.myName) {
+                                const firstGuestName = typeof sanitizedParticipants[0] === 'object'
+                                    ? (sanitizedParticipants[0].name || sanitizedParticipants[0].text)
+                                    : sanitizedParticipants[0];
 
-                            if (firstGuestName) {
-                                setMySelectedName(firstGuestName);
-                                await syncService.setIdentity(firstGuestName);
-                                if (role === 'owner') await syncService.setHostName(firstGuestName);
+                                if (firstGuestName) {
+                                    setMySelectedName(firstGuestName);
+                                    await syncService.setIdentity(firstGuestName);
+                                    await syncService.setHostName(firstGuestName);
+                                }
+                            } else {
+                                const currentName = mySelectedName || syncService.myName;
+                                if (currentName) await syncService.setHostName(currentName);
                             }
                         }
                     }
@@ -343,46 +377,50 @@ export default function NameInputScreen({ route, navigation }) {
                     if (hasMenuRestore) {
                         console.log('NameInputScreen: Skipping menu init - will restore from history');
                     } else {
-                    // PROACTIVE SETUP: Ensure ALL categories have default menus if empty
-                    const categoriesToInit = ['coffee', 'meal', 'snack', 'etc'];
-                    console.log('NameInputScreen: Starting proactive menu initialization for room:', roomId);
+                        // PROACTIVE SETUP: Ensure ALL categories have default menus if empty
+                        const categoriesToInit = ['coffee', 'meal', 'snack', 'etc'];
+                        console.log('NameInputScreen: Starting proactive menu initialization for room:', roomId);
 
-                    for (const cat of categoriesToInit) {
-                        if (isRestoredFromHistoryRef.current) {
-                            console.log(`NameInputScreen: Skipping menu init for ${cat} - restored from history`);
-                            break;
-                        }
-                        const existing = await syncService.getMenuByCategory(cat);
-
-                        if (!existing || !Array.isArray(existing) || existing.length === 0) {
-                            console.log(`NameInputScreen: Initializing default items for ${cat}`);
-                            const translatedPopular = t(`popular_items.${cat}`, { returnObjects: true });
-                            const popular = Array.isArray(translatedPopular) ? translatedPopular : [];
-
-                            const defaultMenus = popular.length > 0
-                                ? popular.map(name => ({ name }))
-                                : [{ name: `${t('common.item') || 'Item'} 1` }, { name: `${t('common.item') || 'Item'} 2` }];
-
-                            await syncService.setMenuByCategory(cat, defaultMenus);
-                            menuCacheRef.current[cat] = defaultMenus;
-
-                            if (cat === initialCat && !isRestoredFromHistoryRef.current) {
-                                console.log(`NameInputScreen: Setting initial state for ${cat}`);
-                                setMenuItems(defaultMenus);
+                        for (const cat of categoriesToInit) {
+                            if (isRestoredFromHistoryRef.current) {
+                                console.log(`NameInputScreen: Skipping menu init for ${cat} - restored from history`);
+                                break;
                             }
-                        } else {
-                            menuCacheRef.current[cat] = existing;
-                            if (cat === initialCat && !isRestoredFromHistoryRef.current) {
-                                console.log(`NameInputScreen: Loading existing data for initial category ${cat}`);
-                                setMenuItems(existing);
+                            const existing = await syncService.getMenuByCategory(cat);
+
+                            if (!existing || !Array.isArray(existing) || existing.length === 0) {
+                                console.log(`NameInputScreen: Initializing default items for ${cat}`);
+                                const translatedPopular = t(`popular_items.${cat}`, { returnObjects: true });
+                                const popular = Array.isArray(translatedPopular) ? translatedPopular : [];
+
+                                const defaultMenus = popular.length > 0
+                                    ? popular.map(name => ({ name }))
+                                    : [{ name: `${t('common.item') || 'Item'} 1` }, { name: `${t('common.item') || 'Item'} 2` }];
+
+                                await syncService.setMenuByCategory(cat, defaultMenus);
+                                menuCacheRef.current[cat] = defaultMenus;
+
+                                if (cat === initialCat && !isRestoredFromHistoryRef.current) {
+                                    console.log(`NameInputScreen: Setting initial state for ${cat}`);
+                                    setMenuItems(defaultMenus);
+                                }
+                            } else {
+                                menuCacheRef.current[cat] = existing;
+                                if (cat === initialCat && !isRestoredFromHistoryRef.current) {
+                                    console.log(`NameInputScreen: Loading existing data for initial category ${cat}`);
+                                    setMenuItems(existing);
+                                }
                             }
                         }
-                    }
                     }
 
                     await syncService.clearSpinState();
                     await syncService.clearVotes();
                     await syncService.clearFinalResults();
+
+                    // Clean up ghost/stale presence entries (e.g., "Unknown User" who left but presence remained)
+                    const currentPNames = (participants.length > 0 ? participants : sanitizedParticipants).map(p => typeof p === 'object' ? p.name : String(p));
+                    await syncService.cleanupStalePresence(currentPNames);
                 } else {
                     console.log('NameInputScreen: Owner returning to re-vote, skipping room reset');
                     const currentParticipants = await syncService.getParticipants();
@@ -407,6 +445,12 @@ export default function NameInputScreen({ route, navigation }) {
                     } else {
                         const fallback = await syncService.getMenuItems();
                         if (fallback) setMenuItems(fallback);
+                    }
+
+                    // Clean up ghost presence on re-entry too
+                    if (currentParticipants) {
+                        const pNames = currentParticipants.map(p => typeof p === 'object' ? p.name : String(p));
+                        await syncService.cleanupStalePresence(pNames);
                     }
                 }
             }
@@ -499,7 +543,26 @@ export default function NameInputScreen({ route, navigation }) {
 
             // Subscribe to room host name
             unsubs.push(syncService.subscribeToHostName(name => {
-                if (name) setHostName(name);
+                setHostName(name || null);
+            }));
+
+            // Listen for room deletion (when host exits completely)
+            unsubs.push(syncService.subscribeToRoomDeleted(() => {
+                // If it's a participant and the room is deleted
+                if (role !== 'owner' && !roomDeletedShownRef.current) {
+                    roomDeletedShownRef.current = true;
+                    // Show alert using CyberAlert state
+                    setAlertConfig({
+                        visible: true,
+                        title: t('common.alert'),
+                        message: t('result.host_ended_room'),
+                        onConfirm: () => {
+                            setAlertConfig(prev => ({ ...prev, visible: false }));
+                            // navigate back to Welcome
+                            navigation.reset({ index: 0, routes: [{ name: 'Welcome' }] });
+                        }
+                    });
+                }
             }));
 
             setIsLoaded(true);
@@ -594,13 +657,6 @@ export default function NameInputScreen({ route, navigation }) {
                 setBackupMySelectedName(mySelectedName);
             }
             setPendingSelectedName(mySelectedName);
-            // Guard: Wait for host to avoid focusing on host's slot during sync delay
-            // This prevents the participant from auto-focusing on the host's name (usually index 0)
-            const hostUser = onlineUsers.find(u => u.role === 'owner');
-            if (role === 'participant' && !hostUser && onlineUsers.length > 0) {
-                setModalFocusedIndex(null);
-                return;
-            }
 
             // Priority 1: Find MY currently selected participant
             let index = -1;
@@ -618,7 +674,8 @@ export default function NameInputScreen({ route, navigation }) {
                     const pNameTrimmed = pName.trim();
                     if (!pNameTrimmed) return false;
                     const otherUserWithName = onlineUsers.find(u => u.name === pNameTrimmed && u.id !== syncService.myId);
-                    const isTaken = !!otherUserWithName;
+                    const isTakenByHostName = role === 'participant' && !!hostName && pNameTrimmed === (hostName || '').trim();
+                    const isTaken = !!otherUserWithName || isTakenByHostName;
                     return !isTaken;
                 });
             }
@@ -641,7 +698,7 @@ export default function NameInputScreen({ route, navigation }) {
                         (x, y) => {
                             modalScrollRef.current?.scrollTo?.({ y: Math.max(0, y - 20), animated: true });
                         },
-                        () => {}
+                        () => { }
                     );
                 }, 300);
             }
@@ -708,6 +765,8 @@ export default function NameInputScreen({ route, navigation }) {
             if (participantNavigateTimerRef.current) {
                 clearTimeout(participantNavigateTimerRef.current);
                 participantNavigateTimerRef.current = null;
+                setIsSpinDelayModal(false);
+                setShowUsersModal(false);
             }
         };
     }, [role, isFocused, isLoaded, roomPhase, spinTarget, finalResults, participants, hostName, onlineUsers, roomId, activeCategory]);
@@ -807,9 +866,10 @@ export default function NameInputScreen({ route, navigation }) {
         if (!isLoaded || role !== 'participant') return;
 
         // 1. RECOVERY: Check if I already have a selected name in the room (e.g. from Retry)
+        // Skip recovery if user manually unchecked themselves (wait for Firebase to sync)
         const meInRoom = onlineUsers.find(u => u.id === syncService.myId);
         // Do not recover when presence with myId is the host (same device, different tab): treat as new participant and auto-select
-        const isRecoveryValid = meInRoom && meInRoom.name && !(role === 'participant' && meInRoom.role === 'owner');
+        const isRecoveryValid = !manualUncheckedRef.current && meInRoom && meInRoom.name && !(role === 'participant' && meInRoom.role === 'owner');
         if (isRecoveryValid) {
             if (mySelectedName !== meInRoom.name) {
                 console.log(`NameInputScreen: Recovering previous selection: ${meInRoom.name}`);
@@ -819,9 +879,11 @@ export default function NameInputScreen({ route, navigation }) {
         }
 
         // 2. AUTO-SELECT: If no selection, pick the first available slot (excluding host)
+        // Skip auto-select if user manually unchecked themselves
+        if (manualUncheckedRef.current) return;
         // Guard: Wait for host information to avoid race conditions (hostUser from presence or hostName from DB)
         const hostUser = onlineUsers.find(u => u.role === 'owner');
-        const guardOk = !mySelectedName && participants.length > 0 && (role !== 'participant' || hostUser || hostName);
+        const guardOk = !mySelectedName && participants.length > 0 && (role !== 'participant' || (hostUser && hostUser.name && hostUser.name.trim()) || (hostName && hostName.trim()));
         if (!guardOk) return;
 
         const sameIdEntry = onlineUsers.find(u => u.id === syncService.myId);
@@ -1198,9 +1260,15 @@ export default function NameInputScreen({ route, navigation }) {
         const isTaken = !!otherUserWithName || isTakenByHostName;
 
         if (mySelectedName === nameToUse) {
+            manualUncheckedRef.current = true;
             setMySelectedName(null);
             await syncService.setIdentity('');
+            if (role === 'owner') {
+                await syncService.setHostName('');
+                setHostName('');
+            }
         } else if (!isTaken) {
+            manualUncheckedRef.current = false;
             setMySelectedName(nameToUse);
             await syncService.setIdentity(nameToUse);
             if (role === 'owner') {
@@ -1818,7 +1886,7 @@ export default function NameInputScreen({ route, navigation }) {
                                                 fontWeight: '900',
                                                 letterSpacing: 1
                                             }}>
-                                                {cat.toUpperCase()}
+                                                {t('categories.' + cat).toUpperCase()}
                                             </Text>
                                         </TouchableOpacity>
                                     );
@@ -1887,106 +1955,69 @@ export default function NameInputScreen({ route, navigation }) {
                     )}
 
                     <View ref={menuListRef} style={{ flex: 1 }}>
-                    <FlatList
-                        data={activeTab === 'people' ? participants : menuItems}
-                        extraData={[activeCategory, selectedMenuIndex, pendingMenuIndex, votes]}
-                        renderItem={({ item, index }) => {
-                            // Ensure nameToCheck is always a string
-                            const rawName = typeof item === 'object' ? (item.name || item.text || '') : String(item);
-                            const nameToCheck = rawName.trim();
-                            const hasName = nameToCheck !== '';
+                        <FlatList
+                            data={activeTab === 'people' ? participants : menuItems}
+                            extraData={[activeCategory, selectedMenuIndex, pendingMenuIndex, votes]}
+                            renderItem={({ item, index }) => {
+                                // Ensure nameToCheck is always a string
+                                const rawName = typeof item === 'object' ? (item.name || item.text || '') : String(item);
+                                const nameToCheck = rawName.trim();
+                                const hasName = nameToCheck !== '';
 
-                            const isTakenByOther = isPeopleTab && hasName && (
-                                onlineUsers.some(u => u.name === nameToCheck && u.id !== syncService.myId) ||
-                                (role === 'participant' && !!hostName && nameToCheck.trim() === (hostName || '').trim())
-                            );
-                            const isMe = isPeopleTab && hasName && mySelectedName === nameToCheck;
-                            const isHost = isPeopleTab && hasName && (mode === 'online' ? onlineUsers.some(u => u.name === nameToCheck && u.role === 'owner') : (isMe && role === 'owner'));
-                            const activeThemeColor = isPeopleTab ? Colors.primary : activeMenuColor;
-                            const currentList = activeTab === 'people' ? participants : menuItems;
-                            let totalWeight = 1;
-                            let percentage = '0';
-                            let displayWeight = '1';
+                                const isTakenByOther = isPeopleTab && hasName && (
+                                    onlineUsers.some(u => u.name === nameToCheck && u.id !== syncService.myId) ||
+                                    (role === 'participant' && !!hostName && nameToCheck.trim() === (hostName || '').trim())
+                                );
+                                const isMe = isPeopleTab && hasName && mySelectedName === nameToCheck;
+                                const isHost = isPeopleTab && hasName && (mode === 'online' ? onlineUsers.some(u => u.name === nameToCheck && u.role === 'owner') : (isMe && role === 'owner'));
+                                const activeThemeColor = isPeopleTab ? Colors.primary : activeMenuColor;
+                                const currentList = activeTab === 'people' ? participants : menuItems;
+                                let totalWeight = 1;
+                                let percentage = '0';
+                                let displayWeight = '1';
 
-                            if (isPeopleTab) {
-                                let totalWeightSum = 0;
-                                for (let i = 0; i < participants.length; i++) {
-                                    totalWeightSum += (participants[i].weight || 0);
+                                if (isPeopleTab) {
+                                    let totalWeightSum = 0;
+                                    for (let i = 0; i < participants.length; i++) {
+                                        totalWeightSum += (participants[i].weight || 0);
+                                    }
+                                    totalWeight = Math.max(1, totalWeightSum);
+                                    const weightValue = item.weight || 0;
+                                    const percentageValue = (weightValue / totalWeight) * 100;
+                                    percentage = percentageValue % 1 === 0 ? percentageValue.toFixed(0) : percentageValue.toFixed(1);
+                                    displayWeight = weightValue % 1 === 0 ? weightValue.toFixed(0) : weightValue.toFixed(1);
                                 }
-                                totalWeight = Math.max(1, totalWeightSum);
-                                const weightValue = item.weight || 0;
-                                const percentageValue = (weightValue / totalWeight) * 100;
-                                percentage = percentageValue % 1 === 0 ? percentageValue.toFixed(0) : percentageValue.toFixed(1);
-                                displayWeight = weightValue % 1 === 0 ? weightValue.toFixed(0) : weightValue.toFixed(1);
-                            }
 
-                            return (
-                                <View style={{
-                                    flexDirection: 'row',
-                                    alignItems: 'center',
-                                    justifyContent: 'space-between',
-                                    backgroundColor: isMe ? `${Colors.primary}15` : (isTakenByOther ? 'rgba(255,255,255,0.01)' : 'rgba(255,255,255,0.03)'),
-                                    paddingHorizontal: 8,
-                                    paddingVertical: 4,
-                                    borderRadius: 12,
-                                    marginBottom: 4,
-                                    borderWidth: 1,
-                                    borderColor: isMe ? Colors.primary : (isTakenByOther ? 'rgba(255,255,255,0.05)' : 'rgba(255,255,255,0.08)'),
-                                    opacity: isTakenByOther && !isMe ? 0.5 : 1
-                                }}>
-                                    <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
-                                        {isPeopleTab ? (
-                                            <TouchableOpacity
-                                                onPress={() => !isTakenByOther ? toggleMe(nameToCheck) : null}
-                                                style={{ marginRight: 12, padding: 4 }}
-                                                disabled={isTakenByOther && !isMe}
-                                            >
-                                                <CheckCircle2
-                                                    color={isMe ? Colors.primary : (isTakenByOther ? 'rgba(255,255,255,0.1)' : 'rgba(255,255,255,0.2)')}
-                                                    size={22}
-                                                    fill={isMe ? `${Colors.primary}33` : 'transparent'}
-                                                />
-                                            </TouchableOpacity>
-                                        ) : (
-                                            <TouchableOpacity
-                                                onPress={() => {
-                                                    const catOpts = CATEGORY_OPTIONS[activeCategory];
-                                                    if (catOpts) {
-                                                        setPendingMenuIndex(index);
-                                                        setShowOptionSheet(true);
-                                                        try { feedbackService.playClick(); } catch (e) { }
-                                                    } else {
-                                                        setSelectedMenuIndex(index);
-                                                    }
-                                                }}
-                                                style={{ marginRight: 12 }}
-                                            >
-                                                {(selectedMenuIndex === index || pendingMenuIndex === index) ? (
-                                                    <CheckCircle2 color={activeMenuColor} size={22} fill={`${activeMenuColor}33`} />
-                                                ) : (
-                                                    <Circle color="rgba(255,255,255,0.2)" size={22} />
-                                                )}
-                                            </TouchableOpacity>
-                                        )}
-
-                                        {editingIndex === index && role === 'owner' ? (
-                                            <TextInput
-                                                autoFocus
-                                                style={{ color: 'white', fontSize: 18, fontWeight: '500', flex: 1, padding: 0 }}
-                                                value={editingValue}
-                                                onChangeText={setEditingValue}
-                                                onBlur={saveEdit}
-                                                onSubmitEditing={saveEdit}
-                                            />
-                                        ) : (
-                                            <TouchableOpacity
-                                                disabled={role !== 'owner' && isTakenByOther}
-                                                onPress={() => {
-                                                    if (role === 'owner') {
-                                                        startEditing(index);
-                                                    } else if (isPeopleTab && !isTakenByOther) {
-                                                        toggleMe(nameToCheck);
-                                                    } else if (!isPeopleTab) {
+                                return (
+                                    <View style={{
+                                        flexDirection: 'row',
+                                        alignItems: 'center',
+                                        justifyContent: 'space-between',
+                                        backgroundColor: isMe ? `${Colors.primary}15` : (isTakenByOther ? 'rgba(255,255,255,0.01)' : 'rgba(255,255,255,0.03)'),
+                                        paddingHorizontal: 8,
+                                        paddingVertical: 4,
+                                        borderRadius: 12,
+                                        marginBottom: 4,
+                                        borderWidth: 1,
+                                        borderColor: isMe ? Colors.primary : (isTakenByOther ? 'rgba(255,255,255,0.05)' : 'rgba(255,255,255,0.08)'),
+                                        opacity: isTakenByOther && !isMe ? 0.5 : 1
+                                    }}>
+                                        <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
+                                            {isPeopleTab ? (
+                                                <TouchableOpacity
+                                                    onPress={() => !isTakenByOther ? toggleMe(nameToCheck) : null}
+                                                    style={{ marginRight: 12, padding: 4 }}
+                                                    disabled={isTakenByOther && !isMe}
+                                                >
+                                                    <CheckCircle2
+                                                        color={isMe ? Colors.primary : (isTakenByOther ? 'rgba(255,255,255,0.1)' : 'rgba(255,255,255,0.2)')}
+                                                        size={22}
+                                                        fill={isMe ? `${Colors.primary}33` : 'transparent'}
+                                                    />
+                                                </TouchableOpacity>
+                                            ) : (
+                                                <TouchableOpacity
+                                                    onPress={() => {
                                                         const catOpts = CATEGORY_OPTIONS[activeCategory];
                                                         if (catOpts) {
                                                             setPendingMenuIndex(index);
@@ -1995,105 +2026,142 @@ export default function NameInputScreen({ route, navigation }) {
                                                         } else {
                                                             setSelectedMenuIndex(index);
                                                         }
-                                                    }
-                                                }}
-                                                style={{ flex: 1, flexDirection: 'row', alignItems: 'center', paddingVertical: 4 }}
-                                            >
-                                                <Text style={{
-                                                    color: !hasName ? 'rgba(255,255,255,0.2)' : ((isTakenByOther && !isMe) ? Colors.textSecondary : 'white'),
-                                                    fontSize: 16,
-                                                    fontWeight: '500',
-                                                    fontStyle: !hasName ? 'italic' : 'normal'
-                                                }}>
-                                                    {hasName ? nameToCheck : t('common.unknown')} {isMe && <Text style={{ color: Colors.primary, fontSize: 14 }}>{t('common.me')}</Text>}
-                                                    {isTakenByOther && !isMe && <Text style={{ color: Colors.textSecondary, fontSize: 12 }}> ({t('name_input.selected').toUpperCase()})</Text>}
-                                                </Text>
-                                                {isHost && (
-                                                    <View style={{
-                                                        backgroundColor: `${Colors.accent}25`,
-                                                        borderColor: Colors.accent,
-                                                        borderWidth: 1,
-                                                        borderRadius: 4,
-                                                        paddingHorizontal: 4,
-                                                        marginLeft: 6,
-                                                        flexDirection: 'row',
-                                                        alignItems: 'center',
+                                                    }}
+                                                    style={{ marginRight: 12 }}
+                                                >
+                                                    {(selectedMenuIndex === index || pendingMenuIndex === index) ? (
+                                                        <CheckCircle2 color={activeMenuColor} size={22} fill={`${activeMenuColor}33`} />
+                                                    ) : (
+                                                        <Circle color="rgba(255,255,255,0.2)" size={22} />
+                                                    )}
+                                                </TouchableOpacity>
+                                            )}
+
+                                            {editingIndex === index && role === 'owner' ? (
+                                                <TextInput
+                                                    autoFocus
+                                                    style={{ color: 'white', fontSize: 18, fontWeight: '500', flex: 1, padding: 0 }}
+                                                    value={editingValue}
+                                                    onChangeText={setEditingValue}
+                                                    onBlur={saveEdit}
+                                                    onSubmitEditing={saveEdit}
+                                                />
+                                            ) : (
+                                                <TouchableOpacity
+                                                    disabled={role !== 'owner' && isTakenByOther}
+                                                    onPress={() => {
+                                                        if (role === 'owner') {
+                                                            startEditing(index);
+                                                        } else if (isPeopleTab && !isTakenByOther) {
+                                                            toggleMe(nameToCheck);
+                                                        } else if (!isPeopleTab) {
+                                                            const catOpts = CATEGORY_OPTIONS[activeCategory];
+                                                            if (catOpts) {
+                                                                setPendingMenuIndex(index);
+                                                                setShowOptionSheet(true);
+                                                                try { feedbackService.playClick(); } catch (e) { }
+                                                            } else {
+                                                                setSelectedMenuIndex(index);
+                                                            }
+                                                        }
+                                                    }}
+                                                    style={{ flex: 1, flexDirection: 'row', alignItems: 'center', paddingVertical: 4 }}
+                                                >
+                                                    <Text style={{
+                                                        color: !hasName ? 'rgba(255,255,255,0.2)' : ((isTakenByOther && !isMe) ? Colors.textSecondary : 'white'),
+                                                        fontSize: 16,
+                                                        fontWeight: '500',
+                                                        fontStyle: !hasName ? 'italic' : 'normal'
                                                     }}>
-                                                        <Crown color={Colors.accent} size={12} fill={`${Colors.accent}33`} style={{ marginRight: 4 }} />
-                                                        <Text style={{ color: Colors.accent, fontSize: 10, fontWeight: '900' }}>{t('common.host').toUpperCase()}</Text>
-                                                    </View>
-                                                )}
-                                            </TouchableOpacity>
-                                        )}
+                                                        {hasName ? nameToCheck : t('common.unknown')} {isMe && <Text style={{ color: Colors.primary, fontSize: 14 }}>{t('common.me')}</Text>}
+                                                        {isTakenByOther && !isMe && <Text style={{ color: Colors.textSecondary, fontSize: 12 }}> ({t('name_input.selected').toUpperCase()})</Text>}
+                                                    </Text>
+                                                    {isHost && (
+                                                        <View style={{
+                                                            backgroundColor: `${Colors.accent}25`,
+                                                            borderColor: Colors.accent,
+                                                            borderWidth: 1,
+                                                            borderRadius: 4,
+                                                            paddingHorizontal: 4,
+                                                            marginLeft: 6,
+                                                            flexDirection: 'row',
+                                                            alignItems: 'center',
+                                                        }}>
+                                                            <Crown color={Colors.accent} size={12} fill={`${Colors.accent}33`} style={{ marginRight: 4 }} />
+                                                            <Text style={{ color: Colors.accent, fontSize: 10, fontWeight: '900' }}>{t('common.host').toUpperCase()}</Text>
+                                                        </View>
+                                                    )}
+                                                </TouchableOpacity>
+                                            )}
+                                        </View>
+
+                                        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                                            {isPeopleTab && (
+                                                <TouchableOpacity
+                                                    disabled={role !== 'owner'}
+                                                    onPress={() => role === 'owner' && startEditingWeight(index)}
+                                                    style={{
+                                                        backgroundColor: 'rgba(0,0,0,0.3)',
+                                                        width: 40,
+                                                        height: 36,
+                                                        borderRadius: 6,
+                                                        marginRight: 10,
+                                                        borderWidth: 1,
+                                                        borderColor: 'rgba(255,255,255,0.1)',
+                                                        alignItems: 'center',
+                                                        justifyContent: 'center'
+                                                    }}
+                                                >
+                                                    {editingWeightIndex === index && role === 'owner' ? (
+                                                        <TextInput
+                                                            autoFocus
+                                                            style={{ color: 'white', fontSize: 14, fontWeight: 'bold', padding: 0, textAlign: 'center', width: '100%', height: '100%' }}
+                                                            value={editingWeightValue}
+                                                            onChangeText={(text) => setEditingWeightValue(text.replace(/[^0-9]/g, '').slice(0, 2))}
+                                                            onBlur={saveWeightEdit}
+                                                            onSubmitEditing={saveWeightEdit}
+                                                            keyboardType="number-pad"
+                                                            maxLength={2}
+                                                        />
+                                                    ) : (
+                                                        <View style={{ alignItems: 'center' }}>
+                                                            <Text style={{ color: Colors.textSecondary, fontSize: 14, fontWeight: 'bold' }}>
+                                                                {displayWeight}
+                                                            </Text>
+                                                            <Text style={{ color: Colors.textSecondary, fontSize: 10, opacity: 0.7 }}>
+                                                                ({percentage}%)
+                                                            </Text>
+                                                        </View>
+                                                    )}
+                                                </TouchableOpacity>
+                                            )}
+
+                                            {role === 'owner' && (
+                                                <TouchableOpacity onPress={() => removeParticipant(index)} style={{ padding: 4 }}>
+                                                    <Trash2 color="rgba(255,255,255,0.2)" size={20} />
+                                                </TouchableOpacity>
+                                            )}
+                                        </View>
                                     </View>
+                                );
+                            }}
 
-                                    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                                        {isPeopleTab && (
-                                            <TouchableOpacity
-                                                disabled={role !== 'owner'}
-                                                onPress={() => role === 'owner' && startEditingWeight(index)}
-                                                style={{
-                                                    backgroundColor: 'rgba(0,0,0,0.3)',
-                                                    width: 40,
-                                                    height: 36,
-                                                    borderRadius: 6,
-                                                    marginRight: 10,
-                                                    borderWidth: 1,
-                                                    borderColor: 'rgba(255,255,255,0.1)',
-                                                    alignItems: 'center',
-                                                    justifyContent: 'center'
-                                                }}
-                                            >
-                                                {editingWeightIndex === index && role === 'owner' ? (
-                                                    <TextInput
-                                                        autoFocus
-                                                        style={{ color: 'white', fontSize: 14, fontWeight: 'bold', padding: 0, textAlign: 'center', width: '100%', height: '100%' }}
-                                                        value={editingWeightValue}
-                                                        onChangeText={(text) => setEditingWeightValue(text.replace(/[^0-9]/g, '').slice(0, 2))}
-                                                        onBlur={saveWeightEdit}
-                                                        onSubmitEditing={saveWeightEdit}
-                                                        keyboardType="number-pad"
-                                                        maxLength={2}
-                                                    />
-                                                ) : (
-                                                    <View style={{ alignItems: 'center' }}>
-                                                        <Text style={{ color: Colors.textSecondary, fontSize: 14, fontWeight: 'bold' }}>
-                                                            {displayWeight}
-                                                        </Text>
-                                                        <Text style={{ color: Colors.textSecondary, fontSize: 10, opacity: 0.7 }}>
-                                                            ({percentage}%)
-                                                        </Text>
-                                                    </View>
-                                                )}
-                                            </TouchableOpacity>
-                                        )}
-
-                                        {role === 'owner' && (
-                                            <TouchableOpacity onPress={() => removeParticipant(index)} style={{ padding: 4 }}>
-                                                <Trash2 color="rgba(255,255,255,0.2)" size={20} />
-                                            </TouchableOpacity>
-                                        )}
+                            ListFooterComponent={
+                                activeTab === 'people' && participants.length > 0 ? (
+                                    <View style={{ flexDirection: 'row', justifyContent: 'flex-end', paddingVertical: 10, paddingRight: 10 }}>
+                                        <Text style={{ color: Colors.textSecondary, fontSize: 14, fontWeight: '500' }}>
+                                            {t('name_input.total_ratio').toUpperCase()}: <Text style={{ color: Colors.textSecondary, fontSize: 16 }}>{totalParticipantsWeight}</Text>
+                                        </Text>
                                     </View>
-                                </View>
-                            );
-                        }}
-
-                        ListFooterComponent={
-                            activeTab === 'people' && participants.length > 0 ? (
-                                <View style={{ flexDirection: 'row', justifyContent: 'flex-end', paddingVertical: 10, paddingRight: 10 }}>
-                                    <Text style={{ color: Colors.textSecondary, fontSize: 14, fontWeight: '500' }}>
-                                        {t('name_input.total_ratio').toUpperCase()}: <Text style={{ color: Colors.textSecondary, fontSize: 16 }}>{totalParticipantsWeight}</Text>
-                                    </Text>
-                                </View>
-                            ) : null
-                        }
-                    />
+                                ) : null
+                            }
+                        />
                     </View>
 
 
 
                     {/* Bottom Action Button */}
-                    <View ref={spinButtonRef} style={{ paddingTop: 0 }}>
+                    <View ref={spinButtonRef} style={{ paddingTop: 0, display: isKeyboardVisible ? 'none' : 'flex' }}>
                         {activeTab === 'menu' ? (
                             <View style={{ alignItems: 'center' }}>
                                 {selectedMenuIndex !== null ? (
@@ -2102,15 +2170,15 @@ export default function NameInputScreen({ route, navigation }) {
                                         <TouchableOpacity
                                             onPress={handleDirectPick}
                                             style={{
-                                            width: '100%',
-                                            backgroundColor: `${activeMenuColor}15`,
-                                            paddingVertical: 10,
-                                            borderRadius: 16,
-                                            flexDirection: 'row',
-                                            alignItems: 'center',
-                                            justifyContent: 'center',
-                                            borderWidth: 1.5,
-                                            borderColor: activeMenuColor
+                                                width: '100%',
+                                                backgroundColor: `${activeMenuColor}15`,
+                                                paddingVertical: 10,
+                                                borderRadius: 16,
+                                                flexDirection: 'row',
+                                                alignItems: 'center',
+                                                justifyContent: 'center',
+                                                borderWidth: 1.5,
+                                                borderColor: activeMenuColor
                                             }}
                                         >
                                             <CheckCircle2 color={activeMenuColor} size={22} strokeWidth={2.5} />
@@ -2175,7 +2243,7 @@ export default function NameInputScreen({ route, navigation }) {
                                 )}
                             </View>
                         ) : (
-                            /* People tab: Host = N/N 참여 완료 - 룰렛 돌리기, Participant = 대기 안내 */
+                            /* People tab: Host = N/N 참여 중 - 룰렛 돌리기, Participant = 대기 안내 */
                             role === 'owner' ? (
                                 <TouchableOpacity
                                     onPress={() => {
@@ -2203,13 +2271,16 @@ export default function NameInputScreen({ route, navigation }) {
                                         marginLeft: 8
                                     }}>
                                         {mode === 'online' && participants.length > 0
-                                            ? t('name_input.participants_ready_spin', {
-                                                current: (() => {
-                                                    const norm = (s) => String(s || '').trim().replace(/\s+/g, '');
-                                                    return onlineUsers.filter(u => participants.some(p => norm((typeof p === 'object' ? p.name : p)) === norm(u.name))).length;
-                                                })(),
-                                                total: participants.length
-                                            }).toUpperCase()
+                                            ? (() => {
+                                                const norm = (s) => String(s || '').trim().replace(/\s+/g, '');
+                                                const currentCount = onlineUsers.filter(u => participants.some(p => norm((typeof p === 'object' ? p.name : p)) === norm(u.name))).length;
+                                                const totalCount = participants.length;
+                                                const isReady = currentCount === totalCount && totalCount > 0;
+                                                return t(isReady ? 'name_input.participants_ready_spin' : 'name_input.participants_joining_spin', {
+                                                    current: currentCount,
+                                                    total: totalCount
+                                                }).toUpperCase();
+                                            })()
                                             : t('name_input.what').toUpperCase()}
                                     </Text>
                                 </TouchableOpacity>
@@ -2430,7 +2501,7 @@ export default function NameInputScreen({ route, navigation }) {
                                                         <TouchableOpacity
                                                             onPress={() => {
                                                                 if (!isTaken || isMe) {
-                                                                    setPendingSelectedName(pName);
+                                                                    setPendingSelectedName(pendingSelectedName === pName ? null : pName);
                                                                 }
                                                             }}
                                                             disabled={(isTaken && !isMe)}
@@ -2449,7 +2520,7 @@ export default function NameInputScreen({ route, navigation }) {
                                                                 if (role === 'owner') {
                                                                     startEditingParticipant(index, pName);
                                                                 } else if (!isTaken || isMe) {
-                                                                    setPendingSelectedName(pName);
+                                                                    setPendingSelectedName(pendingSelectedName === pName ? null : pName);
                                                                 }
                                                             }}
                                                             disabled={role !== 'owner' && isTaken && !isMe}
@@ -2527,7 +2598,12 @@ export default function NameInputScreen({ route, navigation }) {
                                     <TouchableOpacity
                                         onPress={async () => {
                                             if (pendingSelectedName !== mySelectedName) {
-                                                toggleMe(pendingSelectedName);
+                                                if (pendingSelectedName === null && mySelectedName) {
+                                                    // Uncheck: toggle off the current selection
+                                                    toggleMe(mySelectedName);
+                                                } else if (pendingSelectedName) {
+                                                    toggleMe(pendingSelectedName);
+                                                }
                                             }
                                             // Confirm: sync changes to Firebase
                                             if (role === 'owner') {
@@ -2775,12 +2851,15 @@ export default function NameInputScreen({ route, navigation }) {
                     <CyberAlert
                         visible={showExitConfirm}
                         title={t('common.alert')}
-                        message={t('common.exit_confirm')}
+                        message={role === 'owner' && mode !== 'offline' ? t('common.host_exit_confirm') : t('common.exit_confirm')}
                         type="info"
                         confirmText={t('common.confirm')}
                         cancelText={t('common.cancel')}
                         onConfirm={async () => {
                             setShowExitConfirm(false);
+                            if (role === 'owner' && mode !== 'offline') {
+                                await syncService.removeRoom(roomId);
+                            }
                             await syncService.clearPresence();
                             navigation.reset({
                                 index: 0,
@@ -2802,7 +2881,7 @@ export default function NameInputScreen({ route, navigation }) {
                             onPress={() => { setShowOptionSheet(false); setPendingMenuIndex(null); }}
                             style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'flex-end' }}
                         >
-                            <TouchableOpacity activeOpacity={1} onPress={() => {}} style={{
+                            <TouchableOpacity activeOpacity={1} onPress={() => { }} style={{
                                 backgroundColor: Colors.surface,
                                 borderTopLeftRadius: 20,
                                 borderTopRightRadius: 20,
@@ -2823,7 +2902,7 @@ export default function NameInputScreen({ route, navigation }) {
                                             ? (typeof menuItems[pendingMenuIndex] === 'object' ? menuItems[pendingMenuIndex].name : menuItems[pendingMenuIndex])
                                             : ''}
                                     </Text>
-                                    {activeCategory === 'coffee' && role === 'owner' && pendingMenuIndex !== null && (
+                                    {activeCategory === 'coffee' && pendingMenuIndex !== null && (
                                         <TouchableOpacity
                                             onPress={() => {
                                                 setMemoEditingIndex(pendingMenuIndex);
@@ -2876,7 +2955,7 @@ export default function NameInputScreen({ route, navigation }) {
                                                     }}
                                                 >
                                                     <Text style={{ fontSize: 22 }}>{opt.icon}</Text>
-                                                    <Text style={{ color: opt.color, fontSize: 18, fontWeight: '900', letterSpacing: 1 }}>{opt.label}</Text>
+                                                    <Text style={{ color: opt.color, fontSize: 18, fontWeight: '900', letterSpacing: 1 }}>{t('common.' + opt.label.toLowerCase())}</Text>
                                                 </TouchableOpacity>
                                             ))}
                                             {pendingMenuIndex !== null && menuItems[pendingMenuIndex] && typeof menuItems[pendingMenuIndex] === 'object' && menuItems[pendingMenuIndex].note && (() => {
@@ -2926,7 +3005,7 @@ export default function NameInputScreen({ route, navigation }) {
                             onPress={() => { setShowMemoModal(false); setMemoEditingIndex(null); setMemoInputValue(''); }}
                             style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'center', alignItems: 'center', padding: 24 }}
                         >
-                            <TouchableOpacity activeOpacity={1} onPress={() => {}} style={{
+                            <TouchableOpacity activeOpacity={1} onPress={() => { }} style={{
                                 width: '100%',
                                 maxWidth: 340,
                                 backgroundColor: Colors.surface,
@@ -2936,7 +3015,7 @@ export default function NameInputScreen({ route, navigation }) {
                                 borderColor: Colors.glassBorder,
                             }}>
                                 <Text style={{ color: Colors.textSecondary, fontSize: 14, fontWeight: '600', marginBottom: 8 }}>
-                                    {t('name_input.memo_label') || '옵션 추가 (선택)'}
+                                    {t('name_input.memo_label') || 'Add option (optional)'}
                                 </Text>
                                 <Text style={{ color: 'white', fontSize: 17, fontWeight: '700', marginBottom: 12 }} numberOfLines={1}>
                                     {memoEditingIndex !== null && menuItems[memoEditingIndex]
@@ -2955,7 +3034,7 @@ export default function NameInputScreen({ route, navigation }) {
                                         borderColor: 'rgba(255,255,255,0.15)',
                                         marginBottom: 16,
                                     }}
-                                    placeholder={t('name_input.memo_placeholder') || '예: 딸기, 망고'}
+                                    placeholder={t('name_input.memo_placeholder') || 'e.g. strawberry, mango'}
                                     placeholderTextColor="rgba(255,255,255,0.35)"
                                     value={memoInputValue}
                                     onChangeText={setMemoInputValue}
@@ -2968,13 +3047,13 @@ export default function NameInputScreen({ route, navigation }) {
                                         onPress={() => { setShowMemoModal(false); setMemoEditingIndex(null); setMemoInputValue(''); }}
                                         style={{ flex: 1, paddingVertical: 12, borderRadius: 10, backgroundColor: 'rgba(255,255,255,0.1)', alignItems: 'center' }}
                                     >
-                                        <Text style={{ color: Colors.textSecondary, fontSize: 15, fontWeight: '600' }}>{t('common.cancel') || '취소'}</Text>
+                                        <Text style={{ color: Colors.textSecondary, fontSize: 15, fontWeight: '600' }}>{t('common.cancel') || 'Cancel'}</Text>
                                     </TouchableOpacity>
                                     <TouchableOpacity
                                         onPress={saveMemoEdit}
                                         style={{ flex: 1, paddingVertical: 12, borderRadius: 10, backgroundColor: Colors.primary, alignItems: 'center' }}
                                     >
-                                        <Text style={{ color: 'black', fontSize: 15, fontWeight: '700' }}>{t('common.confirm') || '확인'}</Text>
+                                        <Text style={{ color: 'black', fontSize: 15, fontWeight: '700' }}>{t('common.confirm') || 'Confirm'}</Text>
                                     </TouchableOpacity>
                                 </View>
                             </TouchableOpacity>
@@ -3082,7 +3161,22 @@ export default function NameInputScreen({ route, navigation }) {
                                                 </View>
                                                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                                                     {onlineUser ? (
-                                                        userVote ? (
+                                                        ((spinTarget === 'people' || (!remoteSpinState?.isSpinning && activeTab === 'people')) && !(pName === hostName || onlineUser?.role === 'owner')) ? (
+                                                            <View style={{
+                                                                backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                                                                paddingHorizontal: 8,
+                                                                paddingVertical: 4,
+                                                                borderRadius: 4,
+                                                                borderWidth: 1,
+                                                                borderColor: 'rgba(255, 255, 255, 0.1)',
+                                                                flexDirection: 'row',
+                                                                alignItems: 'center'
+                                                            }}>
+                                                                <Text style={{ color: '#888', fontSize: 11, fontWeight: 'normal' }}>
+                                                                    {t('result.watched').toUpperCase()}
+                                                                </Text>
+                                                            </View>
+                                                        ) : userVote ? (
                                                             <View style={{
                                                                 backgroundColor: 'rgba(57, 255, 20, 0.1)',
                                                                 paddingHorizontal: 8,
